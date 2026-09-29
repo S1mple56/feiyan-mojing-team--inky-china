@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>古建游览 - 少林寺武宗禅影</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
+        #game-container { width: 100%; height: 100%; }
+        #top-right-ui { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; z-index: 100; }
+        .sys-btn { background-color: rgba(0, 0, 0, 0.7); border: 2px solid #ceae75; color: #ceae75; padding: 10px 12px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px; cursor: pointer; transition: 0.3s; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+        .sys-btn:hover { background-color: #ceae75; color: #000; }
+        #ui-layer { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 800px; display: none; flex-direction: column; gap: 10px; pointer-events: none; z-index: 90; }
+        .dialog-box { background-color: rgba(139, 69, 19, 0.95); border: 3px solid #ceae75; color: #fff; padding: 25px; font-size: 24px; border-radius: 8px; text-align: center; line-height: 1.6; text-shadow: 1px 1px 2px #000; }
+        .options-container { display: none; flex-direction: column; gap: 10px; pointer-events: auto; }
+        .option-btn { background-color: rgba(0, 0, 0, 0.8); border: 2px solid #ceae75; color: #ceae75; padding: 15px; font-size: 22px; border-radius: 5px; cursor: pointer; transition: 0.3s; text-align: left; font-family: "KaiTi"; }
+        .option-btn:hover { background-color: #ceae75; color: #000; }
+        .highlight { color: #ffd700; font-weight: bold; }
+        .modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(15, 15, 15, 0.95); border: 4px solid #ceae75; color: #fff; padding: 40px; border-radius: 12px; display: none; z-index: 200; text-align: center; min-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #ffd700; font-size: 32px; border-bottom: 1px solid #ceae75; padding-bottom: 10px; }
+        .close-btn { background-color: #ceae75; color: #000; border: none; padding: 10px 30px; font-size: 22px; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: "KaiTi"; margin-top: 20px;}
+        .close-btn:hover { background-color: #fff; }
+        .btn-group { margin-top: 30px; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;}
+        #toast { position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(139, 69, 19, 0.9); border: 2px solid #ffd700; color: #fff; padding: 15px 30px; font-size: 24px; border-radius: 8px; display: none; z-index: 300; opacity: 0; transition: opacity 0.5s; text-align: center; }
+        
+        #page-tracker { 
+            position: absolute; top: 80px; right: 20px; color: #ceae75; 
+            font-size: 22px; font-weight: bold; z-index: 100; 
+            text-shadow: 2px 2px 4px #000; cursor: pointer; 
+            transition: 0.2s; text-align: right; user-select: none;
+        }
+        #page-tracker:hover { color: #ffd700; transform: scale(1.05); }
+
+        /* ========= 新增功能 UI 样式 ========= */
+        #chat-history { height: 250px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 15px; text-align: left; margin-bottom: 15px; border-radius: 8px; font-size: 20px; line-height: 1.5; }
+        #chat-input { width: 70%; padding: 10px; font-size: 20px; font-family: "KaiTi"; background: rgba(255,255,255,0.9); border: 2px solid #ceae75; border-radius: 5px; }
+        
+        .sandbox-grid { display: grid; grid-template-columns: repeat(3, 80px); grid-template-rows: repeat(3, 80px); gap: 10px; justify-content: center; margin: 20px 0; }
+        .grid-cell { width: 80px; height: 80px; background: rgba(255, 215, 0, 0.1); border: 2px dashed #ceae75; display: flex; justify-content: center; align-items: center; }
+        .unit { width: 60px; height: 60px; background: #5a3d2b; border-radius: 10px; color: #fff; display: flex; justify-content: center; align-items: center; cursor: grab; font-weight: bold; font-size: 20px; border: 1px solid #ffd700;}
+        .unit-pool { display: flex; gap: 10px; justify-content: center; min-height: 80px; padding: 10px; border: 1px solid #555; margin-bottom: 20px;}
+
+        #maze-canvas { border: 2px solid #ceae75; background: #e8dcb8; cursor: crosshair; }
+        #ai-gen-input { width: 80%; padding: 15px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px; margin-bottom: 20px;}
+        #ai-gen-preview { max-width: 250px; max-height: 300px; display: none; border: 2px solid #ceae75; border-radius: 10px; margin: 0 auto; }
+        .loading { display: none; color: #ffd700; font-size: 20px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+
+<div id="game-container"></div>
+<div id="page-tracker" onclick="reopenAIGen()">武学残页: 0/3</div>
+
+<div id="top-right-ui">
+    <button class="sys-btn" style="background-color: #ffd700; color: #000; border-color: #ceae75;" onclick="openRealPanorama()">👁️ 真实场景</button>
+    <button class="sys-btn" onclick="toggleBackpack()">🎒 背包</button>
+    <button class="sys-btn" onclick="togglePause()">⏸ 暂停</button>
+</div>
+
+<div id="ui-layer">
+    <div id="dialog-text" class="dialog-box"></div>
+    <div id="options-box" class="options-container">
+        <button class="option-btn" onclick="answerQuestion(0)" id="opt-0"></button>
+        <button class="option-btn" onclick="answerQuestion(1)" id="opt-1"></button>
+        <button class="option-btn" onclick="answerQuestion(2)" id="opt-2"></button>
+    </div>
+</div>
+
+<div id="chat-modal" class="modal" style="min-width: 600px;">
+    <h2>与达摩祖师论禅</h2>
+    <div id="chat-history">
+        <div style="color: #ffd700; margin-bottom:10px;">达摩：你既来此少林，所求何法？心若不安，何以学佛？</div>
+    </div>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+        <input type="text" id="chat-input" placeholder="输入你对佛法、修心的理解...">
+        <button class="sys-btn" onclick="sendChatMessage()" id="btn-send-chat">回答</button>
+    </div>
+    <button class="close-btn" onclick="closeChat()">退下参悟</button>
+</div>
+
+<div id="sandbox-modal" class="modal">
+    <h2>少林棍法推演</h2>
+    <p style="font-size: 18px; color: #ccc;">天下武功出少林。请将下方棍式拖入九宫格排演破敌连招。<br>提示：起手式(上) -> 防御(中) -> 反击(下)。</p>
+    <div id="sandbox-result" style="font-size: 22px; margin-bottom: 10px; height: 26px; font-weight:bold;"></div>
+    
+    <div class="unit-pool" id="unit-pool">
+        <div class="unit" draggable="true" data-type="start" id="u1">拨草寻蛇</div>
+        <div class="unit" draggable="true" data-type="start" id="u2">童子拜佛</div>
+        <div class="unit" draggable="true" data-type="defend" id="u3">铁牛耕地</div>
+        <div class="unit" draggable="true" data-type="attack" id="u4">猛虎劈山</div>
+        <div class="unit" draggable="true" data-type="attack" id="u5">降龙伏虎</div>
+    </div>
+    <div class="sandbox-grid" id="sandbox-grid">
+        <div class="grid-cell" data-row="0"></div><div class="grid-cell" data-row="0"></div><div class="grid-cell" data-row="0"></div>
+        <div class="grid-cell" data-row="1"></div><div class="grid-cell" data-row="1"></div><div class="grid-cell" data-row="1"></div>
+        <div class="grid-cell" data-row="2"></div><div class="grid-cell" data-row="2"></div><div class="grid-cell" data-row="2"></div>
+    </div>
+    <div class="btn-group">
+        <button class="close-btn" style="background:#ffd700;" onclick="checkFormation()">确认演武</button>
+        <button class="close-btn" onclick="closeSandbox()">放弃推演</button>
+    </div>
+</div>
+
+<div id="maze-modal" class="modal">
+    <h2>修心之路</h2>
+    <p style="font-size: 18px; color: #ccc;">请依次点击节点体验佛门四谛：入寺 -> 戒 -> 定 -> 慧 -> 悟。切勿触碰贪念！</p>
+    <div id="maze-result" style="font-size: 22px; margin-bottom: 10px; height: 26px; font-weight:bold;"></div>
+    <canvas id="maze-canvas" width="400" height="300"></canvas>
+    <br>
+    <button class="close-btn" onclick="closeMaze()">放弃修心</button>
+</div>
+
+<div id="ai-gen-modal" class="modal">
+    <h2>藏经阁：自创武学</h2>
+    <p style="font-size: 18px; color: #ccc;">你集齐了武学残页，灵光乍现。请描述你想领悟的绝世武功画面。</p>
+    <input type="text" id="ai-gen-input" placeholder="例如：一个武僧正在施展大力金刚掌，掌心带有金色的佛光...">
+    <div id="ai-loading" class="loading">天道感应中，武学推演中...</div>
+    <img id="ai-gen-preview" src="">
+    <div class="btn-group">
+        <button class="close-btn" style="background:#ffd700;" onclick="generateSkill()" id="btn-gen-skill">顿悟</button>
+        <button class="close-btn" style="background:#4CAF50; display:none;" onclick="downloadSkill()" id="btn-download-skill">💾 保存秘籍</button>
+        <button class="close-btn" onclick="closeAIGen()">暂不顿悟</button>
+    </div>
+</div>
+
+<div id="backpack-modal" class="modal">
+    <h2>行囊记录</h2>
+    <div id="bp-list" style="font-size: 24px; line-height: 2; margin-bottom: 20px;"></div>
+    <button class="close-btn" onclick="toggleBackpack()">关闭</button>
+</div>
+
+<div id="pause-modal" class="modal">
+    <h2>游览已暂停</h2>
+    <div class="btn-group">
+        <button class="close-btn" onclick="togglePause()">继续游览</button>
+        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+    </div>
+</div>
+
+<div id="completion-modal" class="modal">
+    <h2 style="color: #00ff00; font-size: 40px;">🎉 禅武合一 🎉</h2>
+    <p style="font-size: 24px; line-height: 1.8;">
+        您已成功收集少林寺的所有历史信物及武学真意！<br>
+        <span style="color:#ffd700;">🎁 隐藏奖励：已解锁【禅宗初祖·达摩】皮肤！</span><br>
+        可在首页角色设置中更换。
+    </p>
+    <div class="btn-group">
+        <button class="close-btn" onclick="restartJourney()">重新游历</button>
+        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// 共 6 个信物（5个人物 + 1个自创武功）
+let inventory = []; 
+const totalItems = 6; 
+let isPaused = false; 
+
+// 状态变量
+let pageCount = 0;
+let pagesGroup;
+let currentChatNPC = null;
+let currentSandboxNPC = null;
+let currentMazeNPC = null;
+let hasGivenAIItem = false; 
+
+const config = {
+    type: Phaser.AUTO, width: window.innerWidth, height: window.innerHeight, parent: 'game-container',
+    physics: { default: 'arcade', arcade: { debug: false } },
+    scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scene: { preload: preload, create: create, update: update }
+};
+
+const game = new Phaser.Game(config);
+let player, cursors, wasd, spaceKey;
+let npcs = []; let activeNPC = null; let dialogState = 'hidden'; 
+
+const uiLayer = document.getElementById('ui-layer');
+const dialogText = document.getElementById('dialog-text');
+const optionsBox = document.getElementById('options-box');
+const optBtns = [document.getElementById('opt-0'), document.getElementById('opt-1'), document.getElementById('opt-2')];
+
+function preload() {
+    this.load.image('bg', 'province/henan/Architecture/location/bg_shaolinsi.png'); 
+    this.load.image('damo', 'province/henan/Architecture/location/damo.png');
+    this.load.image('tanzong', 'province/henan/Architecture/location/tanzong.png');
+    this.load.image('huike', 'province/henan/Architecture/location/huike.png');
+    this.load.image('batuo', 'province/henan/Architecture/location/batuo.png');
+    this.load.image('qijiguang', 'province/henan/Architecture/location/qijiguang.png'); 
+    this.load.audio('bgm_henan', 'audio/henan.mp3');
+    // 【加载残页图片】⚠️需确保有此文件
+    this.load.image('page', 'province/henan/Architecture/location/page.png');
+
+    let playerSkin = localStorage.getItem('playerSkin') || 'player.png';
+    if (playerSkin.startsWith('data:image')) {
+        let arr = playerSkin.split(','); let mime = arr[0].match(/:(.*?);/)[1];
+        let bstr = atob(arr[1]); let n = bstr.length; let u8arr = new Uint8Array(n);
+        while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+        let blob = new Blob([u8arr], { type: mime });
+        this.load.image('player', URL.createObjectURL(blob));
+    } else {
+        this.load.image('player', playerSkin);
+    }
+}
+
+function create() {
+    let bgm = this.sound.add('bgm_henan', { loop: true, volume: 0.2 });
+    bgm.play();
+    let bg = this.add.image(0, 0, 'bg').setOrigin(0, 0);
+    let scaleX = this.cameras.main.width / bg.width;
+    let scaleY = this.cameras.main.height / bg.height;
+    let baseScale = Math.max(scaleX, scaleY) * 1.5; 
+    bg.setScale(baseScale);
+
+    let worldWidth = bg.width * baseScale; let worldHeight = bg.height * baseScale;
+    this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+    this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+
+    player = this.physics.add.sprite(worldWidth * 0.5, worldHeight * 0.5, 'player');
+    let dynamicScale = 150 / player.height;
+    player.setScale(dynamicScale); player.setCollideWorldBounds(true); player.body.setSize(player.width * 0.6, player.height * 0.6);
+
+    // 修改了NPC配置以适配特殊玩法
+    const npcConfigs = [
+        { id: 'damo', name: '菩提达摩', x: 0.5, y: 0.75, scale: 0.1, customAction: 'chat', item: '《易筋经》真传', hasGivenItem: false, intro: '<span class="highlight">【菩提达摩】</span><br>一苇渡江来，面壁九年悟。禅武同源，法传东土。<br><br>▶ 按【空格键】与祖师论禅' },
+        { id: 'tanzong', name: '昙宗法师', x: 0.3, y: 0.65, scale: 0.1, customAction: 'sandbox', item: '少林棍谱', hasGivenItem: false, intro: '<span class="highlight">【昙宗法师】</span><br>我等十三棍僧，以武护法。<br><br>▶ 按【空格键】推演少林棍法' },
+        { id: 'batuo', name: '少林开创者 跋陀', x: 0.2, y: 0.8, scale: 0.1, customAction: 'maze', item: '建寺圣旨', hasGivenItem: false, intro: '<span class="highlight">【跋陀禅师】</span><br>我受孝文帝之请，在此建寺，弘扬佛法。<br><br>▶ 按【空格键】体验修心之路' },
+        
+        { id: 'huike', name: '禅宗二祖 慧可', x: 0.6, y: 0.7, scale: 0.1, isMain: false, item: '达摩衣钵', hasGivenItem: false, intro: '<span class="highlight">【禅宗二祖 慧可】</span><br>断臂立雪，求师安心。<br><br>▶ 按【空格键】接受历史提问', question: '慧可大师为向达摩祖师求法，以何举动表达至诚之心？', options: ['A. 断左臂', 'B. 长跪三日', 'C. 刺血写经'], correct: 0, success: '善哉！断臂立雪，至诚感天。', fail: '非也，我是“断臂立雪”以求法。' },
+        { id: 'qijiguang', name: '抗倭名将 戚继光', x: 0.8, y: 0.75, scale: 0.1, isMain: false, item: '《纪效新书》', hasGivenItem: false, intro: '<span class="highlight">【戚继光】</span><br>我曾借鉴少林棍法，训练士卒，抗击倭寇。<br><br>▶ 按【空格键】接受历史提问', question: '戚继光在抗倭练兵时，主要借鉴了少林寺的哪种武术？', options: ['A. 少林棍法', 'B. 少林剑法', 'C. 少林拳法'], correct: 0, success: '没错！少林棍法刚猛实用，大破倭寇。', fail: '是少林棍法哦！' }
+    ];
+
+    npcConfigs.forEach(config => {
+        let npcSprite = this.physics.add.sprite(worldWidth * config.x, worldHeight * config.y, config.id);
+        npcSprite.setScale(config.scale); npcSprite.setImmovable(true);  
+        npcSprite.body.setSize(npcSprite.width * 0.6, npcSprite.height * 0.6); npcSprite.npcData = config; 
+        npcs.push(npcSprite); this.physics.add.collider(player, npcSprite);
+    });
+
+    // ================= 生成武学残页 =================
+    pagesGroup = this.physics.add.group();
+    for(let i=0; i<3; i++) {
+        let page = this.physics.add.sprite(worldWidth * (0.2 + Math.random()*0.6), worldHeight * (0.2 + Math.random()*0.6), 'page');
+        page.setScale(0.1); 
+        pagesGroup.add(page);
+    }
+    
+    this.physics.add.overlap(player, pagesGroup, (p, pageObj) => {
+        pageObj.destroy();
+        pageCount++;
+        
+        if (pageCount < 3) {
+            document.getElementById('page-tracker').innerText = `武学残页: ${pageCount}/3`;
+            showToast(`获得散落的残页 (${pageCount}/3)`);
+        } else {
+            document.getElementById('page-tracker').innerHTML = `✨ 秘籍集齐！<br><span style="font-size:18px; text-decoration:underline;">点击顿悟武学</span>`;
+            showToast(`武学残页已集齐！`);
+            setTimeout(openAIGen, 1000); 
+        }
+    }, null, this);
+
+    cursors = this.input.keyboard.createCursorKeys();
+    wasd = this.input.keyboard.addKeys({ W: 87, A: 65, S: 83, D: 68 });
+    spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.cameras.main.startFollow(player, true, 0.08, 0.08); 
+    
+    setupDragAndDrop();
+    setupMazeClick();
+}
+
+function update() {
+    if (isPaused) { player.setVelocity(0); return; }
+    const speed = 250; 
+    if (cursors.left.isDown || wasd.A.isDown) { player.setVelocityX(-speed); player.setFlipX(false); } 
+    else if (cursors.right.isDown || wasd.D.isDown) { player.setVelocityX(speed); player.setFlipX(true); } 
+    else { player.setVelocityX(0); }
+    if (cursors.up.isDown || wasd.W.isDown) { player.setVelocityY(-speed); } 
+    else if (cursors.down.isDown || wasd.S.isDown) { player.setVelocityY(speed); } 
+    else { player.setVelocityY(0); }
+
+    let closestNPC = null; let minDistance = 150; 
+    npcs.forEach(npc => {
+        let distance = Phaser.Math.Distance.Between(player.x, player.y, npc.x, npc.y);
+        if (distance < minDistance) { minDistance = distance; closestNPC = npc; }
+    });
+
+    if (closestNPC) {
+        if (activeNPC !== closestNPC) {
+            activeNPC = closestNPC; dialogState = 'intro';
+            uiLayer.style.display = 'flex'; optionsBox.style.display = 'none';
+            dialogText.innerHTML = activeNPC.npcData.intro;
+        }
+        
+        if (Phaser.Input.Keyboard.JustDown(spaceKey) && dialogState === 'intro') {
+            uiLayer.style.display = 'none'; 
+            if (activeNPC.npcData.customAction === 'chat') {
+                openChat(activeNPC);
+            } else if (activeNPC.npcData.customAction === 'sandbox') {
+                openSandbox(activeNPC);
+            } else if (activeNPC.npcData.customAction === 'maze') {
+                openMaze(activeNPC);
+            } else {
+                uiLayer.style.display = 'flex';
+                dialogState = 'question'; dialogText.innerHTML = `<span class="highlight">提问：</span><br>${activeNPC.npcData.question}`;
+                optionsBox.style.display = 'flex'; 
+                for(let i=0; i<3; i++) { optBtns[i].innerText = activeNPC.npcData.options[i]; }
+            }
+        }
+    } else {
+        activeNPC = null; dialogState = 'hidden'; uiLayer.style.display = 'none'; optionsBox.style.display = 'none';
+    }
+}
+
+// ---------------- 基础发奖机制 ----------------
+window.answerQuestion = function(selectedIndex) {
+    if (!activeNPC || dialogState !== 'question') return;
+    optionsBox.style.display = 'none'; dialogState = 'result'; 
+    if (selectedIndex === activeNPC.npcData.correct) {
+        let rewardHTML = "";
+        if (!activeNPC.npcData.hasGivenItem) {
+            grantItem(activeNPC); rewardHTML = `<br><br><span style="color:#ffd700">🎁 获得信物：【${activeNPC.npcData.item}】</span>`;
+        } else { rewardHTML = `<br><br><span style="color:#aaa">（已获得信物）</span>`; }
+        dialogText.innerHTML = `<span style="color:#aaffaa;">【正确】</span><br>${activeNPC.npcData.success}${rewardHTML}`;
+    } else {
+        dialogText.innerHTML = `<span style="color:#ffaaaa;">【错误】</span><br>${activeNPC.npcData.fail}<br><br><span style="color:#ccc; font-size: 18px;">（走到远处再回来即可重新挑战）</span>`;
+    }
+}
+
+function grantItem(npc, customItemName = null) {
+    let itemName = customItemName || (npc ? npc.npcData.item : '');
+    if (npc && !npc.npcData.hasGivenItem) {
+        npc.npcData.hasGivenItem = true;
+        inventory.push(itemName);
+        let _u = localStorage.getItem('ancient_username');
+        if(_u) { try { let _p=JSON.stringify({username:_u, item_name:itemName, item_desc:'少林寺探寻获得的信物'}); if(navigator.sendBeacon) navigator.sendBeacon('http://127.0.0.1:5000/api/add-item', new Blob([_p],{type:'application/json'})); else fetch('http://127.0.0.1:5000/api/add-item',{method:'POST',headers:{'Content-Type':'application/json'},body:_p,keepalive:true}).catch(e=>console.error(e)); } catch(e){console.error(e);} }
+        showToast(`🎁 获得文物：【${itemName}】`);
+        checkWin();
+    } else if (!npc && !hasGivenAIItem) {
+        hasGivenAIItem = true;
+        inventory.push(itemName);
+        let _u = localStorage.getItem('ancient_username');
+        if(_u) { try { let _p=JSON.stringify({username:_u, item_name:itemName, item_desc:'少林寺探寻获得的信物'}); if(navigator.sendBeacon) navigator.sendBeacon('http://127.0.0.1:5000/api/add-item', new Blob([_p],{type:'application/json'})); else fetch('http://127.0.0.1:5000/api/add-item',{method:'POST',headers:{'Content-Type':'application/json'},body:_p,keepalive:true}).catch(e=>console.error(e)); } catch(e){console.error(e);} }
+        showToast(`🎁 获得绝世秘籍：【${itemName}】`);
+        checkWin();
+    }
+}
+
+function checkWin() {
+    if (inventory.length === totalItems) {
+            localStorage.setItem('unlocked_damo', 'true');
+            setTimeout(() => {
+                document.getElementById('completion-modal').style.display = 'block';
+                isPaused = true;
+            }, 2000);
+    }
+}
+
+// ======================== 核心玩法 1：达摩论禅 ========================
+function openChat(npc) {
+    currentChatNPC = npc; isPaused = true;
+    document.getElementById('chat-modal').style.display = 'block';
+}
+window.closeChat = function() { document.getElementById('chat-modal').style.display = 'none'; isPaused = false; }
+window.sendChatMessage = async function() {
+    const inputEl = document.getElementById('chat-input');
+    const msg = inputEl.value.trim();
+    if(!msg) return;
+    
+    const historyEl = document.getElementById('chat-history');
+    historyEl.innerHTML += `<div style="color: #fff; margin-top:10px;">你：${msg}</div>`;
+    inputEl.value = '';
+    
+    const btn = document.getElementById('btn-send-chat');
+    btn.innerText = "参悟中..."; btn.disabled = true;
+    
+    let isFrontendSuccess = msg.includes('心') || msg.includes('空') || msg.includes('悟') || msg.includes('慈悲') || msg.includes('放下') || msg.includes('善');
+
+    // 动态传入少林寺特有的 Prompt
+    const shaolinPrompt = "你是少林寺达摩祖师，在此面壁九年。玩家来向你求教禅法。你说话充满禅机，高深莫测，常以佛门公案或反问回答。如果玩家的回答体现了“放下”、“明心见性”、“慈悲”、“空”或“禅武合一”等佛理，令你非常满意，你必须在回复最后加上大写的 [SUCCESS] 标记。如果不满意，用佛门偈语点化他。";
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/chat', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ message: msg, system_prompt: shaolinPrompt })
+        });
+        const data = await response.json();
+        
+        if (!response.ok) {
+            if(isFrontendSuccess) {
+                historyEl.innerHTML += `<div style="color: #ffd700; margin-top:10px;">达摩：善哉，汝已明心见性，得我真传。</div>`;
+                triggerChatSuccess(historyEl);
+            } else {
+                historyEl.innerHTML += `<div style="color: #ff4444; margin-top:10px;">(天道提示：后端连线失败。请输入包含“悟”、“心”、“慈悲”等字眼强行顿悟)</div>`;
+            }
+        } else {
+            historyEl.innerHTML += `<div style="color: #ffd700; margin-top:10px;">达摩：${data.reply}</div>`;
+            if(data.success || isFrontendSuccess) {
+                triggerChatSuccess(historyEl);
+            }
+        }
+    } catch (e) {
+        if(isFrontendSuccess) {
+            historyEl.innerHTML += `<div style="color: #ffd700; margin-top:10px;">达摩：善哉，汝已明心见性，得我真传。</div>`;
+            triggerChatSuccess(historyEl);
+        } else {
+            historyEl.innerHTML += `<div style="color: #ff4444; margin-top:10px;">(天道提示：连接异常。请输入包含“悟”、“心”、“慈悲”等字眼直接过关)</div>`;
+        }
+    }
+    btn.innerText = "回答"; btn.disabled = false;
+    historyEl.scrollTop = historyEl.scrollHeight;
+}
+function triggerChatSuccess(historyEl) {
+    if(!currentChatNPC.npcData.hasGivenItem) {
+        historyEl.innerHTML += `<div style="color: #00ff00; margin-top:10px; font-weight:bold;">【系统提示】：达摩微微点头，将《易筋经》真传授给了你！</div>`;
+        grantItem(currentChatNPC);
+        setTimeout(() => { closeChat(); }, 3000);
+    }
+}
+
+// ======================== 核心玩法 2：少林棍法沙盘 ========================
+function openSandbox(npc) {
+    currentSandboxNPC = npc; isPaused = true;
+    document.getElementById('sandbox-result').innerText = "";
+    document.getElementById('sandbox-modal').style.display = 'block';
+}
+window.closeSandbox = function() { document.getElementById('sandbox-modal').style.display = 'none'; isPaused = false; }
+
+function setupDragAndDrop() {
+    const units = document.querySelectorAll('.unit');
+    const cells = document.querySelectorAll('.grid-cell');
+    const pool = document.getElementById('unit-pool');
+    
+    units.forEach(u => { u.ondragstart = (e) => { e.dataTransfer.setData('text/plain', e.target.id); }; });
+    cells.forEach(c => {
+        c.ondragover = (e) => { e.preventDefault(); }; 
+        c.ondrop = (e) => {
+            e.preventDefault();
+            const id = e.dataTransfer.getData('text/plain');
+            if(e.target.classList.contains('grid-cell') && e.target.children.length === 0) e.target.appendChild(document.getElementById(id));
+        };
+    });
+    pool.ondragover = (e) => { e.preventDefault(); };
+    pool.ondrop = (e) => {
+        e.preventDefault();
+        const id = e.dataTransfer.getData('text/plain');
+        pool.appendChild(document.getElementById(id));
+    };
+}
+window.checkFormation = function() {
+    let hasStart = false, hasDefend = false, hasAttack = false;
+    const cells = document.querySelectorAll('.grid-cell');
+
+    cells.forEach(c => {
+        if(c.children.length > 0) {
+            let type = c.children[0].dataset.type;
+            let row = c.dataset.row;
+            if(row === "0" && type === "start") hasStart = true;
+            if(row === "1" && type === "defend") hasDefend = true;
+            if(row === "2" && type === "attack") hasAttack = true;
+        }
+    });
+
+    const res = document.getElementById('sandbox-result');
+    if(hasStart && hasDefend && hasAttack) {
+        res.innerHTML = "<span style='color:#00ff00'>昙宗大喜：善哉！此棍法攻防兼备，进退有度！获得【少林棍谱】</span>";
+        grantItem(currentSandboxNPC);
+        setTimeout(() => closeSandbox(), 2000);
+    } else {
+        res.innerHTML = "<span style='color:#ff4444'>昙宗摇头：招式散乱！上排需起手式，中排需防御，下排需反击攻势！</span>";
+    }
+}
+
+// ======================== 核心玩法 3：修心之路迷宫 ========================
+let mazeNodes = [ {x: 50, y: 150, name: '入寺'}, {x: 150, y: 60, name: '贪念(禁)'}, {x: 180, y: 220, name: '戒'}, {x: 260, y: 100, name: '定'}, {x: 320, y: 200, name: '慧'}, {x: 360, y: 120, name: '悟'} ];
+let mazeStep = 0;
+let correctOrder = ['入寺', '戒', '定', '慧', '悟'];
+let clickedPath = [];
+
+function openMaze(npc) {
+    currentMazeNPC = npc; isPaused = true; clickedPath = []; mazeStep = 0;
+    document.getElementById('maze-result').innerText = "";
+    document.getElementById('maze-modal').style.display = 'block';
+    drawMaze();
+}
+window.closeMaze = function() { document.getElementById('maze-modal').style.display = 'none'; isPaused = false; }
+
+function drawMaze() {
+    const canvas = document.getElementById('maze-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0, canvas.width, canvas.height);
+    
+    if(clickedPath.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(clickedPath[0].x, clickedPath[0].y);
+        for(let i=1; i<clickedPath.length; i++) ctx.lineTo(clickedPath[i].x, clickedPath[i].y);
+        ctx.strokeStyle = '#ceae75'; ctx.lineWidth = 3; ctx.stroke();
+    }
+    
+    mazeNodes.forEach(n => {
+        ctx.beginPath(); ctx.arc(n.x, n.y, 15, 0, Math.PI*2);
+        ctx.fillStyle = n.name.includes('禁') ? '#ff4444' : '#44ff44';
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#000'; ctx.font = '16px KaiTi';
+        ctx.fillText(n.name, n.x - 15, n.y - 20);
+    });
+}
+
+function setupMazeClick() {
+    document.getElementById('maze-canvas').addEventListener('click', (e) => {
+        if (mazeStep >= correctOrder.length) return; 
+        
+        const rect = e.target.getBoundingClientRect();
+        const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+        
+        let clickedNode = null;
+        mazeNodes.forEach(n => { if(Math.hypot(n.x - x, n.y - y) < 20) clickedNode = n; });
+        if (!clickedNode) return;
+
+        const res = document.getElementById('maze-result');
+
+        if(clickedNode.name.includes('禁')) { 
+            res.innerHTML = "<span style='color:#ff4444'>六根不净，心生贪念！前功尽弃，请重来。</span>";
+            clickedPath = []; mazeStep = 0;
+        } else { 
+            if (clickedNode.name === correctOrder[mazeStep]) {
+                clickedPath.push(clickedNode);
+                mazeStep++;
+                res.innerHTML = `<span style='color:#aaffaa'>领悟 ${clickedNode.name} 之理，请继续连线...</span>`;
+                
+                if (mazeStep === correctOrder.length) {
+                    res.innerHTML = "<span style='color:#00ff00'>跋陀赞赏：由戒生定，由定发慧，大彻大悟！获得【建寺圣旨】</span>";
+                    grantItem(currentMazeNPC);
+                    setTimeout(() => closeMaze(), 2000);
+                }
+            } else {
+                res.innerHTML = "<span style='color:#ff4444'>修行顺序有误！必须按：入寺 -> 戒 -> 定 -> 慧 -> 悟。</span>";
+                clickedPath = []; mazeStep = 0;
+            }
+        }
+        drawMaze();
+    });
+}
+
+// ======================== 核心玩法 4：AI 悟道自创武学 ========================
+function openAIGen() {
+    isPaused = true;
+    document.getElementById('ai-gen-modal').style.display = 'block';
+}
+window.closeAIGen = function() { document.getElementById('ai-gen-modal').style.display = 'none'; isPaused = false; }
+
+window.generateSkill = async function() {
+    const input = document.getElementById('ai-gen-input').value.trim();
+    if(!input) return alert("请先描述你想顿悟的武学！");
+    
+    document.getElementById('ai-loading').style.display = 'block';
+    document.getElementById('btn-gen-skill').disabled = true;
+    
+    // 动态传入属于少林武学风格的 Prompt
+    const shaolinImagePrompt = `生成一张高度写实、充满中国传统水墨武侠风格的绝世武功秘籍插图。玩家描述如下：${input}。要求：画面要有浓厚的少林武侠气息和禅意，古朴卷轴质感或武僧演示图，绝对纯白色背景，无多余环境杂物。`;
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/generate-warrior', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ prompt: input, image_prompt: shaolinImagePrompt })
+        });
+        const data = await response.json();
+        
+        if(data.data && data.data.length > 0) {
+            const aiImageUrl = 'data:image/png;base64,' + data.data[0].b64_json;
+            const preview = document.getElementById('ai-gen-preview');
+            preview.src = aiImageUrl;
+            preview.style.display = 'block';
+            document.getElementById('ai-loading').style.display = 'none';
+            
+            document.getElementById('btn-download-skill').style.display = 'inline-block';
+            document.getElementById('btn-gen-skill').innerText = "重新演练"; 
+            
+            setTimeout(() => {
+                alert("一朝顿悟！你已创造出独属你的绝世武学。可以点击绿色按钮保存秘籍图页！");
+                grantItem(null, "自创绝世武功");
+                document.getElementById('page-tracker').innerHTML = `✅ 武学已成`;
+                
+                game.scene.scenes[0].textures.addBase64('ai_skill', aiImageUrl);
+                game.scene.scenes[0].events.once('addBase64', () => {
+                    let aiSprite = game.scene.scenes[0].add.sprite(player.x + 100, player.y, 'ai_skill');
+                    aiSprite.setScale(0.2); 
+                });
+            }, 500);
+        } else {
+            throw new Error("No data");
+        }
+    } catch (e) {
+        document.getElementById('ai-loading').style.display = 'none';
+        alert("天道（API）连接异常！系统已为你直接发放【走火入魔残卷】以防卡关。");
+        grantItem(null, "走火入魔残卷");
+        document.getElementById('page-tracker').innerHTML = `✅ 武学已成`;
+        closeAIGen();
+    }
+    document.getElementById('btn-gen-skill').disabled = false;
+}
+
+window.downloadSkill = function() {
+    const preview = document.getElementById('ai-gen-preview');
+    if (preview.src) {
+        const link = document.createElement('a');
+        link.href = preview.src;
+        link.download = '绝世武功秘籍.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+
+// ======================== 系统菜单 ========================
+function showToast(msg) {
+    const toast = document.getElementById('toast'); toast.innerHTML = msg; toast.style.display = 'block'; toast.style.opacity = 1;
+    setTimeout(() => { toast.style.opacity = 0; setTimeout(() => toast.style.display = 'none', 500); }, 2500);
+}
+window.togglePause = function() {
+    if(document.getElementById('backpack-modal').style.display === 'block') return;
+    isPaused = !isPaused; document.getElementById('pause-modal').style.display = isPaused ? 'block' : 'none';
+}
+window.toggleBackpack = function() {
+    let bp = document.getElementById('backpack-modal');
+    if (bp.style.display === 'block') { bp.style.display = 'none'; isPaused = false; } 
+    else {
+        isPaused = true;  
+        let listHtml = inventory.length > 0 ? inventory.map(item => `<div style="color:#ffd700; margin:10px 0;">📜 ${item}</div>`).join('') : '<div style="color:#aaa; margin: 20px 0;">行囊空空如也</div>';
+        document.getElementById('bp-list').innerHTML = `${listHtml}<div style="color:#aaa; font-size:18px; margin-top:30px; border-top: 1px solid #555; padding-top: 10px;">收集进度：${inventory.length} / ${totalItems}</div>`;
+        bp.style.display = 'block';
+    }
+}
+window.restartJourney = function() { location.reload(); }
+window.returnToMap = function() { window.location.href = 'index.html?region=henan'; }
+
+window.reopenAIGen = function() {
+    if (pageCount >= 3 && !hasGivenAIItem) {
+        openAIGen(); 
+    } else if (pageCount < 3) {
+        showToast(`还差 ${3 - pageCount} 张武学残页哦，请在地图上寻找！`);
+    } else {
+        showToast("武学真意已被你完全掌握！");
+    }
+}
+// ==================== 【新增】跳转至真实全景图页面逻辑 ====================
+window.openRealPanorama = function() {
+    // ⚠️ 记得在这里填入你最终生成的、存放兵马俑真实全景图的页面的 URL。
+    // 建议在你的项目里新建一个文件夹专门放全景页，例如 'panorama/bingmayong.html'
+    const panoUrl = 'panorama/panorama_shaolinsi.html';
+
+    // 实现跳转：用新标签页打开，防止当前页面的进度丢失
+    window.open(panoUrl, '_blank');
+}
+</script>
+    <script src="digital_human.js"></script>
+</body>
+</html>

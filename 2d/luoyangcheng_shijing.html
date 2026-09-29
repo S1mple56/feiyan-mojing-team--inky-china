@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>神都盛景 - 隋唐洛阳城实景</title>
+    <!-- 引入 Three.js 和 PointerLockControls (第一人称漫游) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <style>
+        body { 
+            margin: 0; overflow: hidden; background: radial-gradient(circle, #2a2a2a 0%, #000000 100%); 
+            font-family: "KaiTi", "楷体", serif;
+        }
+        #webgl-container { width: 100vw; height: 100vh; position: absolute; top:0; left:0; }
+        #loading-text {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #ceae75; font-size: 28px; letter-spacing: 2px; z-index: 5;
+        }
+        .top-bar {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            pointer-events: none; z-index: 10; box-sizing: border-box;
+        }
+        .back-btn {
+            background: rgba(0,0,0,0.7); border: 2px solid #ceae75; color: #ceae75;
+            padding: 10px 25px; font-size: 22px; border-radius: 8px; cursor: pointer;
+            pointer-events: auto; text-decoration: none; transition: 0.3s;
+        }
+        .back-btn:hover { background: #ceae75; color: #000; }
+        .info-card {
+            background: rgba(15, 15, 15, 0.85); border: 2px solid #ceae75; border-radius: 12px;
+            padding: 20px; color: #fff; max-width: 300px; text-shadow: 1px 1px 2px #000; pointer-events: auto;
+        }
+        .info-card h1 { margin: 0 0 10px 0; color: #ffd700; font-size: 28px; border-bottom: 1px solid #ceae75; padding-bottom: 10px; }
+        .info-card p { margin: 0; font-size: 18px; color: #ccc; line-height: 1.6; }
+        
+        /* 弹窗介绍 */
+        #poi-popup {
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.95); border: 2px solid #ceae75; border-radius: 12px;
+            padding: 30px; color: #fff; width: 400px; z-index: 100; text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8); pointer-events: auto;
+        }
+        #poi-popup h2 { margin: 0 0 15px 0; color: #ffd700; border-bottom: 1px solid #ceae75; padding-bottom: 10px; }
+        #poi-popup p { font-size: 18px; line-height: 1.6; color: #eee; margin-bottom: 20px; text-align: left; }
+        .close-btn {
+            background: transparent; border: 1px solid #ceae75; color: #ceae75;
+            padding: 8px 20px; font-size: 18px; border-radius: 6px; cursor: pointer; transition: 0.3s;
+        }
+        .close-btn:hover { background: #ceae75; color: #000; }
+
+        /* 沉浸式拦截遮罩 */
+        #blocker {
+            position: absolute; width: 100%; height: 100%;background-color: rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; color: white;
+        }
+        #instructions {
+            text-align: center; cursor: pointer; padding: 40px; border: 2px dashed #ceae75; background: rgba(0,0,0,0.8); border-radius: 10px;
+        }
+        #instructions:hover { background: rgba(30,30,30,0.9); }
+        .click-to-play { font-size: 36px; color: #ffd700; font-weight: bold; margin-bottom: 20px; }
+        .controls-hint { font-size: 20px; color: #ccc; line-height: 1.8; }
+    </style>
+</head>
+<body>
+    <div id="blocker">
+        <div id="instructions">
+            <div class="click-to-play">点击屏幕，进入神都实景漫游</div>
+            <div class="controls-hint">
+                [W] [A] [S] [D] 或 方向键 - 平移漫游<br/>
+                [Q] 下降 / [E] 上升飞空<br/>
+                鼠标可自由点击页面
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-text">时空流转... (实景加载中)</div>
+    <div id="webgl-container"></div>
+    
+    <div class="top-bar">
+        <a href="suitangluoyang.html" class="back-btn">⬅ 返回游览</a>
+        <div class="info-card">
+            <h1>隋唐洛阳城</h1>
+            <p><b>操作指令：</b><br>WASD：移动身驱<br>Q/E：升降浮空<br>鼠标可自由点击页面</p>
+        </div>
+    </div>
+
+    <!-- POI 弹窗 -->
+    <div id="poi-popup">
+        <h2 id="poi-title">建筑结构</h2>
+        <p id="poi-desc">这里是对该历史建筑的详细介绍。</p>
+        <button class="close-btn" onclick="document.getElementById('poi-popup').style.display='none'">我知道了</button>
+    </div>
+
+    <script>
+        const container = document.getElementById('webgl-container');
+        const loadingText = document.getElementById('loading-text');
+
+        // 1. 初始化场景、相机、渲染器
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100000);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // 2. 添加光照
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
+        directionalLight.position.set(200, 500, 300);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        const fillLight = new THREE.DirectionalLight(0xaaccff, 0.5);
+        fillLight.position.set(-200, 100, -200);
+        scene.add(fillLight);
+
+        // 3. 移动控制
+        const controls = {
+            getObject: () => camera,
+            moveForward: (dist) => {
+                camera.position.x -= Math.sin(camera.rotation.y) * dist;
+                camera.position.z -= Math.cos(camera.rotation.y) * dist;
+            },
+            turn: (angle) => {
+                camera.rotation.y += angle;
+            },
+            isLocked: true
+        };
+
+        const blocker = document.getElementById('blocker');
+        if (blocker) blocker.style.display = 'none';
+
+        let moveForward = false;
+        let moveBackward = false;
+        let moveLeft = false;
+        let moveRight = false;
+        let moveUp = false;
+        let moveDown = false;
+
+        let prevTime = performance.now();
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+
+        const onKeyDown = function (event) {
+            switch (event.code) {
+                case 'ArrowUp':
+                case 'KeyW': moveForward = true; break;
+                case 'ArrowLeft':
+                case 'KeyA': moveLeft = true; break;
+                case 'ArrowDown':
+                case 'KeyS': moveBackward = true; break;
+                case 'ArrowRight':
+                case 'KeyD': moveRight = true; break;
+                case 'KeyE': moveUp = true; break;
+                case 'KeyQ': moveDown = true; break;
+            }
+        };
+
+        const onKeyUp = function (event) {
+            switch (event.code) {
+                case 'ArrowUp':
+                case 'KeyW': moveForward = false; break;
+                case 'ArrowLeft':
+                case 'KeyA': moveLeft = false; break;
+                case 'ArrowDown':
+                case 'KeyS': moveBackward = false; break;
+                case 'ArrowRight':
+                case 'KeyD': moveRight = false; break;
+                case 'KeyE': moveUp = false; break;
+                case 'KeyQ': moveDown = false; break;
+            }
+        };
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('keyup', onKeyUp);
+
+        // 4. 加载 GLB 模型
+        const loader = new THREE.GLTFLoader();
+        const collidableObjects = []; 
+        const raycaster = new THREE.Raycaster(); 
+        const mouse = new THREE.Vector2(); 
+        const poiObjects = []; 
+
+        function createPOI(x, y, z, title, desc) {
+            const geometry = new THREE.SphereGeometry(2.5, 32, 32);
+            const material = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+            const sphere = new THREE.Mesh(geometry, material);
+            
+            const haloGeo = new THREE.SphereGeometry(3.0, 32, 32);
+            const haloMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.4 });
+            const halo = new THREE.Mesh(haloGeo, haloMat);
+            sphere.add(halo);
+
+            sphere.position.set(x, y, z);
+            sphere.userData = { title: title, desc: desc, isSelectable: true };
+            
+            scene.add(sphere);
+            poiObjects.push(sphere);
+        }
+
+        loader.load('../test/111.glb', function (gltf) {
+            const model = gltf.scene;
+            
+            const box = new THREE.Box3().setFromObject(model);
+            const maxDim = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
+            
+            const targetSize = 200; 
+            const scale = maxDim === 0 ? 1 : targetSize / maxDim;
+            model.scale.set(scale, scale, scale);
+
+            const scaledBox = new THREE.Box3().setFromObject(model);
+            const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+            model.position.x = -scaledCenter.x;
+            model.position.y = -scaledBox.min.y; 
+            model.position.z = -scaledCenter.z;
+
+            model.traverse(function (child) {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    collidableObjects.push(child); 
+                }
+            });
+            scene.add(model);
+
+            // 示例 POI
+            createPOI(0, 15, 0, '神都洛阳', '这是隋唐洛阳城的微缩全貌景观。');
+
+            camera.position.set(0, 60, 150); 
+            camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+            loadingText.style.display = 'none';
+
+        }, function (xhr) {
+            if(xhr.lengthComputable) {
+                const percent = (xhr.loaded / xhr.total * 100).toFixed(0);
+                loadingText.innerText = '时空流转... ' + percent + '%';
+            }
+        }, function (error) {
+            console.error(error);
+            loadingText.innerText = '模型加载失败，请检查路径。';
+            loadingText.style.color = '#ff5555';
+        });
+
+        // 5. 渲染循环
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now();
+
+            if (controls.isLocked === true) {
+                const delta = (time - prevTime) / 1000;
+
+                velocity.x -= velocity.x * 12.0 * delta; 
+                velocity.z -= velocity.z * 12.0 * delta; 
+                velocity.y -= velocity.y * 12.0 * delta;
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.y = Number(moveUp) - Number(moveDown);
+                direction.normalize(); 
+
+                const moveSpeed = 150.0;
+                if (moveForward || moveBackward) velocity.z -= direction.z * moveSpeed * delta;
+                const turnSpeed = 1.5 * delta; 
+                if (moveLeft) controls.turn(turnSpeed);
+                if (moveRight) controls.turn(-turnSpeed);
+                if (moveUp || moveDown) velocity.y += direction.y * moveSpeed * delta;
+
+                let pos = controls.getObject().position;
+                let oldX, oldZ, oldY, stepVec, stepDist, rayDir, intersects;
+                const playerRadius = 1.0;
+
+                oldX = pos.x; 
+                oldZ = pos.z;
+                controls.moveForward(-velocity.z * delta);
+                stepVec = new THREE.Vector3(pos.x - oldX, 0, pos.z - oldZ);
+                stepDist = stepVec.length();
+                if (stepDist > 0) {
+                    rayDir = stepVec.normalize();
+                    raycaster.set(new THREE.Vector3(oldX, pos.y, oldZ), rayDir);
+                    intersects = raycaster.intersectObjects(collidableObjects, false);
+                    if (intersects.length > 0 && intersects[0].distance < stepDist + playerRadius) {
+                        pos.x = oldX; pos.z = oldZ; velocity.z = 0;
+                    }
+                }
+
+                oldY = pos.y;
+                pos.y += (velocity.y * delta);
+                let stepY = pos.y - oldY;
+                if (stepY < 0) {
+                    rayDir = new THREE.Vector3(0, -1, 0);
+                    raycaster.set(new THREE.Vector3(pos.x, oldY, pos.z), rayDir);
+                    intersects = raycaster.intersectObjects(collidableObjects, false);
+                    if (intersects.length > 0 && intersects[0].distance < Math.abs(stepY) + playerRadius) {
+                        pos.y = oldY; velocity.y = 0;
+                    }
+                }
+
+                if (!moveUp && !moveDown && (moveForward || moveBackward || moveLeft || moveRight)) {
+                    camera.fov = 60 + Math.sin(time * 0.015) * 0.8;
+                    camera.updateProjectionMatrix();
+                } else if (camera.fov !== 60) {
+                    camera.fov = 60;
+                    camera.updateProjectionMatrix();
+                }
+
+                const minY = 1.0;
+                const maxY = 300;
+                if (pos.y < minY) pos.y = minY;
+                if (pos.y > maxY) pos.y = maxY;
+            }
+
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }, false);
+
+        window.addEventListener('click', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(poiObjects, true);
+
+            if (intersects.length > 0) {
+                const target = intersects[0].object;
+                const poiData = target.parent && target.parent.userData && target.parent.userData.isSelectable ? target.parent.userData : target.userData;
+                
+                if (poiData && poiData.isSelectable) {
+                    document.getElementById('poi-title').innerText = poiData.title;
+                    document.getElementById('poi-desc').innerText = poiData.desc;
+                    document.getElementById('poi-popup').style.display = 'block';
+                }
+            }
+        });
+    </script>
+    <script src="digital_human.js"></script>
+</body>
+</html>

@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>古建游览 - 拙政园文心雅韵</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
+        #game-container { width: 100%; height: 100%; }
+        #top-right-ui { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; z-index: 100; }
+        .sys-btn { background-color: rgba(0, 0, 0, 0.7); border: 2px solid #ceae75; color: #ceae75; padding: 10px 12px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px; cursor: pointer; transition: 0.3s; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+        .sys-btn:hover { background-color: #ceae75; color: #000; }
+        #ui-layer { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 800px; display: none; flex-direction: column; gap: 10px; pointer-events: none; z-index: 90; }
+        .dialog-box { background-color: rgba(139, 69, 19, 0.95); border: 3px solid #ceae75; color: #fff; padding: 25px; font-size: 24px; border-radius: 8px; text-align: center; line-height: 1.6; text-shadow: 1px 1px 2px #000; }
+        .options-container { display: none; flex-direction: column; gap: 10px; pointer-events: auto; }
+        .option-btn { background-color: rgba(0, 0, 0, 0.8); border: 2px solid #ceae75; color: #ceae75; padding: 15px; font-size: 22px; border-radius: 5px; cursor: pointer; transition: 0.3s; text-align: left; font-family: "KaiTi"; }
+        .option-btn:hover { background-color: #ceae75; color: #000; }
+        .highlight { color: #ffd700; font-weight: bold; }
+        .modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(15, 15, 15, 0.95); border: 4px solid #ceae75; color: #fff; padding: 40px; border-radius: 12px; display: none; z-index: 200; text-align: center; min-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #ffd700; font-size: 32px; border-bottom: 1px solid #ceae75; padding-bottom: 10px; }
+        .close-btn { background-color: #ceae75; color: #000; border: none; padding: 10px 30px; font-size: 22px; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: "KaiTi"; margin-top: 20px;}
+        .close-btn:hover { background-color: #fff; }
+        .btn-group { margin-top: 30px; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;}
+        #toast { position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(139, 69, 19, 0.9); border: 2px solid #ffd700; color: #fff; padding: 15px 30px; font-size: 24px; border-radius: 8px; display: none; z-index: 300; opacity: 0; transition: opacity 0.5s; text-align: center; }
+
+        #page-tracker {
+            position: absolute; top: 80px; right: 20px; color: #ceae75;
+            font-size: 22px; font-weight: bold; z-index: 100;
+            text-shadow: 2px 2px 4px #000; cursor: pointer;
+            transition: 0.2s; text-align: right; user-select: none;
+        }
+        #page-tracker:hover { color: #ffd700; transform: scale(1.05); }
+
+        /* 聊天对话 */
+        #chat-history { height: 250px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 15px; text-align: left; margin-bottom: 15px; border-radius: 8px; font-size: 20px; line-height: 1.5; }
+        #chat-input { width: 70%; padding: 10px; font-size: 20px; font-family: "KaiTi"; background: rgba(255,255,255,0.9); border: 2px solid #ceae75; border-radius: 5px; }
+
+        /* 造园沙盘 */
+        .sandbox-grid { display: grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); gap: 10px; justify-content: center; margin: 20px 0; }
+        .grid-cell { width: 100px; height: 100px; background: rgba(34, 139, 34, 0.15); border: 2px dashed #6b8e23; display: flex; justify-content: center; align-items: center; font-size: 14px; color: #6b8e23; }
+        .unit { width: 90px; height: 90px; background: linear-gradient(135deg, #2d5a27, #4a7c59); border-radius: 10px; color: #fff; display: flex; justify-content: center; align-items: center; cursor: grab; font-weight: bold; font-size: 18px; border: 2px solid #ceae75; text-align: center; line-height: 1.3; }
+        .unit-pool { display: flex; gap: 10px; justify-content: center; min-height: 100px; padding: 10px; border: 1px solid #555; margin-bottom: 20px; flex-wrap: wrap; }
+
+        #ai-gen-input { width: 80%; padding: 15px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px; margin-bottom: 20px;}
+        #ai-gen-preview { max-width: 250px; max-height: 300px; display: none; border: 2px solid #ceae75; border-radius: 10px; margin: 0 auto; }
+        .loading { display: none; color: #ffd700; font-size: 20px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+
+<div id="game-container"></div>
+<div id="page-tracker" onclick="reopenAIGen()">散落诗笺: 0/3</div>
+
+<div id="top-right-ui">
+    <button class="sys-btn" onclick="toggleBackpack()">🎒 背包</button>
+    <button class="sys-btn" onclick="togglePause()">⏸ 暂停</button>
+</div>
+
+<div id="ui-layer">
+    <div id="dialog-text" class="dialog-box"></div>
+    <div id="options-box" class="options-container">
+        <button class="option-btn" onclick="answerQuestion(0)" id="opt-0"></button>
+        <button class="option-btn" onclick="answerQuestion(1)" id="opt-1"></button>
+        <button class="option-btn" onclick="answerQuestion(2)" id="opt-2"></button>
+    </div>
+</div>
+
+<!-- 文徵明：造园沙盘 -->
+<div id="sandbox-modal" class="modal">
+    <h2>文徵明·造园推演</h2>
+    <p style="font-size: 18px; color: #ccc;">拙政园以水为魂，亭台楼阁错落有致。<br>请将下方园林要素拖入九宫格，营造一座理想中的文人园林。<br>提示：上排水景、中排建筑、下排花木。</p>
+    <div id="sandbox-result" style="font-size: 22px; margin-bottom: 10px; height: 26px; font-weight:bold;"></div>
+
+    <div class="unit-pool" id="unit-pool">
+        <div class="unit" draggable="true" data-type="water" id="u1">池塘莲荷</div>
+        <div class="unit" draggable="true" data-type="water" id="u2">曲水流觞</div>
+        <div class="unit" draggable="true" data-type="building" id="u3">远香堂</div>
+        <div class="unit" draggable="true" data-type="building" id="u4">听雨轩</div>
+        <div class="unit" draggable="true" data-type="plant" id="u5">修竹幽篁</div>
+        <div class="unit" draggable="true" data-type="plant" id="u6">古木奇石</div>
+    </div>
+    <div class="sandbox-grid" id="sandbox-grid">
+        <div class="grid-cell" data-row="0"></div><div class="grid-cell" data-row="0"></div><div class="grid-cell" data-row="0"></div>
+        <div class="grid-cell" data-row="1"></div><div class="grid-cell" data-row="1"></div><div class="grid-cell" data-row="1"></div>
+        <div class="grid-cell" data-row="2"></div><div class="grid-cell" data-row="2"></div><div class="grid-cell" data-row="2"></div>
+    </div>
+    <div class="btn-group">
+        <button class="close-btn" style="background:#ffd700;" onclick="checkFormation()">确认造园</button>
+        <button class="close-btn" onclick="closeSandbox()">暂不推演</button>
+    </div>
+</div>
+
+<!-- 曹雪芹：文学论道 -->
+<div id="chat-modal" class="modal" style="min-width: 600px;">
+    <h2>与曹雪芹论梦</h2>
+    <div id="chat-history">
+        <div style="color: #ffd700; margin-bottom:10px;">曹雪芹：我半生潦倒，唯余一部《石头记》。你读此书，可解其中味？满纸荒唐言，一把辛酸泪。</div>
+    </div>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+        <input type="text" id="chat-input" placeholder="输入你对《红楼梦》、人生如梦的理解...">
+        <button class="sys-btn" onclick="sendChatMessage()" id="btn-send-chat">回答</button>
+    </div>
+    <button class="close-btn" onclick="closeChat()">告辞</button>
+</div>
+
+<!-- 李秀成：历史问答 -->
+<div id="question-modal" class="modal">
+    <h2>忠王李秀成</h2>
+    <p style="font-size: 18px; color: #ccc;">太平天国忠王李秀成曾据拙政园为忠王府。<br>回答他的历史之问，可获忠王信物。</p>
+    <div id="question-text" style="font-size: 22px; margin: 20px 0; line-height: 1.6;"></div>
+    <div id="question-options" style="display: flex; flex-direction: column; gap: 10px;"></div>
+    <div id="question-result" style="font-size: 22px; margin-top: 15px; font-weight: bold;"></div>
+    <button class="close-btn" onclick="closeQuestion()" style="margin-top: 15px;">离去</button>
+</div>
+
+<!-- 诗笺收集（AI生成） -->
+<div id="ai-gen-modal" class="modal">
+    <h2>文脉传承：题诗园壁</h2>
+    <p style="font-size: 18px; color: #ccc;">你集齐了散落的诗笺，灵思泉涌。<br>请描述你想题写于拙政园壁上的诗意画面。</p>
+    <input type="text" id="ai-gen-input" placeholder="例如：月色下的远香堂，荷塘映月，一位文人临窗抚琴...">
+    <div id="ai-loading" class="loading">翰墨感应中，诗意推演中...</div>
+    <img id="ai-gen-preview" src="">
+    <div class="btn-group">
+        <button class="close-btn" style="background:#ffd700;" onclick="generatePoem()" id="btn-gen-poem">落笔</button>
+        <button class="close-btn" style="background:#4CAF50; display:none;" onclick="downloadPoem()" id="btn-download-poem">💾 保存诗画</button>
+        <button class="close-btn" onclick="closeAIGen()">暂不题诗</button>
+    </div>
+</div>
+
+<!-- 背包 -->
+<div id="backpack-modal" class="modal">
+    <h2>行囊记录</h2>
+    <div id="bp-list" style="font-size: 24px; line-height: 2; margin-bottom: 20px;"></div>
+    <button class="close-btn" onclick="toggleBackpack()">关闭</button>
+</div>
+
+<!-- 暂停 -->
+<div id="pause-modal" class="modal">
+    <h2>游览已暂停</h2>
+    <div class="btn-group">
+        <button class="close-btn" onclick="togglePause()">继续游览</button>
+        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+    </div>
+</div>
+
+<!-- 通关 -->
+<div id="completion-modal" class="modal">
+    <h2 style="color: #00ff00; font-size: 40px;">🎉 文园雅集 🎉</h2>
+    <p style="font-size: 24px; line-height: 1.8;">
+        您已成功收集拙政园的所有历史信物！<br>
+        <span style="color:#ffd700;">🎁 隐藏奖励：已解锁【造园大师·文徵明】皮肤！</span><br>
+        可在首页角色设置中更换。
+    </p>
+    <div class="btn-group">
+        <button class="close-btn" onclick="restartJourney()">重新游历</button>
+        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// 共 6 个信物（3个人物 + 1个AI诗画 + 3个诗笺中的前3个合并为1个）
+let inventory = [];
+const totalItems = 5; // 文徵明、曹雪芹、李秀成各1 + 散落诗笺集齐1 + AI题诗1
+let isPaused = false;
+
+// 状态变量
+let pageCount = 0;
+let pagesGroup;
+let currentChatNPC = null;
+let currentSandboxNPC = null;
+let currentQuestionNPC = null;
+let hasGivenAIItem = false;
+
+// 李秀成问答状态
+let liQuestions = [
+    {
+        question: '太平天国后期，忠王李秀成将拙政园改为忠王府。请问李秀成被封为"忠王"是在哪一年？',
+        options: ['A. 1856年', 'B. 1859年', 'C. 1862年'],
+        correct: 1,
+        success: '不错！本王于己未九年（1859年）受封忠王，镇守苏福省。',
+        fail: '非也。本王于1859年受封忠王。'
+    },
+    {
+        question: '李秀成在苏州期间，对拙政园进行了大规模修缮。当时拙政园被用作什么？',
+        options: ['A. 私人花园', 'B. 忠王府邸', 'C. 军事要塞'],
+        correct: 1,
+        success: '正是！拙政园当时为本王忠王府，集办公与居住于一体。',
+        fail: '拙政园当时乃本王忠王府邸。'
+    },
+    {
+        question: '太平天国运动的领袖是谁？',
+        options: ['A. 洪秀全', 'B. 杨秀清', 'C. 石达开'],
+        correct: 0,
+        success: '不错，天王洪秀全创立太平天国，本王为其麾下忠臣。',
+        fail: '乃天王洪秀全也。'
+    }
+];
+let liQuestionIndex = 0;
+
+const config = {
+    type: Phaser.AUTO, width: window.innerWidth, height: window.innerHeight, parent: 'game-container',
+    physics: { default: 'arcade', arcade: { debug: false } },
+    scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scene: { preload: preload, create: create, update: update }
+};
+
+const game = new Phaser.Game(config);
+let player, cursors, wasd, spaceKey;
+let npcs = []; let activeNPC = null; let dialogState = 'hidden';
+
+const uiLayer = document.getElementById('ui-layer');
+const dialogText = document.getElementById('dialog-text');
+const optionsBox = document.getElementById('options-box');
+const optBtns = [document.getElementById('opt-0'), document.getElementById('opt-1'), document.getElementById('opt-2')];
+
+function preload() {
+    this.load.image('bg', 'province/jiangsu/Architecture/location/bg_zhuozhengyuan.png');
+    this.load.image('wenzhengming', 'province/jiangsu/Architecture/location/wenzhengming.png');
+    this.load.image('lixiucheng', 'province/jiangsu/Architecture/location/lixiucheng.png');
+    this.load.image('caoxueqin', 'province/jiangsu/Architecture/location/caoxueqin.png');
+    this.load.image('page', 'province/henan/Architecture/location/page.png');
+    this.load.audio('bgm', 'audio/map_bgm.ogg');
+
+    let playerSkin = localStorage.getItem('playerSkin') || 'player.png';
+    if (playerSkin.startsWith('data:image')) {
+        let arr = playerSkin.split(','); let mime = arr[0].match(/:(.*?);/)[1];
+        let bstr = atob(arr[1]); let n = bstr.length; let u8arr = new Uint8Array(n);
+        while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+        let blob = new Blob([u8arr], { type: mime });
+        this.load.image('player', URL.createObjectURL(blob));
+    } else {
+        this.load.image('player', playerSkin);
+    }
+}
+
+function create() {
+    let bgm = this.sound.add('bgm', { loop: true, volume: 0.2 });
+    bgm.play();
+    let bg = this.add.image(0, 0, 'bg').setOrigin(0, 0);
+    let scaleX = this.cameras.main.width / bg.width;
+    let scaleY = this.cameras.main.height / bg.height;
+    let baseScale = Math.max(scaleX, scaleY) * 1.5;
+    bg.setScale(baseScale);
+
+    let worldWidth = bg.width * baseScale; let worldHeight = bg.height * baseScale;
+    this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+    this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+
+    player = this.physics.add.sprite(worldWidth * 0.5, worldHeight * 0.5, 'player');
+    let dynamicScale = 150 / player.height;
+    player.setScale(dynamicScale); player.setCollideWorldBounds(true); player.body.setSize(player.width * 0.6, player.height * 0.6);
+
+    // NPC配置：文徵明（造园沙盘）、李秀成（历史问答）、曹雪芹（文学论道）
+    const npcConfigs = [
+        {
+            id: 'wenzhengming', name: '文徵明', x: 0.3, y: 0.6, scale: 0.25,
+            customAction: 'sandbox', item: '《拙政园三十一景图》', hasGivenItem: false,
+            intro: '<span class="highlight">【文徵明】</span><br>吾受王御史之邀，历时十六载，绘此园三十一景。<br>园林之道，在于因地制宜，师法自然。<br><br>▶ 按【空格键】体验造园推演'
+        },
+        {
+            id: 'caoxueqin', name: '曹雪芹', x: 0.65, y: 0.55, scale: 0.25,
+            customAction: 'chat', item: '《红楼梦》残稿', hasGivenItem: false,
+            intro: '<span class="highlight">【曹雪芹】</span><br>半生潦倒，十年辛苦，字字看来皆是血。<br>这园中亭台，恰似大观园一梦。<br><br>▶ 按【空格键】与雪芹论梦'
+        },
+        {
+            id: 'lixiucheng', name: '忠王李秀成', x: 0.5, y: 0.75, scale: 0.25,
+            customAction: 'question', item: '太平天国忠王剑', hasGivenItem: false,
+            intro: '<span class="highlight">【忠王李秀成】</span><br>本王据守苏浙，此园曾为忠王府邸。<br>兵戈虽远，史鉴犹存。<br><br>▶ 按【空格键】接受历史之问'
+        }
+    ];
+
+    npcConfigs.forEach(config => {
+        let npcSprite = this.physics.add.sprite(worldWidth * config.x, worldHeight * config.y, config.id);
+        npcSprite.setScale(config.scale); npcSprite.setImmovable(true);
+        npcSprite.body.setSize(npcSprite.width * 0.6, npcSprite.height * 0.6); npcSprite.npcData = config;
+        npcs.push(npcSprite); this.physics.add.collider(player, npcSprite);
+    });
+
+    // 散落诗笺
+    pagesGroup = this.physics.add.group();
+    for(let i=0; i<3; i++) {
+        let page = this.physics.add.sprite(worldWidth * (0.2 + Math.random()*0.6), worldHeight * (0.2 + Math.random()*0.6), 'page');
+        page.setScale(0.1);
+        pagesGroup.add(page);
+    }
+
+    this.physics.add.overlap(player, pagesGroup, (p, pageObj) => {
+        pageObj.destroy();
+        pageCount++;
+
+        if (pageCount < 3) {
+            document.getElementById('page-tracker').innerText = `散落诗笺: ${pageCount}/3`;
+            showToast(`拾得散落诗笺 (${pageCount}/3)`);
+        } else {
+            document.getElementById('page-tracker').innerHTML = `✨ 诗笺集齐！<br><span style="font-size:18px; text-decoration:underline;">点击题诗园壁</span>`;
+            showToast(`诗笺已集齐！`);
+            setTimeout(openAIGen, 1000);
+        }
+    }, null, this);
+
+    cursors = this.input.keyboard.createCursorKeys();
+    wasd = this.input.keyboard.addKeys({ W: 87, A: 65, S: 83, D: 68 });
+    spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.cameras.main.startFollow(player, true, 0.08, 0.08);
+
+    setupDragAndDrop();
+}
+
+function update() {
+    if (isPaused) { player.setVelocity(0); return; }
+    const speed = 250;
+    if (cursors.left.isDown || wasd.A.isDown) { player.setVelocityX(-speed); player.setFlipX(false); }
+    else if (cursors.right.isDown || wasd.D.isDown) { player.setVelocityX(speed); player.setFlipX(true); }
+    else { player.setVelocityX(0); }
+    if (cursors.up.isDown || wasd.W.isDown) { player.setVelocityY(-speed); }
+    else if (cursors.down.isDown || wasd.S.isDown) { player.setVelocityY(speed); }
+    else { player.setVelocityY(0); }
+
+    let closestNPC = null; let minDistance = 150;
+    npcs.forEach(npc => {
+        let distance = Phaser.Math.Distance.Between(player.x, player.y, npc.x, npc.y);
+        if (distance < minDistance) { minDistance = distance; closestNPC = npc; }
+    });
+
+    if (closestNPC) {
+        if (activeNPC !== closestNPC) {
+            activeNPC = closestNPC; dialogState = 'intro';
+            uiLayer.style.display = 'flex'; optionsBox.style.display = 'none';
+            dialogText.innerHTML = activeNPC.npcData.intro;
+        }
+
+        if (Phaser.Input.Keyboard.JustDown(spaceKey) && dialogState === 'intro') {
+            uiLayer.style.display = 'none';
+            if (activeNPC.npcData.customAction === 'chat') {
+                openChat(activeNPC);
+            } else if (activeNPC.npcData.customAction === 'sandbox') {
+                openSandbox(activeNPC);
+            } else if (activeNPC.npcData.customAction === 'question') {
+                openQuestion(activeNPC);
+            }
+        }
+    } else {
+        activeNPC = null; dialogState = 'hidden'; uiLayer.style.display = 'none'; optionsBox.style.display = 'none';
+    }
+}
+
+// ---------------- 基础发奖机制 ----------------
+window.answerQuestion = function(selectedIndex) {
+    if (!activeNPC || dialogState !== 'question') return;
+    optionsBox.style.display = 'none'; dialogState = 'result';
+    if (selectedIndex === activeNPC.npcData.correct) {
+        let rewardHTML = "";
+        if (!activeNPC.npcData.hasGivenItem) {
+            grantItem(activeNPC); rewardHTML = `<br><br><span style="color:#ffd700">🎁 获得信物：【${activeNPC.npcData.item}】</span>`;
+        } else { rewardHTML = `<br><br><span style="color:#aaa">（已获得信物）</span>`; }
+        dialogText.innerHTML = `<span style="color:#aaffaa;">【正确】</span><br>${activeNPC.npcData.success}${rewardHTML}`;
+    } else {
+        dialogText.innerHTML = `<span style="color:#ffaaaa;">【错误】</span><br>${activeNPC.npcData.fail}<br><br><span style="color:#ccc; font-size: 18px;">（走到远处再回来即可重新挑战）</span>`;
+    }
+}
+
+function grantItem(npc, customItemName = null) {
+    let itemName = customItemName || (npc ? npc.npcData.item : '');
+    if (npc && !npc.npcData.hasGivenItem) {
+        npc.npcData.hasGivenItem = true;
+        inventory.push(itemName);
+        let _u = localStorage.getItem('ancient_username');
+        if(_u) { try { let _p=JSON.stringify({username:_u, item_name:itemName, item_desc:'拙政园探寻获得的信物'}); if(navigator.sendBeacon) navigator.sendBeacon('http://127.0.0.1:5000/api/add-item', new Blob([_p],{type:'application/json'})); else fetch('http://127.0.0.1:5000/api/add-item',{method:'POST',headers:{'Content-Type':'application/json'},body:_p,keepalive:true}).catch(e=>console.error(e)); } catch(e){console.error(e);} }
+        showToast(`🎁 获得文物：【${itemName}】`);
+        checkWin();
+    } else if (!npc && !hasGivenAIItem) {
+        hasGivenAIItem = true;
+        inventory.push(itemName);
+        let _u = localStorage.getItem('ancient_username');
+        if(_u) { try { let _p=JSON.stringify({username:_u, item_name:itemName, item_desc:'拙政园探寻获得的信物'}); if(navigator.sendBeacon) navigator.sendBeacon('http://127.0.0.1:5000/api/add-item', new Blob([_p],{type:'application/json'})); else fetch('http://127.0.0.1:5000/api/add-item',{method:'POST',headers:{'Content-Type':'application/json'},body:_p,keepalive:true}).catch(e=>console.error(e)); } catch(e){console.error(e);} }
+        showToast(`🎁 获得绝世诗画：【${itemName}】`);
+        checkWin();
+    }
+}
+
+function checkWin() {
+    if (inventory.length === totalItems) {
+        localStorage.setItem('unlocked_wenzhengming', 'true');
+        setTimeout(() => {
+            document.getElementById('completion-modal').style.display = 'block';
+            isPaused = true;
+        }, 2000);
+    }
+}
+
+// ======================== 核心玩法 1：文徵明·造园沙盘 ========================
+function openSandbox(npc) {
+    currentSandboxNPC = npc; isPaused = true;
+    document.getElementById('sandbox-result').innerText = "";
+    document.getElementById('sandbox-modal').style.display = 'block';
+}
+window.closeSandbox = function() { document.getElementById('sandbox-modal').style.display = 'none'; isPaused = false; }
+
+function setupDragAndDrop() {
+    const units = document.querySelectorAll('.unit');
+    const cells = document.querySelectorAll('.grid-cell');
+    const pool = document.getElementById('unit-pool');
+
+    units.forEach(u => { u.ondragstart = (e) => { e.dataTransfer.setData('text/plain', e.target.id); }; });
+    cells.forEach(c => {
+        c.ondragover = (e) => { e.preventDefault(); };
+        c.ondrop = (e) => {
+            e.preventDefault();
+            const id = e.dataTransfer.getData('text/plain');
+            if(e.target.classList.contains('grid-cell') && e.target.children.length === 0) e.target.appendChild(document.getElementById(id));
+        };
+    });
+    pool.ondragover = (e) => { e.preventDefault(); };
+    pool.ondrop = (e) => {
+        e.preventDefault();
+        const id = e.dataTransfer.getData('text/plain');
+        pool.appendChild(document.getElementById(id));
+    };
+}
+
+window.checkFormation = function() {
+    let hasWater = false, hasBuilding = false, hasPlant = false;
+    const cells = document.querySelectorAll('.grid-cell');
+
+    cells.forEach(c => {
+        if(c.children.length > 0) {
+            let type = c.children[0].dataset.type;
+            let row = c.dataset.row;
+            if(row === "0" && type === "water") hasWater = true;
+            if(row === "1" && type === "building") hasBuilding = true;
+            if(row === "2" && type === "plant") hasPlant = true;
+        }
+    });
+
+    const res = document.getElementById('sandbox-result');
+    if(hasWater && hasBuilding && hasPlant) {
+        res.innerHTML = "<span style='color:#00ff00'>文徵明抚掌大笑：妙哉！理水、营筑、植木，三者合一，方得园林真趣！获得【三十一景图】</span>";
+        grantItem(currentSandboxNPC);
+        setTimeout(() => closeSandbox(), 2000);
+    } else {
+        res.innerHTML = "<span style='color:#ff4444'>文徵明摇头：上排水景映天光，中排建筑依水而筑，下排花木掩映成趣。请重新布局！</span>";
+    }
+}
+
+// ======================== 核心玩法 2：曹雪芹·文学论道 ========================
+function openChat(npc) {
+    currentChatNPC = npc; isPaused = true;
+    document.getElementById('chat-modal').style.display = 'block';
+}
+window.closeChat = function() { document.getElementById('chat-modal').style.display = 'none'; isPaused = false; }
+
+window.sendChatMessage = async function() {
+    const inputEl = document.getElementById('chat-input');
+    const msg = inputEl.value.trim();
+    if(!msg) return;
+
+    const historyEl = document.getElementById('chat-history');
+    historyEl.innerHTML += `<div style="color: #fff; margin-top:10px;">你：${msg}</div>`;
+    inputEl.value = '';
+
+    const btn = document.getElementById('btn-send-chat');
+    btn.innerText = "参悟中..."; btn.disabled = true;
+
+    let isFrontendSuccess = msg.includes('梦') || msg.includes('情') || msg.includes('空') || msg.includes('幻') || msg.includes('真') || msg.includes('假') || msg.includes('醒') || msg.includes('悟');
+
+    const caoxueqinPrompt = "你是曹雪芹，正在苏州拙政园中感怀身世。你创作了《红楼梦》，半生潦倒，字字血泪。你说话文雅含蓄，常以书中人物或情节作比。如果玩家的回答体现了'人生如梦'、'真假难辨'、'情为何物'、'繁华如梦'、'万境归空'等《红楼梦》的核心意境，令你非常满意，你必须在回复最后加上大写的 [SUCCESS] 标记。如果不满意，以书中诗词典故点化他。";
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/chat', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg, system_prompt: caoxueqinPrompt })
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            if(isFrontendSuccess) {
+                historyEl.innerHTML += `<div style="color: #ffd700; margin-top:10px;">曹雪芹：善哉，你已解其中味。这部残稿，便赠与你。</div>`;
+                triggerChatSuccess(historyEl);
+            } else {
+                historyEl.innerHTML += `<div style="color: #ff4444; margin-top:10px;">(天道提示：后端连线失败。请输入包含"梦"、"情"、"空"、"幻"等字眼直接过关)</div>`;
+            }
+        } else {
+            historyEl.innerHTML += `<div style="color: #ffd700; margin-top:10px;">曹雪芹：${data.reply}</div>`;
+            if(data.success || isFrontendSuccess) {
+                triggerChatSuccess(historyEl);
+            }
+        }
+    } catch (e) {
+        if(isFrontendSuccess) {
+            historyEl.innerHTML += `<div style="color: #ffd700; margin-top:10px;">曹雪芹：善哉，你已解其中味。这部残稿，便赠与你。</div>`;
+            triggerChatSuccess(historyEl);
+        } else {
+            historyEl.innerHTML += `<div style="color: #ff4444; margin-top:10px;">(天道提示：连接异常。请输入包含"梦"、"情"、"空"、"幻"等字眼直接过关)</div>`;
+        }
+    }
+    btn.innerText = "回答"; btn.disabled = false;
+    historyEl.scrollTop = historyEl.scrollHeight;
+}
+
+function triggerChatSuccess(historyEl) {
+    if(!currentChatNPC.npcData.hasGivenItem) {
+        historyEl.innerHTML += `<div style="color: #00ff00; margin-top:10px; font-weight:bold;">【系统提示】：曹雪芹微微叹息，将《红楼梦》残稿赠与你！</div>`;
+        grantItem(currentChatNPC);
+        setTimeout(() => { closeChat(); }, 3000);
+    }
+}
+
+// ======================== 核心玩法 3：李秀成·历史之问 ========================
+function openQuestion(npc) {
+    currentQuestionNPC = npc; isPaused = true;
+    liQuestionIndex = 0;
+    showQuestion();
+    document.getElementById('question-modal').style.display = 'block';
+}
+window.closeQuestion = function() { document.getElementById('question-modal').style.display = 'none'; isPaused = false; }
+
+function showQuestion() {
+    const q = liQuestions[liQuestionIndex];
+    document.getElementById('question-text').innerHTML = `<span class="highlight">第${liQuestionIndex+1}问：</span><br>${q.question}`;
+    document.getElementById('question-result').innerText = "";
+
+    const optContainer = document.getElementById('question-options');
+    optContainer.innerHTML = '';
+    q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = opt;
+        btn.onclick = () => answerLiQuestion(idx);
+        optContainer.appendChild(btn);
+    });
+}
+
+window.answerLiQuestion = function(selectedIndex) {
+    const q = liQuestions[liQuestionIndex];
+    const resEl = document.getElementById('question-result');
+    const optContainer = document.getElementById('question-options');
+
+    if (selectedIndex === q.correct) {
+        resEl.innerHTML = `<span style="color:#aaffaa;">【正确】</span> ${q.success}`;
+        optContainer.innerHTML = '';
+        liQuestionIndex++;
+
+        if (liQuestionIndex >= liQuestions.length) {
+            setTimeout(() => {
+                if (!currentQuestionNPC.npcData.hasGivenItem) {
+                    resEl.innerHTML += `<br><br><span style="color:#ffd700">🎁 忠王赞许：你通晓史事，这柄忠王剑赐予你！</span>`;
+                    grantItem(currentQuestionNPC);
+                }
+                setTimeout(() => closeQuestion(), 2000);
+            }, 1500);
+        } else {
+            setTimeout(() => showQuestion(), 1500);
+        }
+    } else {
+        resEl.innerHTML = `<span style="color:#ffaaaa;">【错误】</span> ${q.fail}<br><br><span style="color:#ccc; font-size: 18px;">（请重新作答）</span>`;
+    }
+}
+
+// ======================== 核心玩法 4：AI 题诗园壁 ========================
+function openAIGen() {
+    isPaused = true;
+    document.getElementById('ai-gen-modal').style.display = 'block';
+}
+window.closeAIGen = function() { document.getElementById('ai-gen-modal').style.display = 'none'; isPaused = false; }
+
+window.generatePoem = async function() {
+    const input = document.getElementById('ai-gen-input').value.trim();
+    if(!input) return alert("请先描述你想题写的诗意画面！");
+
+    document.getElementById('ai-loading').style.display = 'block';
+    document.getElementById('btn-gen-poem').disabled = true;
+
+    const poemImagePrompt = `生成一张高度写实、充满中国传统水墨文人画风格的诗意画卷。玩家描述如下：${input}。要求：画面要有浓厚的江南园林气息和文人雅韵，古宣纸质感，淡雅设色，绝对纯白色背景，无多余环境杂物。`;
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/generate-warrior', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: input, image_prompt: poemImagePrompt })
+        });
+        const data = await response.json();
+
+        if(data.data && data.data.length > 0) {
+            const aiImageUrl = 'data:image/png;base64,' + data.data[0].b64_json;
+            const preview = document.getElementById('ai-gen-preview');
+            preview.src = aiImageUrl;
+            preview.style.display = 'block';
+            document.getElementById('ai-loading').style.display = 'none';
+
+            document.getElementById('btn-download-poem').style.display = 'inline-block';
+            document.getElementById('btn-gen-poem').innerText = "重新题诗";
+
+            setTimeout(() => {
+                alert("妙笔生花！你已题写独属你的诗意画卷。可点击绿色按钮保存！");
+                grantItem(null, "自创诗意画卷");
+                document.getElementById('page-tracker').innerHTML = `✅ 诗画已成`;
+
+                game.scene.scenes[0].textures.addBase64('ai_poem', aiImageUrl);
+                game.scene.scenes[0].events.once('addBase64', () => {
+                    let aiSprite = game.scene.scenes[0].add.sprite(player.x + 100, player.y, 'ai_poem');
+                    aiSprite.setScale(0.2);
+                });
+            }, 500);
+        } else {
+            throw new Error("No data");
+        }
+    } catch (e) {
+        document.getElementById('ai-loading').style.display = 'none';
+        alert("天道（API）连接异常！系统已为你直接发放【残墨断章】以防卡关。");
+        grantItem(null, "残墨断章");
+        document.getElementById('page-tracker').innerHTML = `✅ 诗画已成`;
+        closeAIGen();
+    }
+    document.getElementById('btn-gen-poem').disabled = false;
+}
+
+window.downloadPoem = function() {
+    const preview = document.getElementById('ai-gen-preview');
+    if (preview.src) {
+        const link = document.createElement('a');
+        link.href = preview.src;
+        link.download = '拙政园诗意画卷.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+
+// ======================== 系统菜单 ========================
+function showToast(msg) {
+    const toast = document.getElementById('toast'); toast.innerHTML = msg; toast.style.display = 'block'; toast.style.opacity = 1;
+    setTimeout(() => { toast.style.opacity = 0; setTimeout(() => toast.style.display = 'none', 500); }, 2500);
+}
+window.togglePause = function() {
+    if(document.getElementById('backpack-modal').style.display === 'block') return;
+    isPaused = !isPaused; document.getElementById('pause-modal').style.display = isPaused ? 'block' : 'none';
+}
+window.toggleBackpack = function() {
+    let bp = document.getElementById('backpack-modal');
+    if (bp.style.display === 'block') { bp.style.display = 'none'; isPaused = false; }
+    else {
+        isPaused = true;
+        let listHtml = inventory.length > 0 ? inventory.map(item => `<div style="color:#ffd700; margin:10px 0;">📜 ${item}</div>`).join('') : '<div style="color:#aaa; margin: 20px 0;">行囊空空如也</div>';
+        document.getElementById('bp-list').innerHTML = `${listHtml}<div style="color:#aaa; font-size:18px; margin-top:30px; border-top: 1px solid #555; padding-top: 10px;">收集进度：${inventory.length} / ${totalItems}</div>`;
+        bp.style.display = 'block';
+    }
+}
+window.restartJourney = function() { location.reload(); }
+window.returnToMap = function() { window.location.href = 'index.html?region=jiangsu'; }
+
+window.reopenAIGen = function() {
+    if (pageCount >= 3 && !hasGivenAIItem) {
+        openAIGen();
+    } else if (pageCount < 3) {
+        showToast(`还差 ${3 - pageCount} 张散落诗笺哦，请在园中寻找！`);
+    } else {
+        showToast("诗意画卷已成！");
+    }
+}
+</script>
+    <script src="digital_human.js"></script>
+</body>
+</html>
+

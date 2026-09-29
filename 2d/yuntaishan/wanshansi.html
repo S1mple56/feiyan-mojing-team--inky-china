@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水墨神州 - 万善寺</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; font-family: "KaiTi", "楷体", serif; }
+        #bg {
+            position: fixed; inset: 0; z-index: 0;
+            background: url('../province/henan/Architecture/location/yuntaishan/bg_wanshansi.png') center center / cover no-repeat;
+        }
+        #overlay {
+            position: fixed; inset: 0; z-index: 1;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.55) 100%);
+        }
+        #top-left {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            display: flex; align-items: center; gap: 20px;
+        }
+        .btn-back {
+            padding: 10px 20px; font-size: 20px; font-family: "KaiTi";
+            background: rgba(0,0,0,0.6); color: #ceae75; border: 1px solid #ceae75;
+            cursor: pointer; transition: 0.3s; border-radius: 8px;
+        }
+        .btn-back:hover { background: #ceae75; color: #000; }
+        #page-title {
+            font-size: 36px; color: #ffd700; text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+            letter-spacing: 6px;
+        }
+        #top-right-ui {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+        }
+        .sys-btn {
+            background: rgba(0,0,0,0.7); border: 2px solid #ceae75; color: #ceae75;
+            padding: 10px 20px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px;
+            cursor: pointer; transition: 0.3s; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        }
+        .sys-btn:hover { background: #ceae75; color: #000; }
+        .sys-btn.primary {
+            background: linear-gradient(135deg, #ffd700, #b8860b);
+            color: #1a1a1a; border-color: #ffd700; font-weight: bold;
+        }
+        .sys-btn.primary:hover { transform: scale(1.05); }
+        #info {
+            position: fixed; bottom: 60px; left: 50px; z-index: 50;
+            max-width: 500px; background: rgba(0,0,0,0.55); backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(206,174,117,0.3);
+            border-radius: 16px; padding: 30px 36px; color: #f5f0e6;
+        }
+        #info h2 { font-size: 32px; color: #ffd700; letter-spacing: 4px; margin-bottom: 6px; }
+        #info .sub { font-size: 16px; color: #ceae75; letter-spacing: 2px; margin-bottom: 16px; }
+        #info .desc { font-size: 17px; line-height: 1.9; color: #d4c4a0; }
+        #poem {
+            position: fixed; bottom: 30px; right: 50px; z-index: 50;
+            text-align: right; color: rgba(206,174,117,0.7);
+            font-size: 18px; letter-spacing: 4px; line-height: 2.2;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="overlay"></div>
+<div id="top-left">
+    <button class="btn-back" onclick="window.location.href='../yuntaishan.html'">← 返回云台山</button>
+    <span id="page-title">万善寺</span>
+</div>
+<div id="top-right-ui">
+    <button class="sys-btn primary" onclick="window.location.href='wanshansi_scene.html'">🌍 进入场景</button>
+    <button class="sys-btn" onclick="window.location.href='wanshansi_game.html'">🏗️ 古建搭建</button>
+</div>
+<div id="info">
+    <h2>万善寺</h2>
+    <div class="sub">千年古刹 · 佛道共存</div>
+    <div class="desc">
+        万善寺位于云台山茱萸峰脚下，始建于明朝万历年间，距今已有四百余年历史。寺庙依山而建，环境清幽。<br><br>
+        寺内殿堂错落有致，古柏参天，晨钟暮鼓，香火绵延。万善寺融合了佛道两教的文化特色，是云台山重要的宗教文化场所，也是游客休憩参悟的绝佳去处。
+    </div>
+</div>
+<div id="poem">
+    晨钟暮鼓惊尘梦<br>古柏苍松伴佛灯
+</div>
+</body>
+</html>

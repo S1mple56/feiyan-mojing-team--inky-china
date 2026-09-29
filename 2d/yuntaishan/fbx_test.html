@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>FBX 加载测试</title>
+    <style>
+        body{background:#111;color:#0f0;font-family:monospace;padding:20px;font-size:14px}
+        .err{color:#f00} .ok{color:#0f0} .warn{color:#ff0}
+    </style>
+</head>
+<body>
+<h2>FBX 加载诊断</h2>
+<div id="log"></div>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+}
+</script>
+
+<script type="module">
+const log = document.getElementById('log');
+function out(msg, cls) {
+    const d = document.createElement('div');
+    d.className = cls || '';
+    d.textContent = msg;
+    log.appendChild(d);
+    console.log(msg);
+}
+
+// 1. 测试 Three.js 加载
+out('1. 加载 Three.js...');
+import * as THREE from 'three';
+out('   ✅ Three.js 版本: ' + THREE.REVISION, 'ok');
+
+// 2. 测试 FBXLoader 加载
+out('2. 加载 FBXLoader...');
+try {
+    const { FBXLoader } = await import('three/addons/loaders/FBXLoader.js');
+    out('   ✅ FBXLoader 加载成功', 'ok');
+
+    // 3. 测试 fetch 文件
+    const testUrl = '../F/9/platform.fbx';
+    out('3. 测试 fetch: ' + testUrl);
+    try {
+        const resp = await fetch(testUrl);
+        out('   状态码: ' + resp.status);
+        const text = await resp.text();
+        out('   文件大小: ' + text.length + ' 字符');
+        out('   前100字: ' + text.substring(0, 100));
+        out('   ✅ 文件可读取', 'ok');
+
+        // 4. 测试 FBXLoader 解析
+        out('4. 测试 FBXLoader 解析...');
+        const loader = new FBXLoader();
+        loader.load(
+            testUrl,
+            (obj) => {
+                out('   ✅ 解析成功! 对象类型: ' + obj.type, 'ok');
+                out('   子对象数: ' + obj.children.length);
+
+                let meshCount = 0;
+                obj.traverse(c => { if (c.isMesh) meshCount++; });
+                out('   网格数: ' + meshCount, 'ok');
+
+                // 添加到场景测试渲染
+                const scene = new THREE.Scene();
+                scene.add(obj.clone());
+                out('   ✅ 场景添加成功', 'ok');
+
+                out('', '');
+                out('===== 结论: FBX 加载正常! =====', 'ok');
+            },
+            (xhr) => {
+                if (xhr.lengthComputable) {
+                    out('   加载进度: ' + Math.round(xhr.loaded / xhr.total * 100) + '%', 'warn');
+                }
+            },
+            (err) => {
+                out('   ❌ FBXLoader 解析失败!', 'err');
+                out('   错误: ' + (err.message || JSON.stringify(err)), 'err');
+                out('', '');
+                out('===== 结论: FBX 解析失败 =====', 'err');
+                out('可能原因:', 'err');
+                out('  - FBX 版本不兼容 (当前: 7.7.0)', 'err');
+                out('  - ASCII FBX 格式不支持', 'err');
+                out('建议: 将 FBX 转换为 GLTF 格式', 'err');
+            }
+        );
+    } catch (e) {
+        out('   ❌ fetch 失败: ' + e.message, 'err');
+    }
+} catch (e) {
+    out('   ❌ FBXLoader 加载失败: ' + e.message, 'err');
+}
+</script>
+</body>
+</html>

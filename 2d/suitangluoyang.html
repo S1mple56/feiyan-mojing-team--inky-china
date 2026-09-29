@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>古建游览 - 隋唐洛阳城</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "STKaiti", "华文楷体", "KaiTi", "楷体", serif; letter-spacing: 1px; }
+        #game-container { width: 100%; height: 100%; }
+        #top-right-ui { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; z-index: 100; }
+        
+        /* 系统按钮优化 */
+        .sys-btn { 
+            background: linear-gradient(180deg, rgba(20,20,20,0.8), rgba(0,0,0,0.9)); 
+            border: 1px solid #ceae75; 
+            border-top: 2px solid #ffd700;
+            border-bottom: 2px solid #8b6914;
+            color: #e8d099; 
+            padding: 10px 22px; 
+            font-size: 20px; 
+            font-family: "STKaiti", "KaiTi", serif; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            transition: all 0.4s ease; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.1); 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
+        }
+        .sys-btn:hover { 
+            background: linear-gradient(180deg, rgba(40,30,20,0.9), rgba(20,15,10,0.9)); 
+            color: #fff; 
+            box-shadow: 0 0 15px rgba(206, 174, 117, 0.5), inset 0 1px 1px rgba(255,255,255,0.2); 
+            transform: translateY(-2px);
+        }
+
+        #ui-layer { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); width: 850px; display: none; flex-direction: column; gap: 15px; pointer-events: none; z-index: 90; }
+        
+        /* 对话框：类似古代诏书或沉木牌匾 */
+        .dialog-box { 
+            background: linear-gradient(135deg, rgba(15,15,15,0.95) 0%, rgba(45,35,25,0.95) 100%);
+            border: 2px solid #8b6b33; 
+            border-image: linear-gradient(to right, #8b6b33, #ffd700, #8b6b33) 1;
+            color: #f4e8c1; 
+            padding: 30px; 
+            font-size: 26px; 
+            text-align: center; 
+            line-height: 1.8; 
+            text-shadow: 2px 2px 4px #000; 
+            box-shadow: 0 15px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+        }
+        .dialog-box::before {
+            content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border: 1px solid rgba(206,174,117,0.2); pointer-events: none;
+        }
+
+        .options-container { display: none; flex-direction: column; gap: 12px; pointer-events: auto; }
+        
+        /* 选项按钮：黑金渐变，卷轴感 */
+        .option-btn { 
+            background: linear-gradient(90deg, rgba(0,0,0,0.9) 0%, rgba(30,20,10,0.8) 50%, rgba(0,0,0,0.9) 100%);
+            border: none;
+            border-left: 3px solid #8b6b33;
+            border-right: 3px solid #8b6b33;
+            color: #d4b886; 
+            padding: 16px 20px; 
+            font-size: 24px; 
+            cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); 
+            text-align: center; 
+            font-family: "STKaiti", "KaiTi", serif; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.6);
+            position: relative;
+            overflow: hidden;
+        }
+        .option-btn::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(206,174,117,0.1), transparent);
+            transition: left 0.7s;
+        }
+        .option-btn:hover { 
+            background: linear-gradient(90deg, rgba(20,15,5,0.95), rgba(60,45,20,0.9), rgba(20,15,5,0.95));
+            border-color: #ffd700;
+            color: #fff; 
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(206,174,117,0.4);
+            text-shadow: 0 0 8px rgba(255,215,0,0.6);
+        }
+        .option-btn:hover::after { left: 200%; }
+
+        .highlight { color: #ffd700; font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.4); }
+        
+        /* 模态框优化 */
+        .modal { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMxMTEiLz48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMjIyIi8+PC9zdmc+'), rgba(15, 10, 5, 0.98); 
+            border: 2px solid #8b6b33; 
+            border-image: linear-gradient(to bottom right, #ffd700, #8b6b33, #3a2a18) 1;
+            color: #e8d099; 
+            padding: 40px 50px; 
+            display: none; z-index: 200; text-align: center; min-width: 500px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 0 30px rgba(0,0,0,0.8); 
+        }
+        .modal::before {
+            content: ''; position: absolute; top: 5px; left: 5px; right: 5px; bottom: 5px;
+            border: 1px dashed rgba(206,174,117,0.3); pointer-events: none;
+        }
+        .modal h2 { margin-top: 0; color: #ffd700; font-size: 36px; border-bottom: 1px solid rgba(206,174,117,0.3); padding-bottom: 15px; font-weight: normal; letter-spacing: 2px; }
+        
+        .close-btn { 
+            background: linear-gradient(135deg, #a48135, #ceae75, #8b6914); 
+            color: #1a1005; 
+            border: 1px solid #ffd700; 
+            padding: 12px 35px; 
+            font-size: 24px; 
+            border-radius: 2px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-family: "STKaiti", "KaiTi", serif; 
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .close-btn:hover { 
+            background: linear-gradient(135deg, #ceae75, #ffd700, #a48135);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255,215,0,0.4);
+            color: #000;
+        }
+        .btn-group { margin-top: 35px; display: flex; justify-content: center; gap: 40px; }
+        
+        /* 提示框仿玉牌效果 */
+        #toast { 
+            position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%); 
+            background: linear-gradient(to right, rgba(40,35,25,0.0), rgba(40,35,25,0.9) 20%, rgba(40,35,25,0.9) 80%, rgba(40,35,25,0.0)); 
+            border-top: 1px solid #ceae75; border-bottom: 1px solid #ceae75;
+            color: #ffd700; 
+            padding: 20px 60px; 
+            font-size: 26px; 
+            display: none; z-index: 300; opacity: 0; transition: opacity 0.5s; text-align: center; 
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container"></div>
+
+<div id="top-right-ui">
+    <button class="sys-btn" onclick="javascript:window.location.href='panorama/glb_111.html'">🌍 三维实景</button>
+    <button class="sys-btn" onclick="toggleBackpack()">🎒 背包</button>
+    <button class="sys-btn" onclick="togglePause()">⏸ 暂停</button>
+</div>
+
+<div id="ui-layer">
+    <div id="dialog-text" class="dialog-box"></div>
+    <div id="options-box" class="options-container">
+        <button class="option-btn" onclick="answerQuestion(0)" id="opt-0"></button>
+        <button class="option-btn" onclick="answerQuestion(1)" id="opt-1"></button>
+        <button class="option-btn" onclick="answerQuestion(2)" id="opt-2"></button>
+    </div>
+</div>
+
+<div id="backpack-modal" class="modal">
+    <h2>行囊记录</h2>
+    <div id="bp-list" style="font-size: 24px; line-height: 2; margin-bottom: 20px;"></div>
+    <button class="close-btn" onclick="toggleBackpack()" style="margin-top: 10px;">关闭</button>
+</div>
+
+<div id="pause-modal" class="modal">
+    <h2>游览已暂停</h2>
+    <p style="font-size: 20px; color: #aaa;">神都洛阳，宜静心体味。</p>
+    <div class="btn-group">
+        <button class="close-btn" onclick="togglePause()">继续游览</button>
+        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+    </div>
+</div>
+
+<div id="completion-modal" class="modal">
+    <h2 style="color: #00ff00; font-size: 40px;">🎉 神都盛景 🎉</h2>
+    <p style="font-size: 24px; line-height: 1.8;">
+        您已成功收集隋唐洛阳城的所有历史信物！<br>
+        神都洛阳盛世重现。<br>
+        感谢您见证这片中原佛国圣地。
+    </p>
+    <div class="btn-group">
+        <button class="close-btn" onclick="restartJourney()">重新游历</button>
+        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+    </div>
+</div>
+
+<div id="video-modal" class="modal" style="min-width: 800px; padding: 20px;">
+    <h2 style="margin-bottom: 15px;">神都神韵·盛世洛阳</h2>
+    <video id="story-video" width="100%" controls style="border: 2px solid #ceae75; border-radius: 8px; background: #000;">
+        <source src="video/TODO_luoyang.mp4" type="video/mp4">
+        您的浏览器不支持 HTML5 视频播放。
+    </video>
+    <br>
+    <button class="close-btn" onclick="closeVideo()" style="margin-top: 20px;">结束观看</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let inventory = []; 
+const totalItems = 4 
+let isPaused = false; 
+
+const config = {
+    type: Phaser.AUTO, width: window.innerWidth, height: window.innerHeight, parent: 'game-container',
+    physics: { default: 'arcade', arcade: { debug: false } },
+    scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scene: { preload: preload, create: create, update: update }
+};
+
+const game = new Phaser.Game(config);
+let player, cursors, wasd, spaceKey;
+let npcs = []; let activeNPC = null; let dialogState = 'hidden'; 
+
+const uiLayer = document.getElementById('ui-layer');
+const dialogText = document.getElementById('dialog-text');
+const optionsBox = document.getElementById('options-box');
+const optBtns = [document.getElementById('opt-0'), document.getElementById('opt-1'), document.getElementById('opt-2')];
+
+function preload() {
+    // 资源路径指向河南隋唐洛阳城
+    this.load.image('bg', 'province/henan/Architecture/location/bg_suitangluoyang.png'); 
+    this.load.image('yuwenkai', 'province/henan/Architecture/location/yuwenkai.png');
+    this.load.image('wuzetian', 'province/henan/Architecture/location/wuzetian.png');
+    this.load.image('direnjie', 'province/henan/Architecture/location/direnjie.png');
+    this.load.image('baijuyi', 'province/henan/Architecture/location/baijuyi.png');
+
+
+    let playerSkin = localStorage.getItem('playerSkin') || 'player.png';
+    if (playerSkin.startsWith('data:image')) {
+        let arr = playerSkin.split(','); let mime = arr[0].match(/:(.*?);/)[1];
+        let bstr = atob(arr[1]); let n = bstr.length; let u8arr = new Uint8Array(n);
+        while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+        let blob = new Blob([u8arr], { type: mime });
+        this.load.image('player', URL.createObjectURL(blob));
+    } else {
+        this.load.image('player', playerSkin);
+    }
+}
+
+function create() {
+    let bg = this.add.image(0, 0, 'bg').setOrigin(0, 0);
+    let scaleX = this.cameras.main.width / bg.width;
+    let scaleY = this.cameras.main.height / bg.height;
+    let baseScale = Math.max(scaleX, scaleY) * 1.5; 
+    bg.setScale(baseScale);
+
+    let worldWidth = bg.width * baseScale; let worldHeight = bg.height * baseScale;
+    this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+    this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+
+    player = this.physics.add.sprite(worldWidth * 0.5, worldHeight * 0.5, 'player');
+    let dynamicScale = 150 / player.height;
+    player.setScale(dynamicScale); player.setCollideWorldBounds(true); player.body.setSize(player.width * 0.6, player.height * 0.6);
+
+    const npcConfigs = [
+        { id: 'yuwenkai', name: '将作大匠 宇文恺', x: 0.5, y: 0.5, scale: 0.4, tint: 0xffffff, isMain: true, item: '洛阳规划图纸', hasGivenItem: false, intro: '<span class="highlight">【隋朝名匠 宇文恺】</span><br>我依山川地势，引洛水穿城，营建东都洛阳，开创都城新制。<br><br>▶ 按【空格键】观看洛阳城规划解析' },
+        { id: 'wuzetian', name: '大周女皇 武则天', x: 0.3, y: 0.4, scale: 0.12, tint: 0xffaaaa, isMain: false, item: '万象神宫模型', hasGivenItem: false, intro: '<span class="highlight">【一代女皇 武则天】</span><br>朕临朝称帝，定都洛阳，号为神都，营建明堂天堂。<br><br>▶ 按【空格键】接受历史提问', question: '朕在神都洛阳建造的“万象神宫”通常被称作什么？', options: ['A. 明堂', 'B. 辟雍', 'C. 天堂'], correct: 0, success: '答对了！明堂宏伟壮丽，乃朕布政之所。', fail: '是明堂哦，它可是大唐最为宏丽的皇家建筑。' },
+        { id: 'direnjie', name: '国老 狄仁杰', x: 0.7, y: 0.4, scale: 0.4, tint: 0xaaffaa, isMain: false, item: '法理铁卷', hasGivenItem: false, intro: '<span class="highlight">【唐代名相 狄仁杰】</span><br>我在神都辅佐女皇，断案如神，匡扶社稷。<br><br>▶ 按【空格键】接受历史提问', question: '神都洛阳的水路大动脉，连接京杭大运河的枢纽是？', options: ['A. 广通渠', 'B. 永济渠', 'C. 通济渠'], correct: 2, success: '正确！通济渠引谷水入黄河，乃漕运命脉。', fail: '是通济渠哦，它连接了洛阳与江淮地区。' },
+        { id: 'baijuyi', name: '香山居士 白居易', x: 0.2, y: 0.4, scale: 0.4, tint: 0xaaaaff, isMain: false, item: '清隽诗卷', hasGivenItem: false, intro: '<span class="highlight">【唐代大诗人 白居易】</span><br>晚年我退居洛阳履道里，与香山僧人结交，赋诗饮酒。<br><br>▶ 按【空格键】接受历史提问', question: '洛阳牡丹甲天下，我在洛阳写下的《牡丹芳》有一句“花开花落二十日”，下一句是什么？', options: ['A. 一城之人皆若狂', 'B. 此花开尽更无花', 'C. 惟有牡丹真国色'], correct: 0, success: '答对了！一城之人皆若狂，这就是洛阳人对牡丹的狂热。', fail: '是“一城之人皆若狂”呀。' }
+    ];
+    // =======================================================
+
+    npcConfigs.forEach(config => {
+        let npcSprite = this.physics.add.sprite(worldWidth * config.x, worldHeight * config.y, config.id);
+        npcSprite.setScale(config.scale); npcSprite.setImmovable(true); 
+        npcSprite.body.setSize(npcSprite.width * 0.6, npcSprite.height * 0.6); npcSprite.npcData = config; 
+        npcs.push(npcSprite); this.physics.add.collider(player, npcSprite);
+    });
+
+    cursors = this.input.keyboard.createCursorKeys();
+    wasd = this.input.keyboard.addKeys({ W: 87, A: 65, S: 83, D: 68 });
+    spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    this.cameras.main.startFollow(player, true, 0.08, 0.08); 
+    this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
+        if(isPaused) return; 
+        let newZoom = this.cameras.main.zoom - (deltaY * 0.001); 
+        this.cameras.main.zoom = Phaser.Math.Clamp(newZoom, 1, 3); 
+    });
+}
+
+function update() {
+    if (isPaused) { player.setVelocity(0); return; }
+    const speed = 250; 
+    if (cursors.left.isDown || wasd.A.isDown) { player.setVelocityX(-speed); player.setFlipX(false); } 
+    else if (cursors.right.isDown || wasd.D.isDown) { player.setVelocityX(speed); player.setFlipX(true); } 
+    else { player.setVelocityX(0); }
+    if (cursors.up.isDown || wasd.W.isDown) { player.setVelocityY(-speed); } 
+    else if (cursors.down.isDown || wasd.S.isDown) { player.setVelocityY(speed); } 
+    else { player.setVelocityY(0); }
+
+    let closestNPC = null; let minDistance = 150; 
+    npcs.forEach(npc => {
+        let distance = Phaser.Math.Distance.Between(player.x, player.y, npc.x, npc.y);
+        if (distance < minDistance) { minDistance = distance; closestNPC = npc; }
+    });
+
+    if (closestNPC) {
+        if (activeNPC !== closestNPC) {
+            activeNPC = closestNPC; dialogState = 'intro';
+            uiLayer.style.display = 'flex'; optionsBox.style.display = 'none';
+            dialogText.innerHTML = activeNPC.npcData.intro;
+        }
+        if (Phaser.Input.Keyboard.JustDown(spaceKey) && dialogState === 'intro') {
+            if (activeNPC.npcData.isMain) { grantItem(activeNPC); playStoryVideo(); } 
+            else {
+                dialogState = 'question'; dialogText.innerHTML = `<span class="highlight">提问：</span><br>${activeNPC.npcData.question}`;
+                optionsBox.style.display = 'flex'; 
+                for(let i=0; i<3; i++) { optBtns[i].innerText = activeNPC.npcData.options[i]; }
+            }
+        }
+    } else {
+        activeNPC = null; dialogState = 'hidden'; uiLayer.style.display = 'none'; optionsBox.style.display = 'none';
+    }
+}
+
+window.answerQuestion = function(selectedIndex) {
+    if (!activeNPC || dialogState !== 'question') return;
+    optionsBox.style.display = 'none'; dialogState = 'result'; 
+    if (selectedIndex === activeNPC.npcData.correct) {
+        let rewardHTML = "";
+        if (!activeNPC.npcData.hasGivenItem) {
+            grantItem(activeNPC); rewardHTML = `<br><br><span style="color:#ffd700">🎁 获得信物：【${activeNPC.npcData.item}】</span>`;
+        } else { rewardHTML = `<br><br><span style="color:#aaa">（您已获得过该人物赠予的信物）</span>`; }
+        dialogText.innerHTML = `<span style="color:#aaffaa;">【正确】</span><br>${activeNPC.npcData.success}${rewardHTML}`;
+    } else {
+        dialogText.innerHTML = `<span style="color:#ffaaaa;">【错误】</span><br>${activeNPC.npcData.fail}<br><br><span style="color:#ccc; font-size: 18px;">（走到远处再回来即可重新挑战）</span>`;
+    }
+}
+
+function grantItem(npc) {
+    if (!npc.npcData.hasGivenItem) {
+        inventory.push(npc.npcData.item); npc.npcData.hasGivenItem = true;
+        let _u = localStorage.getItem('ancient_username');
+        if(_u) {
+            try {
+                let payload = JSON.stringify({username:_u, item_name:npc.npcData.item, item_desc:'隋唐洛阳城探寻获得的信物'});
+                if (navigator.sendBeacon) {
+                    let blob = new Blob([payload], {type:'application/json'});
+                    navigator.sendBeacon('http://127.0.0.1:5000/api/add-item', blob);
+                } else {
+                    fetch('http://127.0.0.1:5000/api/add-item', { method:'POST', headers:{'Content-Type':'application/json'}, body:payload, keepalive:true }).catch(e=>console.error(e));
+                }
+            } catch(e) { console.error(e); }
+        }
+        showToast(`🎉 获得文物：【${npc.npcData.item}】 🎉`);
+        if (inventory.length === totalItems) {
+            setTimeout(() => {
+                document.getElementById('completion-modal').style.display = 'block'; isPaused = true;
+            }, 2000);
+        }
+    }
+}
+
+function playStoryVideo() {
+    const videoModal = document.getElementById('video-modal'); const video = document.getElementById('story-video');
+    videoModal.style.display = 'block'; video.currentTime = 0;
+    let playPromise = video.play();
+    if (playPromise !== undefined) { playPromise.catch(e => { console.warn('视频播放失败:', e); }); }
+    isPaused = true;
+}
+window.closeVideo = function() {
+    const videoModal = document.getElementById('video-modal'); const video = document.getElementById('story-video');
+    try { video.pause(); } catch(e) {}
+    videoModal.style.display = 'none'; isPaused = false;
+}
+function showToast(msg) {
+    const toast = document.getElementById('toast'); toast.innerHTML = msg; toast.style.display = 'block'; toast.style.opacity = 1;
+    setTimeout(() => { toast.style.opacity = 0; setTimeout(() => toast.style.display = 'none', 500); }, 2500);
+}
+window.togglePause = function() {
+    if(document.getElementById('backpack-modal').style.display === 'block' || document.getElementById('completion-modal').style.display === 'block') return;
+    isPaused = !isPaused; document.getElementById('pause-modal').style.display = isPaused ? 'block' : 'none';
+}
+window.toggleBackpack = function() {
+    if(document.getElementById('pause-modal').style.display === 'block' || document.getElementById('completion-modal').style.display === 'block') return;
+    let bp = document.getElementById('backpack-modal');
+    if (bp.style.display === 'block') { bp.style.display = 'none'; isPaused = false; } 
+    else {
+        isPaused = true;  
+        let listHtml = inventory.length > 0 ? inventory.map(item => `<div style="color:#ffd700; margin:10px 0;">📜 ${item}</div>`).join('') : '<div style="color:#aaa; margin: 20px 0;">行囊空空如也，去与名士结交吧！</div>';
+        document.getElementById('bp-list').innerHTML = `${listHtml}<div style="color:#aaa; font-size:18px; margin-top:30px; border-top: 1px solid #555; padding-top: 10px;">收集进度：${inventory.length} / ${totalItems}</div>`;
+        bp.style.display = 'block';
+    }
+}
+window.restartJourney = function() {
+    inventory = []; npcs.forEach(npc => { npc.npcData.hasGivenItem = false; });
+    document.getElementById('completion-modal').style.display = 'none'; isPaused = false; showToast("时光回溯，新的游历开始了...");
+}
+window.returnToMap = function() {
+    // 【核心返回路径】完成游览后返回河南
+    window.location.href = 'index.html?region=henan';
+}
+</script>
+    <script src="digital_human.js"></script>
+</body>
+</html>

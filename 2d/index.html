@@ -1,0 +1,2446 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>水墨神州 - 古建游览</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* ---------------- 全局与水墨风基础样式 ---------------- */
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #1a1a1a; font-family: "KaiTi", "楷体", serif; overflow: hidden; color: #333;
+        }
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.8s ease;
+        }
+        .hidden { opacity: 0; pointer-events: none; z-index: -1; }
+        .active { opacity: 1; pointer-events: auto; z-index: 10; }
+
+        /* ================= 首页视频背景设置 ================= */
+        #screen-main { background-color: #000; overflow: hidden; } 
+        
+        #bg-video {
+            position: absolute;
+            top: 50%; left: 50%;
+            min-width: 100%; min-height: 100%;
+            width: auto; height: auto;
+            transform: translateX(-50%) translateY(-50%);
+            object-fit: cover; 
+            z-index: -1; 
+            opacity: 0.85; 
+        }
+
+        #sound-toggle {
+            position: absolute; bottom: 30px; right: 30px;
+            background: rgba(0, 0, 0, 0.6); border: 1px solid #ceae75;
+            color: #ceae75; padding: 10px 20px; font-size: 18px;
+            font-family: "KaiTi"; border-radius: 5px; cursor: pointer;
+            transition: 0.3s; z-index: 10;
+        }
+        #sound-toggle:hover { background: #ceae75; color: #000; }
+
+        /* ================= 大地图与沙盘基础设置 ================= */
+        #map-china { 
+            position: absolute;
+            width: 100vw; 
+            height: 56.25vw; 
+            max-height: 100vh; 
+            max-width: 177.78vh; 
+            background: url('map1.png') no-repeat center center / contain; 
+            background-color: #1a1a1a;
+            top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            perspective: 1000px;
+            overflow: visible; 
+        }
+        
+        #map-province { 
+            background-color: #111; 
+            overflow: hidden; 
+        }
+
+        #level2-map-content {
+            position: absolute;
+            top: 0; left: 0;
+            width: 3000px; 
+            height: 2000px;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            cursor: grab;
+            transform-origin: 0 0; 
+        }
+        #level2-map-content:active { cursor: grabbing; }
+
+        /* ---------------- 主菜单与角色 UI ---------------- */
+        .char-card { position: relative; overflow: hidden; }
+        .lock-mask {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center;
+            color: #aaa; font-size: 20px; font-weight: bold; text-align: center; line-height: 1.5;
+            z-index: 5; transition: opacity 0.5s;
+        }
+        .char-card.locked { cursor: not-allowed; border-color: #333; }
+        .char-card.locked:hover { background: rgba(0,0,0,0.5); border-color: #333; transform: none; box-shadow: none; }
+
+        .panel {
+            background: rgba(20, 20, 20, 0.95); border: 3px solid #ceae75; border-radius: 15px;
+            padding: 40px; color: #fff; display: flex; flex-direction: column; align-items: center;
+            width: 80vw;
+            max-width: 1100px; 
+            box-shadow: 0 15px 30px rgba(0,0,0,0.8);
+        }
+        .panel h2 { color: #ffd700; font-size: 36px; margin-top: 0; border-bottom: 1px solid #ceae75; padding-bottom: 15px; width: 100%; text-align: center; }
+        
+        /* ================= 角色选择面板滚动优化 ================= */
+        .char-grid { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 20px; 
+            margin: 30px 0; 
+            width: 100%; 
+            max-height: 55vh; 
+            overflow-y: auto; 
+            overflow-x: hidden; 
+            padding: 10px;
+            scroll-behavior: smooth; 
+        }
+
+        /* 竖向暗金滚动条样式 */
+        .char-grid::-webkit-scrollbar {
+            width: 10px; 
+        }
+        .char-grid::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            border: 1px solid #555;
+        }
+        .char-grid::-webkit-scrollbar-thumb {
+            background: #ceae75;
+            border-radius: 5px;
+        }
+        .char-grid::-webkit-scrollbar-thumb:hover {
+            background: #ffd700;
+        }
+
+        /* ============== 低门槛提示 & 悬念彩蛋 ============== */
+        .low-threshold-tip {
+            position: absolute;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 16px;
+            margin-top: 15px;
+            opacity: 0.9;
+            text-align: center;
+            font-family: "KaiTi", "楷体", serif;
+            z-index: 10;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+            pointer-events: none;
+        }
+
+        .secret-tip {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            color: #ffd700;
+            font-family: "KaiTi", "楷体", serif;
+            font-size: 16px;
+            z-index: 10;
+            pointer-events: none;
+            text-shadow: 0 0 6px rgba(0,0,0,0.6);
+        }
+        .secret-tip marquee { display: block; }
+
+        /* 行囊入口样式已删除 */
+
+        /* ================= 目录面板样式（省份与景点） ================= */
+        .province-grid, .attraction-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 6px;
+        }
+        .province-item, .attraction-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 8px; color: #f5f5f5; font-size: 18px;
+            transition: all 180ms ease; cursor: pointer;
+        }
+        .province-item::before { content: '🏛️'; margin-right: 8px; opacity: 0.95; }
+        .attraction-item::before { content: '📍'; margin-right: 8px; opacity: 0.95; }
+        .province-item:hover, .attraction-item:hover {
+            background: linear-gradient(90deg, rgba(206,174,117,0.12), rgba(255,215,0,0.04));
+            border-color: #ceae75; color: #ffd700; transform: translateX(6px);
+            box-shadow: 0 10px 30px rgba(206,174,117,0.12);
+        }
+        .province-item.active, .attraction-item.active {
+            background: linear-gradient(90deg, rgba(255,215,0,0.12), rgba(206,174,117,0.04));
+            border-left: 4px solid #ffd700; border-color: #ffd700; color: #ffd700;
+            transform: translateX(6px); box-shadow: 0 12px 36px rgba(255,215,0,0.12);
+        }
+        .province-grid::-webkit-scrollbar, .attraction-grid::-webkit-scrollbar { width: 8px; }
+        .province-grid::-webkit-scrollbar-thumb, .attraction-grid::-webkit-scrollbar-thumb {
+            background: linear-gradient(#ceae75, #ffd700); border-radius: 6px;
+        }
+
+        /* ============== 首页核心玩法亮点 ============== */
+        .main-highlights {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 30px;
+            color: #ceae75;
+            font-family: "KaiTi", "楷体", serif;
+            font-size: 18px;
+            text-shadow: 0 0 8px rgba(0,0,0,0.8);
+            z-index: 10;
+            pointer-events: none;
+        }
+        .main-highlights span {
+            background: rgba(0,0,0,0.22);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(206,174,117,0.12);
+            backdrop-filter: blur(2px);
+            white-space: nowrap;
+        }
+        @media (max-width: 768px) {
+            .main-highlights { flex-direction: column; gap: 8px; font-size: 14px; bottom: 80px; }
+            .main-highlights span { padding: 4px 8px; }
+        }
+
+        .char-card {
+            width: 140px; 
+            flex-shrink: 0; 
+            border: 2px solid #555; border-radius: 10px; padding: 15px; cursor: pointer;
+            transition: 0.3s; display: flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(0,0,0,0.5);
+        }
+        .char-card:hover { border-color: #ceae75; background: rgba(206, 174, 117, 0.2); }
+        .char-card.selected { border-color: #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); background: rgba(255, 215, 0, 0.2); }
+        .char-img { width: 120px; height: 150px; object-fit: contain; }
+        .upload-area {
+            border: 2px dashed #ceae75; border-radius: 10px; padding: 40px; text-align: center;
+            margin: 20px 0; cursor: pointer; transition: 0.3s; width: 80%;
+        }
+        .upload-area:hover { background: rgba(206, 174, 117, 0.1); }
+        #ai-preview { max-width: 200px; max-height: 250px; display: none; margin-top: 20px; border-radius: 10px; border: 2px solid #ceae75; }
+        .loading { display: none; color: #ffd700; font-size: 20px; margin: 15px 0; }
+        .menu-btn {
+            background-color: rgba(139, 69, 19, 0.8); border: 2px solid #ceae75; color: #fff;
+            padding: 15px 40px; font-size: 28px; font-family: "KaiTi"; border-radius: 8px;
+            cursor: pointer; transition: 0.3s; width: 250px; text-align: center;
+        }
+        .menu-btn:hover { background-color: #ceae75; color: #000; transform: scale(1.05); }
+
+        /* ================= 地图交互热区 ================= */
+        .region-hotspot {
+            position: absolute; 
+            display: flex; justify-content: center; align-items: center;
+            font-size: 2vw; font-weight: bold; color: transparent; text-shadow: none;
+            background-size: contain; background-position: center; background-repeat: no-repeat;
+            transform: scale(1.0); opacity: 0.8; 
+            pointer-events: none; 
+            transition: all 0.2s ease-out; 
+        }
+        
+        .region-hotspot.active-hover {
+            opacity: 1; 
+            transform: scale(1.05) translateY(-5px); 
+            filter: brightness(1.15) contrast(1.1) drop-shadow(0px 0px 15px rgba(255, 215, 0, 0.7)); 
+            color: #fff; text-shadow: 2px 2px 4px #000; 
+            z-index: 9999 !important; 
+        }
+        
+        /* ---------------- 保留你所有的省份板块坐标，未作任何修改 ---------------- */
+        #region-jiangxi { top: 68%; left: 55.5%; width: 10%; height: 15%; background-image: url('province/jiangxi/plate/jiangxi.png'); }
+        #region-henan { top: 52%; left: 53%; width: 7.98%; height: 13.05%; background-image: url('province/henan/plate/henan.png'); }
+        #region-anhui { top: 56.5%; left: 58.35%; width: 6.5%; height: 13%; background-image: url('province/anhui/plate/anhui.png'); }
+        #region-hebei { top: 35.6%; left: 53%; width: 14%; height: 17%; background-image: url('province/hebei/plate/hebei.png'); }
+        #region-shanxi { top: 41%; left: 52%; width: 7%; height: 16%; background-image: url('province/shanxi/plate/shanxi.png'); } 
+        #region-shaanxi { top: 43.90%; left: 46.96%; width: 8%; height: 21%; background-image: url('province/shaanxi/plate/shaanxi.png'); } 
+        #region-shandong { top: 46.55%; left: 58.5%; width: 8%; height: 10.5%; background-image: url('province/shandong/plate/shandong.png'); }
+        #region-xizang { top: 45.5%; left: 15.8%; width: 24%; height: 28%; background-image: url('province/xizang/plate/xizang.png'); }
+        #region-beijing { top: 39.5%; left: 58%; width: 3%; height: 4.5%; background-image: url('province/beijing/plate/beijing.png'); }
+        #region-chongqing { top: 63.16%; left: 45.14%; width: 10%; height: 10%; background-image: url('province/chongqing/plate/chongqing.png'); }
+        #region-gansu { top: 34%; left: 6%; width: 73%; height: 28%; background-image: url('province/gansu/plate/gansu.png'); }
+        #region-guizhou { top: 70.5%; left: 44.5%; width: 8.4%; height: 12%; background-image: url('province/guizhou/plate/guizhou.png'); }
+        #region-heilongjiang { top: 6.5%; left: 47.6%; width: 44%; height: 24%; background-image: url('province/heilongjiang/plate/heilongjiang.png'); }
+        #region-hunan { top: 68.5%; left: 50.1%; width: 9.6%; height: 13.5%; background-image: url('province/hunan/plate/hunan.png'); }
+        #region-jiangsu { top: 54.5%; left: 59.5%; width: 8%; height: 11%; background-image: url('province/jiangsu/plate/jiangsu.png'); }
+        #region-jilin { top: 24.93%; left: 64.15%; width: 10.5%; height: 13.5%; background-image: url('province/jilin/plate/jilin.png'); }
+        #region-liaoning { top: 32%; left: 55.9%; width: 20%; height: 12%; background-image: url('province/liaoning/plate/liaoning.png'); }
+        #region-yunnan { top: 69.5%; left: 33.5%; width: 17.5%; height: 20.5%; background-image: url('province/yunnan/plate/yunnan.png'); }
+        #region-zhejiang { top: 64.5%; left: 61%; width: 8.5%; height: 10.5%; background-image: url('province/zhejiang/plate/zhejiang.png'); }
+        #region-tianjin { top: 42%; left: 59.7%; width: 2%; height: 4%; background-image: url('province/tianjin/plate/tianjin.png'); }
+        #region-fujian { top: 72.4%; left: 59.20%; width: 8.5%; height: 12.5%; background-image: url('province/fujian/plate/fujian.png'); }
+        #region-guangdong { top: 79.8%; left: 51.4%; width: 11.5%; height: 13.5%; background-image: url('province/guangdong/plate/guangdong.png'); }
+        #region-taiwan { top: 79%; left: 61.2%; width: 12%; height: 9%; background-image: url('province/taiwan/plate/taiwan.png'); }
+        #region-hainan { top: 93%; left: 50.5%; width: 4%; height: 6%; background-image: url('province/hainan/plate/hainan.png'); }
+        #region-xinjiang { top: 14.84%; left: 13.75%; width: 25%; height: 35%; background-image: url('province/xinjiang/plate/xinjiang.png'); }
+        #region-ningxia { top: 43.99%; left: 43.25%; width: 10.1%; height: 11.1%; background-image: url('province/ningxia/plate/ningxia.png'); }
+        #region-neimenggu { top: 8.15%; left: 25.75%; width: 55.35%; height: 40.95%; background-image: url('province/neimenggu/plate/neimenggu.png'); }
+        #region-qinghai { top: 42.5%; left: 15%; width: 44%; height: 20%; background-image: url('province/qinghai/plate/qinghai.png'); }
+        #region-sichuan { top: 56%; left: 37%; width: 15%; height: 22%; background-image: url('province/sichuan/plate/sichuan.png'); }
+        #region-guangxi { top: 78%; left: 44%; width: 13.5%; height: 12.45%; background-image: url('province/guangxi/plate/guangxi.png'); }
+        #region-hubei { top: 55.5%; left: 50.5%; width: 10%; height: 20%; background-image: url('province/hubei/plate/hubei.png'); }
+        /* 新增：香港、澳门、上海 热区（复用现有命名/资源路径，使用 SVG 占位图） */
+        #region-hongkong { top: 88%; left: 59%; width: 2%; height: 2%; background-image: url('province/hongkong/plate/hongkong.png'); }
+        #region-macau { top: 90%; left: 57%; width: 1.59%; height: 1.59%; background-image: url('province/macau/plate/macau.png'); }
+        #region-shanghai { top: 60.7%; left: 65.5%; width: 3.5%; height: 5%; background-image: url('province/shanghai/plate/shanghai.png'); }
+
+        /* ================= 景点地标通用样式 ================= */
+        .landmark-spot {
+            position: absolute;
+            width: 200px; height: 200px; 
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: bottom center;
+            cursor: pointer;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.6)); 
+            display: flex; justify-content: center; align-items: flex-end;
+            color: transparent; 
+            font-size: 24px; font-weight: bold; text-shadow: 2px 2px 5px #000;
+        }
+        .landmark-spot:hover {
+            transform: scale(1.15) translateY(-15px); 
+            filter: drop-shadow(0px 20px 30px rgba(255, 215, 0, 0.6)); 
+            color: #ffd700; 
+            padding-bottom: 25px; 
+        }
+
+        /* ---------------- 保留你调整好的地标图标坐标 ---------------- */
+        #spot-ciguangge { top: 38%; left: 48%; background-image: url('province/anhui/Architecture/logo/ciguangge.png'); }
+        #spot-changcheng { top: 25%; left: 45%; background-image: url('province/beijing/Architecture/logo/changcheng.png'); }
+        #spot-tiantan { top: 60%; left: 55%; background-image: url('province/beijing/Architecture/logo/tiantan.png'); }
+        #spot-gugong { top: 42%; left: 48%; background-image: url('province/beijing/Architecture/logo/gugong.png'); }
+        #spot-hualinsi { top: 35%; left: 60%; background-image: url('province/fujian/Architecture/logo/hualinsi.png'); }
+        #spot-qingjingsi { top: 65%; left: 55%; background-image: url('province/fujian/Architecture/logo/qingjingsi.png'); }
+        #spot-zhaozhouqiao { top: 45%; left: 55%; background-image: url('province/hebei/Architecture/logo/zhaozhouqiao.png'); }
+        #spot-kaiyuansita { top: 40%; left: 40%; background-image: url('province/hebei/Architecture/logo/kaiyuansita.png'); }
+        #spot-yaowangmiao { top: 70%; left: 50%; background-image: url('province/hebei/Architecture/logo/yaowangmiao.png'); }
+        #spot-tazicheng { top: 40%; left: 50%; background-image: url('province/heilongjiang/Architecture/logo/tazicheng.png'); }
+        #spot-heilongjiangmiao { top: 70%; left: 45%; background-image: url('province/heilongjiang/Architecture/logo/heilongjiangmiao.png'); }
+        #spot-tengwangge { top: 40%; left: 60%; background-image: url('province/jiangxi/Architecture/logo/twg.png'); }
+        #spot-shaolinsi { top: 35%; left: 40%; background-image: url('province/henan/Architecture/logo/shaolinsi.png'); }
+        #spot-longmenshiku { top: 45%; left: 60%; background-image: url('province/henan/Architecture/logo/longmenshiku.png'); }
+        #spot-songyuesita { top: 60%; left: 55%; background-image: url('province/henan/Architecture/logo/songyuesita.png'); }
+        #spot-yinxu { top: 25%; left: 50%; background-image: url('province/henan/Architecture/logo/yinxu.png'); /* TODO: 请替换为正式的图标 */ }
+        #spot-suitangluoyang { top: 50%; left: 45%; background-image: url('province/henan/Architecture/logo/suitangluoyang.png'); /* TODO: 请替换为正式的图标 */ }
+        #spot-yuntaishan { top: 70%; left: 35%; background-image: url('province/henan/Architecture/logo/yuntaishan.png'); }
+        #spot-huanghelou { top: 40%; left: 70%; background-image: url('province/hubei/Architecture/logo/huanghelou.png'); }
+        #spot-yueyanglou { top: 40%; left: 70%; background-image: url('province/hunan/Architecture/logo/yueyanglou.png'); }
+        #spot-shuyuan { top: 50%; left: 40%; background-image: url('province/hunan/Architecture/logo/shuyuan.png'); }
+        #spot-mingxiaoling { top: 35%; left: 20%; background-image: url('province/jiangsu/Architecture/logo/mingxiaoling.png'); }
+        #spot-zhuozhengyuan { top: 45%; left: 60%; background-image: url('province/jiangsu/Architecture/logo/zhuozhengyuan.png'); }
+        #spot-guandimiao { top: 45%; left: 30%; background-image: url('province/jilin/Architecture/logo/guandimiao.png'); }
+        #spot-jilinmiao { top: 20%; left: 80%; background-image: url('province/jilin/Architecture/logo/jilinmiao.png'); }
+        #spot-fengguosi { top: 40%; left: 30%; background-image: url('province/liaoning/Architecture/logo/fengguosi.png'); }
+        #spot-shenyanggugong { top: 20%; left: 50%; background-image: url('province/liaoning/Architecture/logo/shenyanggugong.png'); }
+        #spot-dazhaosi { top: 25%; left: 35%; background-image: url('province/neimenggu/Architecture/logo/dazhaosi.png'); }
+        #spot-xilituzhao { top: 60%; left: 55%; background-image: url('province/nei/menggu/Architecture/logo/xilituzhao.png'); }
+        #spot-bingmayong { top: 35%; left: 20%; background-image: url('province/shaanxi/Architecture/logo/bingmayong.png'); }
+        #spot-penglaige { top: 40%; left: 50%; background-image: url('province/shandong/Architecture/logo/penglaige.png'); }
+        #spot-kongmiao { top: 70%; left: 20%; background-image: url('province/shandong/Architecture/logo/kongmiao.png'); }
+        #spot-foguangsi { top: 40%; left: 80%; background-image: url('province/shanxi/Architecture/logo/foguangsi.png'); }
+        #spot-nanchansi { top: 20%; left: 40%; background-image: url('province/shanxi/Architecture/logo/nanchansi.png'); }
+        #spot-yaozhi { top: 60%; left: 30%; background-image: url('province/jiangxi/Architecture/logo/yaozhi.png'); }
+        #spot-dulesi { top: 60%; left: 50%; background-image: url('province/tianjin/Architecture/logo/dulesi.png'); }
+        #spot-tianhougong { top: 30%; left: 50%; background-image: url('province/tianjin/Architecture/logo/tianhougong.png'); }
+        #spot-budalagong { top: 40%; left: 50%; background-image: url('province/xizang/Architecture/logo/budalagong.png'); }
+        #spot-liuheta { top: 25%; left: 30%; background-image: url('province/zhejiang/Architecture/logo/liuheta.png'); }
+        .btn-back {
+            position: absolute; top: 30px; left: 30px; padding: 10px 20px; font-size: 20px; font-family: "KaiTi";
+            background: rgba(0,0,0,0.6); color: #ceae75; border: 1px solid #ceae75; cursor: pointer; transition: 0.3s;
+            z-index: 100; 
+        }
+        .btn-back:hover { background: #ceae75; color: #000; }
+        .title { position: absolute; top: 30px; right: 30px; font-size: 36px; color: #fff; text-shadow: 2px 2px 4px #000; pointer-events: none; z-index: 100; }
+
+        /* ================= 仙子呼吸与悬浮动画 ================= */
+        @keyframes breathing {
+            0% { transform: scale(1) translateY(0px); filter: brightness(1); }
+            50% { transform: scale(1.02) translateY(-8px); filter: brightness(1.05); } 
+            100% { transform: scale(1) translateY(0px); filter: brightness(1); }
+        }
+
+        /* ================= 仙子推演天机文字动画 ================= */
+        @keyframes text-pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; text-shadow: 0 0 15px rgba(206,174,117,0.8); }
+            100% { opacity: 0.6; }
+        }
+        .thinking-text {
+            animation: text-pulse 2s infinite ease-in-out;
+            color: #ceae75;
+            font-style: italic;
+        }
+
+        /* 隐藏对话框的滚动条但保持可滚动 */
+        #dialogue-content::-webkit-scrollbar { width: 6px; }
+        #dialogue-content::-webkit-scrollbar-track { background: transparent; }
+        #dialogue-content::-webkit-scrollbar-thumb { background: rgba(206,174,117,0.5); border-radius: 3px; }
+
+        #guide-chat-input:focus { border-bottom: 2px solid #ceae75 !important; }
+
+        /* ================= 登录与背包相关UI样式 ================= */
+        #top-right-ui-container {
+            position: absolute; top: 30px; right: 30px; z-index: 100;
+            display: flex; gap: 15px; align-items: center; justify-content: flex-end;
+        }
+
+        .top-ui-btn {
+            background: rgba(0, 0, 0, 0.7); border: 2px solid #ceae75;
+            color: #ceae75; padding: 10px 20px; font-size: 20px; font-family: "KaiTi"; 
+            border-radius: 8px; cursor: pointer; transition: 0.3s;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5); white-space: nowrap;
+        }
+        .top-ui-btn:hover { background: #ceae75; color: #000; box-shadow: 0 0 15px rgba(206,174,117,0.8); }
+
+        .auth-modal {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.95); border: 3px solid #ceae75; border-radius: 12px;
+            padding: 40px; width: 400px; z-index: 2000; text-align: center; color: #ceae75;
+            display: none; box-shadow: 0 15px 30px rgba(0,0,0,0.8);
+        }
+        .auth-modal h2 { margin-bottom: 20px; font-size: 32px; border-bottom: 1px solid #ceae75; padding-bottom: 10px; }
+        .auth-modal input {
+            width: calc(100% - 20px); padding: 10px; margin: 10px 0; background: rgba(0,0,0,0.6);
+            border: 1px solid #ceae75; color: #fff; font-size: 18px; text-align: center; font-family: "KaiTi";
+            border-radius: 5px;
+        }
+        .auth-modal button { margin: 10px 5px; width: 120px; }
+        
+        .bp-modal {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.95); border: 3px solid #ceae75; border-radius: 15px;
+            padding: 40px; width: 800px; max-height: 80vh; overflow-y: auto; z-index: 1500;
+            display: none; color: #fff; box-shadow: 0 15px 30px rgba(0,0,0,0.8); text-align: center;
+        }
+        .bp-modal h2 { margin-bottom: 20px; color: #ffd700; border-bottom: 1px solid #ceae75; padding-bottom: 15px; }
+        
+        .bp-tabs { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; }
+        .bp-tab-btn { background: transparent; border: 2px solid #ceae75; color: #ceae75; padding: 10px 30px; font-size: 20px; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-family: 'KaiTi', sans-serif; }
+        .bp-tab-btn.active { background: #ceae75; color: #000; font-weight: bold; box-shadow: 0 0 15px rgba(206,174,117,0.8); }
+        .bp-tab-btn:hover { background: rgba(206,174,117,0.2); }
+        
+        .bp-list { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+        .bp-item-card {
+            background: rgba(0,0,0,0.6); border: 1px solid #ceae75; border-radius: 10px; width: 45%;
+            padding: 20px; text-align: left; transition: transform 0.3s; position: relative;
+        }
+        .bp-item-card:hover { transform: scale(1.05); border-color: #ffd700; background: rgba(206,174,117,0.1); }
+        .bp-item-title { font-size: 24px; color: #00ffcc; font-weight: bold; margin-bottom: 10px; }
+        .bp-item-desc { font-size: 18px; color: #ccc; line-height: 1.5; }
+        .bp-item-time { font-size: 14px; color: #777; margin-top: 15px; text-align: right; }
+        
+        .reward-card { background: rgba(20,20,20,0.8); border: 2px dashed #00ffcc; border-radius: 8px; padding: 20px; text-align: center; width: 28%; min-width: 250px; }
+        .reward-title { font-size: 22px; color: #ffd700; margin-bottom: 10px; font-weight: bold; }
+        .reward-req { color: #ffae00; font-size: 18px; margin: 10px 0; }
+        .reward-stock { color: #aaa; font-size: 16px; margin-bottom: 15px; }
+        .reward-btn { padding: 8px 20px; font-family: 'KaiTi', sans-serif; font-size: 16px; background: transparent; border: 2px solid #00ffcc; color: #00ffcc; border-radius: 5px; cursor: pointer; transition: 0.3s; }
+        .reward-btn:hover:not(:disabled) { background: #00ffcc; color: #000; }
+        .reward-btn:disabled { border-color: #555; color: #555; background: #333; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <!-- Top Right Buttons -->
+    <div id="top-right-ui-container">
+        <button id="top-wenchuang-btn" class="top-ui-btn" onclick="window.location.href='wenchuang.html'" style="display: block;">🏮 文创界面</button>
+        <button id="top-games-btn" class="top-ui-btn" onclick="window.location.href='games.html'" style="display: block;">🎮 游艺区</button>
+        <button id="top-backpack-btn" class="top-ui-btn" onclick="openBackpackModal()" style="display: none; position:relative;">🎒 个人背包 <span id="bp-badge" style="display:none; position:absolute; top:-6px; right:-6px; background:#ff4444; color:#fff; font-size:12px; min-width:18px; height:18px; line-height:18px; text-align:center; border-radius:9px; padding:0 4px; box-shadow:0 0 4px rgba(0,0,0,0.5);">0</span></button>
+        <button id="top-login-btn" class="top-ui-btn" onclick="openAuthModal()">登录 / 注册</button>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="auth-modal">
+        <h2 id="auth-title">行者登录</h2>
+        <input type="text" id="auth-username" placeholder="输入名号">
+        <input type="password" id="auth-password" placeholder="输入秘钥">
+        <br>
+        <button class="menu-btn" onclick="handleLogin()">登 录</button>
+        <button class="menu-btn" onclick="handleRegister()">注 册</button>
+        <button class="menu-btn" onclick="closeAuthModal()" style="margin-top:20px; width:80%;">关 闭</button>
+    </div>
+
+    <!-- Backpack Modal -->
+    <div id="backpack-modal" class="bp-modal">
+        <h2>🎒 跨时空考古行囊 <span id="bp-points" style="font-size:18px; color:#ffae00; float:right; line-height:36px;"></span></h2>
+        <div class="bp-tabs">
+            <button class="bp-tab-btn active" id="tab-items-btn" onclick="switchBpTab('items')">信物展墙</button>
+            <button class="bp-tab-btn" id="tab-rewards-btn" onclick="switchBpTab('rewards')">福利兑换</button>
+            <button class="bp-tab-btn" id="tab-codes-btn" onclick="switchBpTab('codes')">我的兑换码</button>
+        </div>
+        <div id="bp-list-container" class="bp-list">
+            <!-- Items injected by JS -->
+        </div>
+        <div id="bp-rewards-container" class="bp-list" style="display: none;">
+            <!-- Rewards injected by JS -->
+        </div>
+        <div id="bp-codes-container" class="bp-list" style="display: none;">
+            <!-- Redeemed codes injected by JS -->
+        </div>
+        <button class="menu-btn" onclick="closeBackpackModal()" style="margin-top:30px;">合上行囊</button>
+    </div>
+
+    <!-- Province Preview Modal -->
+    <div id="province-preview-modal" class="bp-modal hidden" style="width: 620px;">
+        <h2 id="province-preview-title">省份预览</h2>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+            <img id="province-preview-img" src="" alt="省份地图预览" style="max-width:100%; max-height:60vh; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.6); background:#111;">
+            <div style="display:flex; gap:16px;">
+                <button id="province-preview-enter-btn" class="menu-btn" style="width:180px;">进入该省景区</button>
+                <button id="province-preview-cancel-btn" class="menu-btn" style="width:120px; background:#333;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-main" class="screen active">
+        
+        <video id="bg-video" autoplay loop muted playsinline>
+            <source src="video/index.mp4" type="video/mp4">
+        </video>
+         <audio id="bgm-map" loop preload="auto" volume="0.3">
+            <source src="audio/map_bgm.ogg" type="audio/mpeg">
+        </audio>
+
+        <div id="cloth-menu-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none;"></div>
+        
+        <!-- 首页主按钮下方新增：核心玩法亮点 -->
+        <div class="main-highlights" aria-hidden="true">
+            <span>🔮 与秦始皇/王勃等历史人物AI对话</span>
+            <span>🏯 沉浸式漫游全国古建名胜</span>
+            <span>🎁 收集信物解锁限定历史角色</span>
+            <span>📸 AI定制你的专属古风形象</span>
+        </div>
+        
+        <button id="sound-toggle" onclick="toggleSound()">🎵 开启背景音</button>
+        
+        <input type="file" id="teleport-input" accept="image/*" style="display: none;" onchange="handleTeleportUpload(event)">
+        
+        <!-- 降低心理门槛提示 -->
+        <div class="low-threshold-tip" aria-hidden="true">无需下载 · 点开即玩 · 30秒解锁千年古建之旅</div>
+
+        <!-- 悬念感彩蛋（滚动条） -->
+        <div class="secret-tip" aria-hidden="true">
+            <marquee scrollamount="3" direction="left">传闻集齐12件古建信物，可解锁千古帝王专属身份 | 已有328位少侠解锁了秦始皇限定角色 | 你的家乡秘境已开启，待你探索</marquee>
+        </div>
+    </div>
+
+    <div id="teleport-loading" class="screen hidden" style="background: rgba(0,0,0,0.85); z-index: 1000;">
+        <div class="panel">
+            <h2 style="border-bottom:none; margin-bottom:0;">🌀 传送阵启灵中...</h2>
+            <p style="font-size: 24px; color: #ffd700; text-align: center;">天道罗盘正在分析此地景貌，请稍候...</p>
+        </div>
+    </div>
+
+    <div id="screen-virtual-guide" class="screen hidden">
+        <div class="panel" style="width: 80vw; max-width: 1000px; height: 80vh; justify-content: flex-start;">
+            <h2>天道接引人</h2>
+            <div style="display: flex; width: 100%; height: calc(100% - 100px); gap: 30px; margin-top: 10px;">
+                
+                <div class="teleport-panel" style="flex: 1; max-height: calc(100% - 20px); overflow-y: auto; padding: 20px;">
+                    <h3 style="color: #ffd700; text-align: center; margin-top: 0;">🏛️ 神州秘境目录</h3>
+                    <div style="margin-top: 10px;">
+                        <h4 style="color: #ceae75; font-size: 18px; margin-bottom: 12px; text-align: center;">各省名胜</h4>
+                        <div class="province-grid" id="province-grid" style="padding: 6px; display: flex; flex-direction: column; gap: 8px;">
+                            <!-- 省份由 JS 动态生成 -->
+                        </div>
+                    </div>
+                    <div style="margin-top: 18px;">
+                        <h4 style="color: #ceae75; font-size: 18px; margin-bottom: 12px; text-align: center;">热门古迹</h4>
+                        <div class="attraction-grid" id="attraction-grid" style="padding: 6px; display: flex; flex-direction: column; gap: 8px;">
+                            <!-- 热门景点由 JS 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <div style="flex: 2; display: flex; flex-direction: column; justify-content: space-between; gap: 20px;">
+                    
+                    <div style="flex: 1; background: linear-gradient(to bottom, rgba(30,30,30,0.9), rgba(10,10,10,0.95)); border: 2px solid #ceae75; border-radius: 12px; padding: 40px 30px 30px 30px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; margin-top: 20px;">
+                        
+                        <div id="dialogue-speaker" style="position: absolute; top: -25px; left: 30px; background: linear-gradient(135deg, #ceae75, #8b6508); color: #000; padding: 8px 35px; border-radius: 8px; font-size: 28px; font-weight: bold; border: 2px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.6); letter-spacing: 2px; transition: 0.3s;">接引仙子</div>
+                        
+                        <div id="dialogue-content" style="color: #f5f5f5; font-size: 26px; line-height: 1.8; font-family: 'KaiTi'; text-shadow: 1px 1px 3px #000; overflow-y: auto;">
+                            少侠好！神州大地辽阔，您想去哪里游历？<br><br>您可以直接告知我想去的秘境名称（例如：“带我去兵马俑”），或者奉上目的地的画卷（图片），我来为您开启天道传送阵。
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div style="display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.6); padding: 15px 25px; border-radius: 10px; border: 1px solid rgba(206,174,117,0.5);">
+                            <span style="color: #ceae75; font-size: 24px; font-weight: bold;">少侠发言：</span>
+                            <input type="text" id="guide-chat-input" placeholder="输入你想去的地方或与之闲聊..." style="flex: 1; background: transparent; border: none; border-bottom: 2px solid rgba(206,174,117,0.5); color: #fff; font-size: 26px; font-family: 'KaiTi'; outline: none; padding: 5px 10px; transition: 0.3s;">
+                            <button class="menu-btn" style="width: 150px; padding: 10px; font-size: 26px; background: rgba(139, 69, 19, 0.9);" onclick="sendGuideMessage()" id="btn-guide-send">诉说</button>
+                        </div>
+
+                        <div style="display: flex; gap: 20px; justify-content: center; margin-top: 5px;">
+                            <button class="menu-btn" style="padding: 12px 30px; font-size: 24px; box-shadow: 0 0 15px rgba(206,174,117,0.2);" onclick="document.getElementById('teleport-input').click()">🖼️ 奉上画卷 (上传图片)</button>
+                            <button class="menu-btn" style="padding: 12px 30px; font-size: 24px; background: #333;" onclick="showScreen('screen-main')">告辞 (返回主界面)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-char-select" class="screen hidden">
+        <div class="panel">
+            <h2>选择游历身份</h2>
+            <div class="char-grid">
+                <div class="char-card selected" onclick="selectChar(this, 'player.png')">
+                    <img src="player.png" class="char-img" alt="书生">
+                    <span>俊逸书生</span>
+                </div>
+                <div class="char-card" onclick="selectChar(this, 'player_girl.png')">
+                    <img src="player_girl.png" class="char-img" alt="侠女" onerror="this.src='player.png'">
+                    <span>婉约侠女</span>
+                </div>
+                <div class="char-card" onclick="selectChar(this, 'player_old.png')">
+                    <img src="player_old.png" class="char-img" alt="老叟" onerror="this.src='player.png'">
+                    <span>隐世老叟</span>
+                </div>
+                <div class="char-card locked" id="card-wangbo" onclick="selectChar(this, 'province/jiangxi/Architecture/location/wangbo.png')">
+                    <div class="lock-mask" id="mask-wangbo">🔒<br>集齐滕王阁信物<br>即可解锁</div>
+                    <img src="province/jiangxi/Architecture/location/wangbo.png" class="char-img" alt="王勃" style="opacity: 0.4;" id="img-wangbo">
+                    <span style="color: #ffd700;">诗杰 王勃</span>
+                </div>
+                <div class="char-card locked" id="card-qinshihuang" onclick="selectChar(this, 'province/shaanxi/Architecture/location/qinshihuang.png')">
+                    <div class="lock-mask" id="mask-qinshihuang">🔒<br>集齐兵马俑信物<br>即可解锁</div>
+                    <img src="province/shaanxi/Architecture/location/qinshihuang.png" class="char-img" alt="秦始皇" style="opacity: 0.4;" id="img-qinshihuang">
+                    <span style="color: #ffd700;">千古一帝 秦始皇</span>
+                </div>
+                <div class="char-card locked" id="card-wenchenggongzhu" onclick="selectChar(this, 'province/xizang/Architecture/location/wenchenggongzhu.png')">
+                    <div class="lock-mask" id="mask-wenchenggongzhu">🔒<br>集齐文成公主信物<br>即可解锁</div>
+                    <img src="province/xizang/Architecture/location/wenchenggongzhu.png" class="char-img" alt="文成公主" style="opacity: 0.4;" id="img-wenchenggongzhu">
+                    <span style="color: #ffd700;">和亲公主 文成公主</span>
+                </div>
+                <div class="char-card locked" id="card-mengtian" onclick="selectChar(this, 'province/beijing/Architecture/location/mengtian.png')">
+                    <div class="lock-mask" id="mask-mengtian">🔒<br>集齐蒙恬信物<br>即可解锁</div>
+                    <img src="province/beijing/Architecture/location/mengtian.png" class="char-img" alt="蒙恬" style="opacity: 0.4;" id="img-mengtian">
+                    <span style="color: #ffd700;">抗胡名将 蒙恬</span>
+                </div>
+                <div class="char-card locked" id="card-cuihao" onclick="selectChar(this, 'province/hubei/Architecture/location/cuihao.png')">
+                    <div class="lock-mask" id="mask-cuihao">🔒<br>集齐崔浩信物<br>即可解锁</div>
+                    <img src="province/hubei/Architecture/location/cuihao.png" class="char-img" alt="崔浩" style="opacity: 0.4;" id="img-cuihao">
+                    <span style="color: #ffd700;">北魏名臣 崔浩</span>
+                </div>
+                <div class="char-card locked" id="card-wuzetian" onclick="selectChar(this, 'province/henan/Architecture/location/wuzetian.png')">
+                    <div class="lock-mask" id="mask-wuzetian">🔒<br>集齐武则天信物<br>即可解锁</div>
+                    <img src="province/henan/Architecture/location/wuzetian.png" class="char-img" alt="武则天" style="opacity: 0.4;" id="img-wuzetian">
+                    <span style="color: #ffd700;">女皇 武则天</span>
+                </div>
+                <div class="char-card locked" id="card-lvdongbin" onclick="selectChar(this, 'province/shandong/Architecture/location/lvdongbin.png')">
+                    <div class="lock-mask" id="mask-lvdongbin">🔒<br>集齐吕洞宾信物<br>即可解锁</div>
+                    <img src="province/shandong/Architecture/location/lvdongbin.png" class="char-img" alt="吕洞宾" style="opacity: 0.4;" id="img-lvdongbin">
+                    <span style="color: #ffd700;">八仙 吕洞宾</span>
+                </div>
+                <div class="char-card locked" id="card-damo" onclick="selectChar(this, 'province/henan/Architecture/location/damo.png')">
+                    <div class="lock-mask" id="mask-damo">🔒<br>集齐达摩信物<br>即可解锁</div>
+                    <img src="province/henan/Architecture/location/damo.png" class="char-img" alt="达摩" style="opacity: 0.4;" id="img-damo">
+                    <span style="color: #ffd700;">禅宗始祖 达摩</span>
+                </div>
+                <div class="char-card locked" id="card-jiajing" onclick="selectChar(this, 'province/beijing/Architecture/location/jiajing.png')">
+                    <div class="lock-mask" id="mask-jiajing">🔒<br>集齐嘉靖信物<br>即可解锁</div>
+                    <img src="province/beijing/Architecture/location/jiajing.png" class="char-img" alt="嘉靖" style="opacity: 0.4;" id="img-jiajing">
+                    <span style="color: #ffd700;">明朝皇帝 嘉靖</span>
+                </div>
+                <div class="char-card locked" id="card-fanzhongyan" onclick="selectChar(this, 'province/hunan/Architecture/location/fanzhongyan.png')">
+                    <div class="lock-mask" id="mask-fanzhongyan">🔒<br>集齐范仲淹信物<br>即可解锁</div>
+                    <img src="province/hunan/Architecture/location/fanzhongyan.png" class="char-img" alt="范仲淹" style="opacity: 0.4;" id="img-fanzhongyan">
+                    <span style="color: #ffd700;">北宋名臣 范仲淹</span>
+                </div>
+                <div class="char-card locked" id="card-lichun" onclick="selectChar(this, 'province/hebei/Architecture/location/lichun.png')">
+                    <div class="lock-mask" id="mask-lichun">🔒<br>集齐李春信物<br>即可解锁</div>
+                    <img src="province/hebei/Architecture/location/lichun.png" class="char-img" alt="李春" style="opacity: 0.4;" id="img-lichun">
+                    <span style="color: #ffd700;">隋代建筑师 李春</span>
+                </div>
+            </div>
+            <button class="menu-btn" onclick="saveCharAndReturn()">确认身份</button>
+        </div>
+    </div>
+
+    <div id="screen-ai-custom" class="screen hidden">
+        <div class="panel">
+            <h2>AI 形象定制</h2>
+            <p style="font-size: 18px; color: #aaa;">上传您的正面自拍，火山引擎将为您生成专属国风水墨化身。</p>
+            <input type="file" id="upload-input" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+            <div class="upload-area" onclick="document.getElementById('upload-input').click()">
+                <span style="font-size: 40px;"></span><br><br>点击此处上传照片
+            </div>
+            <div id="ai-loading" class="loading">火山引擎灵境正在为您绘制古风形象，请稍候...</div>
+            <img id="ai-preview" src="">
+            <div style="display: flex; gap: 20px; margin-top: 30px;">
+                <button class="menu-btn" style="background: #333;" onclick="showScreen('screen-main')">取消返回</button>
+                <button id="btn-save-ai" class="menu-btn" style="display: none;" onclick="saveAICharAndReturn()">化身此景</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="map-china" class="screen hidden">
+        <button class="btn-back" onclick="showScreen('screen-main')">返回主菜单</button>
+        <div class="title">神州大地</div>
+        
+        <div id="region-jiangxi" class="region-hotspot">江西</div>
+        <div id="region-henan" class="region-hotspot">河南</div>
+        <div id="region-anhui" class="region-hotspot">安徽</div>
+        <div id="region-hebei" class="region-hotspot">河北</div>
+        <div id="region-shanxi" class="region-hotspot">山西</div>
+        <div id="region-shaanxi" class="region-hotspot">陕西</div>
+        <div id="region-shandong" class="region-hotspot">山东</div>
+        <div id="region-xizang" class="region-hotspot">西藏</div>
+        <div id="region-beijing" class="region-hotspot">北京</div>
+        <div id="region-chongqing" class="region-hotspot">重庆</div>
+        <div id="region-gansu" class="region-hotspot">甘肃</div>
+        <div id="region-guizhou" class="region-hotspot">贵州</div>
+        <div id="region-heilongjiang" class="region-hotspot">黑龙江</div>
+        <div id="region-hunan" class="region-hotspot">湖南</div>
+        <div id="region-jiangsu" class="region-hotspot">江苏</div>
+        <div id="region-jilin" class="region-hotspot">吉林</div>
+        <div id="region-liaoning" class="region-hotspot">辽宁</div>
+        <div id="region-yunnan" class="region-hotspot">云南</div>
+        <div id="region-zhejiang" class="region-hotspot">浙江</div>
+        <div id="region-tianjin" class="region-hotspot">天津</div>
+        <div id="region-fujian" class="region-hotspot">福建</div>
+        <div id="region-guangdong" class="region-hotspot">广东</div>
+        <div id="region-taiwan" class="region-hotspot">台湾</div>
+        <div id="region-hainan" class="region-hotspot">海南</div>
+        <div id="region-xinjiang" class="region-hotspot">新疆</div>
+        <div id="region-ningxia" class="region-hotspot">宁夏</div>
+        <div id="region-neimenggu" class="region-hotspot">内蒙古</div>
+        <div id="region-qinghai" class="region-hotspot">青海</div>
+        <div id="region-sichuan" class="region-hotspot">四川</div>
+        <div id="region-guangxi" class="region-hotspot">广西</div>
+        <div id="region-hubei" class="region-hotspot">湖北</div>
+        <div id="region-hongkong" class="region-hotspot">香港</div>
+        <div id="region-macau" class="region-hotspot">澳门</div>
+        <div id="region-shanghai" class="region-hotspot">上海</div>
+    </div>
+
+    <div id="map-province" class="screen hidden">
+        <button class="btn-back" onclick="showScreen('map-china')">返回神州</button>
+        <div class="title" id="province-title">内景图</div>
+        
+        <div id="level2-map-content">
+            <div id="spot-tengwangge" class="landmark-spot" style="display: none;">滕王阁</div>
+            <div id="spot-shaolinsi" class="landmark-spot" style="display: none;">少林寺</div>
+            <div id="spot-longmenshiku" class="landmark-spot" style="display: none;">龙门石窟</div>
+            <div id="spot-bingmayong" class="landmark-spot" style="display: none;">兵马俑</div>
+            <div id="spot-budalagong" class="landmark-spot" style="display: none;">布达拉宫</div>
+            <div id="spot-zhaozhouqiao" class="landmark-spot" style="display: none;">赵州桥</div>
+            <div id="spot-changcheng" class="landmark-spot" style="display: none;">长城</div>
+            <div id="spot-tiantan" class="landmark-spot" style="display: none;">天坛</div>
+            <div id="spot-gugong" class="landmark-spot" style="display: none;">紫禁城故宫</div>
+            <div id="spot-penglaige" class="landmark-spot" style="display: none;">蓬莱阁</div>
+            <div id="spot-yueyanglou" class="landmark-spot" style="display: none;">岳阳楼</div>
+            <div id="spot-yinxu" class="landmark-spot" style="display: none;">安阳殷墟</div>
+            <div id="spot-suitangluoyang" class="landmark-spot" style="display: none;">隋唐洛阳城</div>
+            <div id="spot-yuntaishan" class="landmark-spot" style="display: none;">云台山</div>
+            
+            <div id="spot-ciguangge" class="landmark-spot" style="display: none;">慈光阁</div>
+            <div id="spot-hualinsi" class="landmark-spot" style="display: none;">华林寺</div>
+            <div id="spot-qingjingsi" class="landmark-spot" style="display: none;">清净寺</div>
+            <div id="spot-kaiyuansita" class="landmark-spot" style="display: none;">开元寺塔</div>
+            <div id="spot-yaowangmiao" class="landmark-spot" style="display: none;">药王庙</div>
+            <div id="spot-tazicheng" class="landmark-spot" style="display: none;">塔子城</div>
+            <div id="spot-heilongjiangmiao" class="landmark-spot" style="display: none;">哈尔滨文庙</div>
+            <div id="spot-songyuesita" class="landmark-spot" style="display: none;">嵩岳寺塔</div>
+            <div id="spot-shuyuan" class="landmark-spot" style="display: none;">岳麓书院</div>
+            <div id="spot-mingxiaoling" class="landmark-spot" style="display: none;">明孝陵</div>
+            <div id="spot-zhuozhengyuan" class="landmark-spot" style="display: none;">拙政园</div>
+            <div id="spot-guandimiao" class="landmark-spot" style="display: none;">北山关帝庙</div>
+            <div id="spot-jilinmiao" class="landmark-spot" style="display: none;">吉林文庙</div>
+            <div id="spot-fengguosi" class="landmark-spot" style="display: none;">奉国寺</div>
+            <div id="spot-shenyanggugong" class="landmark-spot" style="display: none;">沈阳故宫</div>
+            <div id="spot-dazhaosi" class="landmark-spot" style="display: none;">大召寺</div>
+            <div id="spot-xilituzhao" class="landmark-spot" style="display: none;">席力图召</div>
+            <div id="spot-kongmiao" class="landmark-spot" style="display: none;">曲阜孔庙</div>
+            <div id="spot-foguangsi" class="landmark-spot" style="display: none;">佛光寺</div>
+            <div id="spot-nanchansi" class="landmark-spot" style="display: none;">南禅寺</div>
+            <div id="spot-yaozhi" class="landmark-spot" style="display: none;">窑址</div>
+            <div id="spot-dulesi" class="landmark-spot" style="display: none;">独乐寺</div>
+            <div id="spot-tianhougong" class="landmark-spot" style="display: none;">天后宫</div>
+            <div id="spot-liuheta" class="landmark-spot" style="display: none;">六和塔</div>
+            <div id="spot-huanghelou" class="landmark-spot" style="display: none;">黄鹤楼</div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // 【真·物理布料菜单引擎】基于 Verlet Integration 与 Three.js
+        // 允许鼠标抓取、拖拽，并完美映射到原有 UI 点击事件上
+        // =========================================================================
+        // =========================================================================
+        // 【真·物理悬挂卷轴菜单引擎】基于 Verlet Integration 与 Three.js
+        // 顶部木棍固定，下垂自然飘动，底部带有破损边缘
+        // =========================================================================
+        const ClothEngine = {
+            init() {
+                this.container = document.getElementById('cloth-menu-container');
+                this.container.style.pointerEvents = 'auto'; 
+
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.set(0, 0, 120);
+
+                this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.container.appendChild(this.renderer.domElement);
+
+                // 暖色调水墨环境光
+                const ambientLight = new THREE.AmbientLight(0xe8d8c0, 0.85); 
+                this.scene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(0xffeedd, 0.2); 
+                dirLight.position.set(50, 50, 50);
+                this.scene.add(dirLight);
+
+                this.createMenuTexture();
+
+                // 物理网格设定 (恢复悬挂卷轴的纵向比例)
+                this.segX = 35; 
+                this.segY = 35; 
+                this.width = 50;  
+                this.height = 66; 
+
+                this.geometry = new THREE.PlaneGeometry(this.width, this.height, this.segX, this.segY);
+                // =========================================================================
+                // 【新增】应用加载好的图片贴图
+                // =========================================================================
+                this.material = new THREE.MeshStandardMaterial({
+                    map: this.texture,  
+                    roughness: 0.9,     
+                    metalness: 0.1,     
+                    side: THREE.DoubleSide,
+                    depthWrite: false,  // (顺便修复了原代码中 depth 的一个拼写小错误)
+                    transparent: true,  
+                    opacity: 0.7       // 【新增】：设置全局透明度。数值从 0.0(完全透明) 到 1.0(完全不透明)
+                });
+
+                this.clothMesh = new THREE.Mesh(this.geometry, this.material);
+                // 居中显示
+                this.clothMesh.position.set(0, 0, 0); 
+                this.scene.add(this.clothMesh);
+
+                this.particles = [];
+                this.constraints = [];
+                this.restDistanceX = this.width / this.segX;
+                this.restDistanceY = this.height / this.segY;
+
+                const positions = this.geometry.attributes.position.array;
+                for (let v = 0; v <= this.segY; v++) {
+                    for (let u = 0; u <= this.segX; u++) {
+                        const i = (v * (this.segX + 1) + u) * 3;
+                        const pos = new THREE.Vector3(positions[i], positions[i+1], positions[i+2]);
+                        
+                        // ====== 核心修改 1：固定顶部边缘 (v === 0) 模拟挂在木棍上 ======
+                        const mass = (v === 0) ? 0 : 1; 
+                        this.particles.push({
+                            pos: pos.clone(),
+                            oldPos: pos.clone(),
+                            originalPos: pos.clone(),
+                            mass: mass
+                        });
+                    }
+                }
+
+                const index = (u, v) => v * (this.segX + 1) + u;
+                for (let v = 0; v <= this.segY; v++) {
+                    for (let u = 0; u <= this.segX; u++) {
+                        if (u < this.segX) this.constraints.push([index(u, v), index(u + 1, v), this.restDistanceX]);
+                        if (v < this.segY) this.constraints.push([index(u, v), index(u, v + 1), this.restDistanceY]);
+                        if (u < this.segX && v < this.segY) {
+                            this.constraints.push([index(u, v), index(u + 1, v + 1), Math.hypot(this.restDistanceX, this.restDistanceY)]);
+                            this.constraints.push([index(u + 1, v), index(u, v + 1), Math.hypot(this.restDistanceX, this.restDistanceY)]);
+                        }
+                    }
+                }
+
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2();
+                this.draggedParticle = null;
+                this.isDragging = false;
+                this.clickTime = 0;
+
+                window.addEventListener('resize', () => this.onWindowResize());
+                this.renderer.domElement.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+                this.renderer.domElement.addEventListener('pointermove', (e) => this.onPointerMove(e));
+                window.addEventListener('pointerup', (e) => this.onPointerUp(e));
+
+                this.clock = new THREE.Clock();
+                this.animate();
+            },
+
+            // =========================================================================
+        // 【新增】准备旗帜图片贴图 (THREE.TextureLoader)
+        // =========================================================================
+        createMenuTexture() {
+            // 1. 创建内存画布 (分辨率 1024x1024)
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; 
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+
+            // 2. 提前生成 Canvas 贴图绑定给 3D 材质
+            this.texture = new THREE.CanvasTexture(canvas);
+            this.texture.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+            
+            // 3. 准备存放精准计算后的点击热区
+            this.buttonUVs = [];
+
+            // 4. 异步加载你的“无字画卷”图片
+            const img = new Image();
+            img.src = 'my_flag.png'; // 👉 【注意】请确保这里填入你无字底图的正确文件名！
+            
+            img.onload = () => {
+                // 当图片加载完成后，先把它铺满整个画布作为底图
+                ctx.drawImage(img, 0, 0, 1024, 1024);
+
+                // ==========================================
+                // 开始在画卷上“写字”
+                // ==========================================
+                const centerX = 512; 
+                
+                // 绘制大标题与选项 (使用纯正浓墨，并加上轻微边缘晕染让字体更厚重)
+                ctx.fillStyle = '#000000'; // 纯黑墨色
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; // 墨迹边缘微晕，加深视觉厚度
+                ctx.shadowBlur = 4; // 晕染程度
+                ctx.font = '120px "华文行楷", "STXingkai", "Xingkai SC", "隶书", "LiSu", cursive';
+                ctx.textAlign = 'center';
+                ctx.fillText('水墨神州', centerX, 300); // 标题高度
+
+                // 设置按钮文字的字体
+                // ==========================================
+                // 定义我们要使用的两种字体
+                // ==========================================
+                const brushFont = '60px "华文行楷", "STXingkai", "Xingkai SC", "隶书", "LiSu", cursive';
+                const modernFont = 'bold 55px "Microsoft YaHei", Arial, sans-serif'; // 用于 AI 的现代粗体
+                
+                // ==========================================
+                // 1. 修改坐标：让四个选项从上到下垂直居中排列
+                // ==========================================
+                this.buttons = [
+                    { id: '开始游历', text: '开始游历', cx: 512, cy: 460, w: 300, h: 90, target: 'map-china' },
+                    { id: '角色设置', text: '角色设置', cx: 512, cy: 580, w: 300, h: 90, target: 'screen-char-select' },
+                    { id: 'AI易容',   text: 'AI易容',   cx: 512, cy: 700, w: 350, h: 90, target: 'screen-ai-custom' },
+                    { id: '传送阵',   text: '传送阵',   cx: 512, cy: 820, w: 250, h: 90, target: 'screen-virtual-guide' }
+                ];
+
+                // ==========================================
+                // 2. 遍历绘制文字，并【自动计算】绝对精准的点击热区
+                // ==========================================
+                this.buttons.forEach(btn => {
+                    
+                    if (btn.id === 'AI易容') {
+                        // 【特殊处理：AI 现代字 + 易容毛笔字 居中拼接】
+                        ctx.textAlign = 'left'; // 改为左对齐以便拼接画字
+                        
+                        // 测量两段不同字体文字的宽度
+                        ctx.font = modernFont;
+                        const w1 = ctx.measureText('AI ').width; // AI 后面加个空格视觉更透气
+                        ctx.font = brushFont;
+                        const w2 = ctx.measureText('易容').width;
+                        
+                        // 计算起始 X 坐标，以保证拼出来的整句话在画布绝对正中间
+                        const startX = btn.cx - (w1 + w2) / 2;
+                        
+                        // 绘制 "AI " (非毛笔字)
+                        ctx.font = modernFont;
+                        ctx.fillText('AI ', startX, btn.cy + 20);
+                        
+                        // 绘制 "易容" (毛笔字)
+                        ctx.font = brushFont;
+                        ctx.fillText('易容', startX + w1, btn.cy + 20);
+                        
+                    } else {
+                        // 【正常处理：其他选项使用纯毛笔字】
+                        ctx.textAlign = 'center';
+                        ctx.font = brushFont;
+                        ctx.fillText(btn.text, btn.cx, btn.cy + 20); 
+                    }
+
+                    // 自动计算该按钮在 1024x1024 画布中的 UV 边界（隐形判定框）
+                    const left = btn.cx - btn.w / 2;
+                    const right = btn.cx + btn.w / 2;
+                    const top = btn.cy - btn.h / 2;
+                    const bottom = btn.cy + btn.h / 2;
+
+                    this.buttonUVs.push({
+                        id: btn.id,
+                        target: btn.target, 
+                        uMin: left / 1024,
+                        uMax: right / 1024,
+                        vMin: 1 - (bottom / 1024), 
+                        vMax: 1 - (top / 1024)
+                    });
+                });
+
+                // 通知 3D 引擎：画布内容已更新，请重新渲染贴图！
+                this.texture.needsUpdate = true;
+            };
+        },
+
+            simulate(dt) {
+                // 恢复垂直重力
+                const gravity = new THREE.Vector3(0, -90 * dt * dt, 0);
+                const time = this.clock.getElapsedTime();
+                
+                for (let i = 0; i < this.particles.length; i++) {
+                    const p = this.particles[i];
+                    if (p.mass === 0) continue; // 顶部的木棍和绑绳处固定不动
+
+                    const velocity = p.pos.clone().sub(p.oldPos).multiplyScalar(0.96); 
+                    p.oldPos.copy(p.pos);
+                    p.pos.add(velocity).add(gravity);
+
+                    // ====== 核心修改 2：轻柔的悬挂微风 ======
+                    // 风力变得柔和，产生布帛轻微波动的呼吸感
+                    const windX = Math.sin(p.pos.y * 0.1 + time * 1.5) * 0.01;
+                    const windZ = Math.cos(p.pos.x * 0.1 + time * 1.0) * 0.01;
+                    
+                    p.pos.add(new THREE.Vector3(windX, 0, windZ));
+                }
+
+                // 物理约束计算
+                for (let iter = 0; iter < 5; iter++) {
+                    for (let i = 0; i < this.constraints.length; i++) {
+                        const [idx1, idx2, restDist] = this.constraints[i];
+                        const p1 = this.particles[idx1];
+                        const p2 = this.particles[idx2];
+                        
+                        const delta = p2.pos.clone().sub(p1.pos);
+                        const currentDist = delta.length();
+                        if (currentDist === 0) continue;
+                        
+                        const diff = (currentDist - restDist) / currentDist;
+                        const offset = delta.multiplyScalar(diff * 0.5);
+
+                        if (p1.mass !== 0) p1.pos.add(offset);
+                        if (p2.mass !== 0) p2.pos.sub(offset);
+                    }
+                }
+
+                // 更新网格
+                const positions = this.geometry.attributes.position.array;
+                for (let i = 0; i < this.particles.length; i++) {
+                    positions[i * 3] = this.particles[i].pos.x;
+                    positions[i * 3 + 1] = this.particles[i].pos.y;
+                    positions[i * 3 + 2] = this.particles[i].pos.z;
+                }
+                this.geometry.attributes.position.needsUpdate = true;
+                this.geometry.computeVertexNormals();
+            },
+
+            onPointerDown(e) {
+                if (!document.getElementById('screen-main').classList.contains('active')) {
+                    this.container.style.pointerEvents = 'none';
+                    return;
+                }
+                
+                this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObject(this.clothMesh);
+
+                if (intersects.length > 0) {
+                    this.isDragging = true;
+                    this.clickTime = Date.now();
+                    
+                    const hitPoint = intersects[0].point;
+                    let minDist = Infinity;
+                    for (let i = 0; i < this.particles.length; i++) {
+                        if(this.particles[i].mass === 0) continue; // 不许拉扯顶部的木棍
+                        const dist = this.particles[i].pos.distanceTo(hitPoint);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            this.draggedParticle = this.particles[i];
+                        }
+                    }
+                    this.lastHitUV = intersects[0].uv;
+                } else {
+                    this.container.style.pointerEvents = 'none';
+                    setTimeout(() => { this.container.style.pointerEvents = 'auto'; }, 100);
+                }
+            },
+
+            onPointerMove(e) {
+                if (!this.isDragging || !this.draggedParticle) return;
+                
+                this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                
+                const target = new THREE.Vector3(this.mouse.x, this.mouse.y, 0.5);
+                target.unproject(this.camera);
+                const dir = target.sub(this.camera.position).normalize();
+                const distance = -this.camera.position.z / dir.z; 
+                const pos = this.camera.position.clone().add(dir.multiplyScalar(distance));
+                
+                this.draggedParticle.pos.copy(pos);
+            },
+
+            // =========================================================================
+            // 【新增】将原本的点击事件，改为 UV 像素级检测
+            // =========================================================================
+            onPointerUp(e) {
+                if (!this.isDragging) return;
+                this.isDragging = false;
+                this.draggedParticle = null;
+
+                // 如果是快速点击且点中了 3D 布料
+                if (Date.now() - this.clickTime < 300 && this.lastHitUV) {
+                    const uv = this.lastHitUV; 
+
+                    // 遍历所有自动计算好的精准热区
+                    this.buttonUVs.forEach(btnUV => {
+                        if (uv.x >= btnUV.uMin && uv.x <= btnUV.uMax &&
+                            uv.y >= btnUV.vMin && uv.y <= btnUV.vMax) {
+                            
+                            // 触发对应的跳转或功能
+                            if (btnUV.target === 'action-teleport') {
+                                document.getElementById('teleport-input').click();
+                            } else {
+                                window.showScreen(btnUV.target);
+                            }
+                        }
+                    });
+                }
+                this.lastHitUV = null;
+            },
+
+            onWindowResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            },
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                if (document.getElementById('screen-main').classList.contains('active')) {
+                    this.container.style.display = 'block';
+                    const dt = Math.min(this.clock.getDelta(), 0.05); 
+                    this.simulate(dt);
+                    this.renderer.render(this.scene, this.camera);
+                } else {
+                    this.container.style.display = 'none';
+                }
+            }
+        };
+
+        window.addEventListener('load', () => {
+            setTimeout(() => ClothEngine.init(), 200);
+        });
+
+        const screens = ['screen-main', 'screen-char-select', 'screen-ai-custom', 'map-china', 'map-province', 'screen-virtual-guide'];
+        
+        // =========================================================================
+        // 【终极打字机特效核心函数 - 真正的高清 MP4 图层穿透技术】
+        // =========================================================================
+        function typeWriterEffect(element, text, speed = 40, callback) {
+            let i = 0;
+            element.innerHTML = ""; 
+            
+            // 获取静态图和底层视频元素
+            const staticImg = document.getElementById('fairy-static');
+            const talkingVid = document.getElementById('fairy-talking');
+
+            // 魔法开始：打字前，启动底层视频播放，并将顶层图片变透明
+            if (staticImg && talkingVid) {
+                talkingVid.play().catch(e => console.warn("视频播放受浏览器限制:", e));
+                staticImg.style.opacity = '0';
+            }
+            
+            function typing() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    element.scrollTop = element.scrollHeight; // 让对话框始终滚动到底部
+                    setTimeout(typing, speed);
+                } else {
+                    // 魔法结束：打完字了，用 0.3 秒的时间将静态图片淡入回来，然后再暂停底层的视频
+                    if (staticImg && talkingVid) {
+                        staticImg.style.opacity = '1';
+                        // 预留足够的时间让过渡动画完成，再暂停底层的嘴部运动，绝对顺滑
+                        setTimeout(() => {
+                            talkingVid.pause();
+                        }, 300);
+                    }
+                    if (callback) callback(); 
+                }
+            }
+            typing();
+        }
+
+        // =========================================================================
+        // 【虚拟引路人文字聊天 + AVG风格对话框逻辑】
+        // =========================================================================
+        async function sendGuideMessage() {
+            const inputEl = document.getElementById('guide-chat-input');
+            const msg = inputEl.value.trim();
+            if(!msg) return;
+
+            const speakerEl = document.getElementById('dialogue-speaker');
+            const contentEl = document.getElementById('dialogue-content');
+
+            // 1. 玩家发言阶段：修改姓名板，呈现玩家说的话
+            speakerEl.innerText = "少侠";
+            speakerEl.style.background = "linear-gradient(135deg, #e0e0e0, #999999)"; // 玩家姓名板变灰白
+            contentEl.innerHTML = msg;
+            inputEl.value = '';
+
+            const btn = document.getElementById('btn-guide-send');
+            btn.innerText = "倾听中..."; 
+            btn.disabled = true; 
+            inputEl.disabled = true;
+
+            const locations = {
+                "兵马俑": "bingmayong.html", "秦始皇": "bingmayong.html",
+                "少林寺": "shaolinsi.html", "少林": "shaolinsi.html",
+                "布达拉宫": "budalagong.html",
+                "长城": "changcheng.html",
+                "黄鹤楼": "huanghelou.html",
+                "龙门石窟": "longmenshiku.html",
+                "蓬莱阁": "penglaige.html",
+                "滕王阁": "tengwangge.html",
+                "天坛": "tiantan.html",
+                "岳阳楼": "yueyanglou.html",
+                "赵州桥": "zhaozhouqiao.html",
+                "殷墟": "yinxu.html", "安阳殷墟": "yinxu.html",
+                "洛阳城": "suitangluoyang.html", "隋唐洛阳城": "suitangluoyang.html",
+                "拙政园": "zhuozhengyuan.html", "苏州园林": "zhuozhengyuan.html",
+                "故宫": "gugong.html", "紫禁城": "gugong.html",
+                "云台山": "yuntaishan.html",
+                "茱萸峰": "yuntaishan.html",
+                "红石峡": "yuntaishan.html",
+                "万善寺": "yuntaishan.html",
+                "子房湖": "yuntaishan.html",
+                "叠彩洞": "yuntaishan.html"
+            };
+
+            let targetSite = null;
+            let targetUrl = null;
+            for (let key in locations) {
+                if (msg.includes(key)) {
+                    targetSite = key;
+                    targetUrl = locations[key];
+                    break;
+                }
+            }
+
+            const unlockInput = () => {
+                btn.innerText = "诉说"; 
+                btn.disabled = false;
+                inputEl.disabled = false;
+                inputEl.focus();
+            };
+
+            // 2. 模拟仙子推演天机的过渡状态 (延迟 800ms 保证玩家看清自己发的话)
+            setTimeout(async () => {
+                // 切回仙子视角
+                speakerEl.innerText = "接引仙子";
+                speakerEl.style.background = "linear-gradient(135deg, #ceae75, #8b6508)"; // 恢复暗金框
+                // 添加专属呼吸发光动画文字
+                contentEl.innerHTML = "<span class='thinking-text'>(仙子微闭双目，天道罗盘飞速旋转，正在推演天机...)</span>";
+
+                // 如果直接匹配到了景点
+                if (targetUrl) {
+                    setTimeout(() => {
+                        const replyText = `感应到时空坐标【${targetSite}】。天道传送阵，开！`;
+                        typeWriterEffect(contentEl, replyText, 40, () => {
+                            setTimeout(() => { window.location.href = targetUrl; }, 1000);
+                        });
+                    }, 1200);
+                    return;
+                }
+
+                // 否则，去请求后端大模型
+                const guidePrompt = `你是神州大地的接引仙子，说话温柔、带有古风色彩。玩家不知道去哪，你需要根据他们的话语推荐景点。目前天地间开放了以下秘境：兵马俑、少林寺、布达拉宫、长城、黄鹤楼、龙门石窟、蓬莱阁、滕王阁、天坛、岳阳楼、赵州桥、安阳殷墟、隋唐洛阳城、拙政园、故宫、云台山（含茱萸峰、红石峡、万善寺、子房湖、叠彩洞）。请巧妙地引导他们直接回复这些名字，或者提示他们可以奉上画卷(上传图片)来进行传送。不要使用任何代码格式或聊天气泡。直接输出你想说的话。`;
+
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/api/chat', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: msg, system_prompt: guidePrompt })
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        typeWriterEffect(contentEl, "(接引仙子灵力受阻。请少侠直接输入景点名称进行传送。)", 40, unlockInput);
+                    } else {
+                        // 移除大模型可能自带的“接引仙子：”前缀
+                        let finalReply = data.reply.replace(/^接引仙子：/g, '').trim();
+                        typeWriterEffect(contentEl, finalReply, 40, unlockInput);
+                    }
+                } catch (e) {
+                    typeWriterEffect(contentEl, "(天道网络异常。请少侠直接输入景点名称进行传送。)", 40, unlockInput);
+                }
+            }, 800);
+        }
+
+        // =========================================================================
+        // 【图像上传传送阵逻辑】
+        // =========================================================================
+        function handleTeleportUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64DataWithMime = e.target.result; 
+                
+                document.getElementById('teleport-loading').classList.remove('hidden');
+                document.getElementById('teleport-loading').classList.add('active');
+                
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/api/teleport', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: base64DataWithMime })
+                    });
+                    const data = await response.json();
+                    
+                    document.getElementById('teleport-loading').classList.remove('active');
+                    document.getElementById('teleport-loading').classList.add('hidden');
+                    
+                    const locations = {
+                        "兵马俑": "bingmayong.html",
+                        "少林寺": "shaolinsi.html",
+                        "布达拉宫": "budalagong.html",
+                        "长城": "changcheng.html",
+                        "黄鹤楼": "huanghelou.html",
+                        "龙门石窟": "longmenshiku.html",
+                        "蓬莱阁": "penglaige.html",
+                        "滕王阁": "tengwangge.html",
+                        "天坛": "tiantan.html",
+                        "岳阳楼": "yueyanglou.html",
+                        "赵州桥": "zhaozhouqiao.html",
+                        "殷墟": "yinxu.html",
+                        "洛阳城": "suitangluoyang.html",
+                        "拙政园": "zhuozhengyuan.html",
+                        "故宫": "gugong.html", "紫禁城": "gugong.html",
+                        "云台山": "yuntaishan.html",
+                        "茱萸峰": "yuntaishan.html",
+                        "红石峡": "yuntaishan.html",
+                        "万善寺": "yuntaishan.html",
+                        "子房湖": "yuntaishan.html",
+                        "叠彩洞": "yuntaishan.html"
+                    };
+
+                    let targetUrl = null;
+                    if (data.result) {
+                        for (let key in locations) {
+                            if (data.result.includes(key)) {
+                                targetUrl = locations[key];
+                                break;
+                            }
+                        }
+                    }
+
+                    if (targetUrl) {
+                        window.location.href = targetUrl;
+                    } else {
+                        alert("未能识别出对应的神州古迹。\n天道罗盘返回结果：" + (data.result || "未知"));
+                    }
+                } catch (err) {
+                    document.getElementById('teleport-loading').classList.remove('active');
+                    document.getElementById('teleport-loading').classList.add('hidden');
+                    alert("传送阵能量波动（接口报错），请检查后端黑窗口日志！");
+                }
+                event.target.value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // =========================================================================
+        // 【终极方案：Canvas 像素级精准拾取引擎】
+        // =========================================================================
+        const pixelEngine = {
+            cache: {},
+            canvas: document.createElement('canvas'),
+            ctx: null,
+            hotspots: [],
+
+            init() {
+                this.canvas.width = 1; this.canvas.height = 1;
+                this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+                this.hotspots = Array.from(document.querySelectorAll('.region-hotspot'));
+
+                this.hotspots.sort((a, b) => (parseInt(b.style.zIndex) || 0) - (parseInt(a.style.zIndex) || 0));
+
+                this.hotspots.forEach(el => {
+                    const bg = window.getComputedStyle(el).backgroundImage;
+                    if (bg && bg !== 'none') {
+                        const match = bg.match(/url\(['"]?(.*?)['"]?\)/);
+                        if (match && match[1]) {
+                            const url = match[1];
+                            if (!this.cache[url]) {
+                                const img = new Image();
+                                img.src = url;
+                                this.cache[url] = { img: img, loaded: false };
+                                img.onload = () => { this.cache[url].loaded = true; };
+                            }
+                        }
+                    }
+                });
+
+                this.bindEvents();
+            },
+
+            isTransparent(el, clientX, clientY) {
+                const bg = window.getComputedStyle(el).backgroundImage;
+                if (bg === 'none') return true;
+                const match = bg.match(/url\(['"]?(.*?)['"]?\)/);
+                if (!match || !match[1]) return true;
+                const url = match[1];
+
+                const cacheObj = this.cache[url];
+                if (!cacheObj || !cacheObj.loaded) return true;
+
+                const img = cacheObj.img;
+                const rect = el.getBoundingClientRect();
+
+                const x_screen = clientX - rect.left;
+                const y_screen = clientY - rect.top;
+                const cssX = x_screen * (el.offsetWidth / rect.width);
+                const cssY = y_screen * (el.offsetHeight / rect.height);
+
+                const ar_div = el.offsetWidth / el.offsetHeight;
+                const ar_img = img.width / img.height;
+                let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
+
+                if (ar_div > ar_img) {
+                    drawHeight = el.offsetHeight;
+                    drawWidth = drawHeight * ar_img;
+                    offsetX = (el.offsetWidth - drawWidth) / 2;
+                } else {
+                    drawWidth = el.offsetWidth;
+                    drawHeight = drawWidth / ar_img;
+                    offsetY = (el.offsetHeight - drawHeight) / 2;
+                }
+
+                if (cssX < offsetX || cssX > offsetX + drawWidth || cssY < offsetY || cssY > offsetY + drawHeight) {
+                    return true;
+                }
+
+                const imgX = ((cssX - offsetX) / drawWidth) * img.width;
+                const imgY = ((cssY - offsetY) / drawHeight) * img.height;
+
+                this.ctx.clearRect(0, 0, 1, 1);
+                this.ctx.drawImage(img, imgX, imgY, 1, 1, 0, 0, 1, 1);
+                const alpha = this.ctx.getImageData(0, 0, 1, 1).data[3];
+
+                return alpha < 10;
+            },
+
+            bindEvents() {
+                const mapContainer = document.getElementById('map-china');
+
+                mapContainer.addEventListener('mousemove', (e) => {
+                    if(!mapContainer.classList.contains('active')) return;
+
+                    let targetHover = null;
+                    for (let el of this.hotspots) {
+                        const rect = el.getBoundingClientRect();
+                        if (e.clientX >= rect.left && e.clientX <= rect.right &&
+                            e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                            
+                            if (!this.isTransparent(el, e.clientX, e.clientY)) {
+                                targetHover = el;
+                                break; 
+                            }
+                        }
+                    }
+
+                    this.hotspots.forEach(el => {
+                        if (el === targetHover) {
+                            el.classList.add('active-hover');
+                        } else {
+                            el.classList.remove('active-hover');
+                        }
+                    });
+                });
+
+                mapContainer.addEventListener('click', (e) => {
+                    if(!mapContainer.classList.contains('active')) return;
+
+                    for (let el of this.hotspots) {
+                        const rect = el.getBoundingClientRect();
+                        if (e.clientX >= rect.left && e.clientX <= rect.right &&
+                            e.clientY >= rect.top && e.clientY <= rect.bottom) {
+
+                            if (!this.isTransparent(el, e.clientX, e.clientY)) {
+                                const provKey = el.id.replace('region-', '');
+                                showProvincePreview(provKey);
+                                break;
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        // =========================================================================
+        // 虚拟引导界面 - 初始化目录与交互函数
+        // =========================================================================
+        function initVirtualGuideInterface() {
+            const provinceGrid = document.getElementById('province-grid');
+            const attractionGrid = document.getElementById('attraction-grid');
+            if (!provinceGrid || !attractionGrid) return;
+
+            let provinceHtml = '';
+            for (let key in provinceConfig) {
+                const title = provinceConfig[key].title;
+                const spots = provinceConfig[key].spots || [];
+                const count = spots.length;
+                provinceHtml += `<div class="province-item" onclick="(function(){document.getElementById('guide-chat-input').value='${title}'; showProvinceMap('${key}','${title}');})();">${title}${count>0?` (${count}处)`:''}</div>`;
+            }
+            provinceGrid.innerHTML = provinceHtml;
+
+            // 点击与悬浮的类管理：保证点击时高亮（active），悬浮时有即时视觉反馈
+            setTimeout(() => {
+                const provItems = provinceGrid.querySelectorAll('.province-item');
+                provItems.forEach(el => {
+                    el.addEventListener('click', (ev) => {
+                        provItems.forEach(x => x.classList.remove('active'));
+                        el.classList.add('active');
+                    });
+                });
+            }, 50);
+
+            const popularAttractions = ['兵马俑','少林寺','布达拉宫','长城','黄鹤楼','龙门石窟','蓬莱阁','滕王阁','天坛','岳阳楼','赵州桥','安阳殷墟','隋唐洛阳城','拙政园','故宫','云台山'];
+            let attractionHtml = '';
+            popularAttractions.forEach(at => {
+                attractionHtml += `<div class="attraction-item" onclick="selectDirectoryAttraction('${at}')">${at}</div>`;
+            });
+            attractionGrid.innerHTML = attractionHtml;
+
+            // 同样为热门景点添加点击高亮处理
+            setTimeout(() => {
+                const atItems = attractionGrid.querySelectorAll('.attraction-item');
+                atItems.forEach(el => {
+                    el.addEventListener('click', (ev) => {
+                        atItems.forEach(x => x.classList.remove('active'));
+                        el.classList.add('active');
+                    });
+                });
+            }, 50);
+
+            const input = document.getElementById('guide-chat-input');
+            if (input) input.focus();
+        }
+
+        function selectDirectoryAttraction(attractionName) {
+            const input = document.getElementById('guide-chat-input');
+            if (input) {
+                input.value = attractionName;
+                sendGuideMessage();
+            }
+        }
+
+        function showProvinceMap(provinceKey, provinceTitle) {
+            // 先把名字填写到输入框
+            const input = document.getElementById('guide-chat-input');
+            if (input) {
+                input.value = provinceTitle;
+                sendGuideMessage();
+            }
+        }
+
+        window.addEventListener('load', () => {
+            setTimeout(() => pixelEngine.init(), 100);
+        });
+
+        window.showScreen = function(targetId) {
+            screens.forEach(id => {
+                const el = document.getElementById(id);
+                if (id === targetId) {
+                    el.classList.remove('hidden'); el.classList.add('active');
+                } else {
+                    el.classList.remove('active'); el.classList.add('hidden');
+                }
+            });
+            
+            if (targetId === 'screen-virtual-guide') {
+                setTimeout(initVirtualGuideInterface, 250);
+            }
+        };
+
+        function toggleSound() {
+            const bgmMap = document.getElementById('bgm-map'); 
+            const btn = document.getElementById('sound-toggle');
+
+            if (bgmMap.paused) {
+                bgmMap.play(); 
+                btn.innerHTML = "🔊 关闭背景音";
+                btn.style.color = "#ffd700"; 
+            } else {
+                bgmMap.pause(); 
+                btn.innerHTML = "🎵 开启背景音";
+                btn.style.color = "#ceae75";
+            }
+        }
+
+        const provinceConfig = {
+            'jiangxi':  { title: '江西', bg: 'province/jiangxi/Background/bg_jiangxi.png',   spots: ['spot-tengwangge', 'spot-yaozhi'] },
+            'henan':    { title: '河南', bg: 'province/henan/Background/bg_henan.png',     spots: ['spot-shaolinsi', 'spot-longmenshiku', 'spot-songyuesita', 'spot-yinxu', 'spot-suitangluoyang', 'spot-yuntaishan']},
+            'anhui':    { title: '安徽', bg: 'province/anhui/Background/bg_anhui.png',     spots: ['spot-ciguangge'] },
+            'hebei':    { title: '河北', bg: 'province/hebei/Background/bg_hebei.png',     spots: ['spot-zhaozhouqiao', 'spot-kaiyuansita', 'spot-yaowangmiao'] },
+            'shanxi':   { title: '山西', bg: 'province/shanxi/Background/bg_shanxi.png',   spots: ['spot-foguangsi', 'spot-nanchansi'] },
+            'shaanxi':  { title: '陕西', bg: 'province/shaanxi/Background/bg_shaanxi.png', spots: ['spot-bingmayong'] }, 
+            'shandong': { title: '山东', bg: 'province/shandong/Background/bg_shandong.png',spots: ['spot-penglaige', 'spot-kongmiao'] },
+            'xizang':   { title: '西藏', bg: 'province/xizang/Background/bg_xizang.png',   spots: ['spot-budalagong'] }, 
+            'beijing':  { title: '北京', bg: 'province/beijing/Background/bg_beijing.png', spots: ['spot-changcheng', 'spot-tiantan', 'spot-gugong'] },
+            'chongqing':  { title: '重庆', bg: 'province/chongqing/Background/bg_chongqing.png', spots: [] },
+            'gansu':      { title: '甘肃', bg: 'province/gansu/Background/bg_gansu.png',       spots: [] },
+            'guizhou':    { title: '贵州', bg: 'province/guizhou/Background/bg_guizhou.png',     spots: [] },
+            'heilongjiang':{ title: '黑龙江', bg: 'province/heilongjiang/Background/bg_heilongjiang.png', spots: ['spot-tazicheng', 'spot-heilongjiangmiao'] },
+            'hunan':      { title: '湖南', bg: 'province/hunan/Background/bg_hunan.png',       spots: ['spot-yueyanglou', 'spot-shuyuan'] }, 
+            'jiangsu':    { title: '江苏', bg: 'province/jiangsu/Background/bg_jiangsu.png',     spots: ['spot-mingxiaoling', 'spot-zhuozhengyuan'] },
+            'jilin':      { title: '吉林', bg: 'province/jilin/Background/bg_jilin.png',       spots: ['spot-guandimiao', 'spot-jilinmiao'] },
+            'liaoning':   { title: '辽宁', bg: 'province/liaoning/Background/bg_liaoning.png',     spots: ['spot-fengguosi', 'spot-shenyanggugong'] },
+            'yunnan':     { title: '云南', bg: 'province/yunnan/Background/bg_yunnan.png',       spots: [] },
+            'zhejiang':   { title: '浙江', bg: 'province/zhejiang/Background/bg_zhejiang.png',     spots: ['spot-liuheta'] },
+            'tianjin':    { title: '天津', bg: 'province/tianjin/Background/bg_tianjin.png',     spots: ['spot-dulesi', 'spot-tianhougong'] },
+            'fujian':     { title: '福建', bg: 'province/fujian/Background/bg_fujian.png',       spots: ['spot-qingjingsi','spot-hualinsi'] },
+            'guangdong':  { title: '广东', bg: 'province/guangdong/Background/bg_guangdong.png',     spots: [] },
+            'taiwan':     { title: '台湾', bg: 'province/taiwan/Background/bg_taiwan.png',       spots: [] },
+            'hainan':     { title: '海南', bg: 'province/hainan/Background/bg_hainan.png',       spots: [] },
+            'xinjiang':   { title: '新疆', bg: 'province/xinjiang/Background/bg_xinjiang.png',     spots: [] },
+            'ningxia':    { title: '宁夏', bg: 'province/ningxia/Background/bg_ningxia.png',     spots: [] },
+            'neimenggu':  { title: '内蒙古', bg: 'province/neimenggu/Background/bg_neimenggu.png',  spots: ['spot-dazhaosi', 'spot-xilituzhao'] },
+            'qinghai':    { title: '青海', bg: 'province/qinghai/Background/bg_qinghai.png', spots: [] },
+            'sichuan':    { title: '四川', bg: 'province/sichuan/Background/bg_sichuan.png', spots: [] },
+            'guangxi':    { title: '广西', bg: 'province/guangxi/Background/bg_guangxi.png', spots: [] },
+            'hubei':      { title: '湖北', bg: 'province/hubei/Background/bg_hubei.png', spots: ['spot-huanghelou'] },
+            'hongkong':   { title: '香港', bg: 'province/hongkong/Background/bg_hongkong.png', spots: [] },
+            'macau':      { title: '澳门', bg: 'province/macau/Background/bg_macau.png', spots: [] },
+            'shanghai':   { title: '上海', bg: 'province/shanghai/Background/bg_shanghai.png', spots: [] }
+        };
+
+        // Province preview modal logic: show an intermediate preview before entering
+        function showProvincePreview(provinceKey) {
+            const config = provinceConfig[provinceKey] || { title: provinceKey };
+            const title = config.title || provinceKey;
+            const modal = document.getElementById('province-preview-modal');
+            const titleEl = document.getElementById('province-preview-title');
+            const imgEl = document.getElementById('province-preview-img');
+
+            if (titleEl) titleEl.innerText = title;
+
+            const candidates = [
+                `province_shentu/${provinceKey}.jpg`,
+                `province_shentu/${provinceKey}.png`,
+                `province_shentu/${title}.jpg`,
+                `province_shentu/${title}.png`,
+                config.bg
+            ];
+
+            let idx = 0;
+            function tryNext() {
+                if (idx >= candidates.length) {
+                    if (imgEl) imgEl.src = '';
+                    return;
+                }
+                const src = candidates[idx++];
+                if (!src) return tryNext();
+                imgEl.onerror = tryNext;
+                imgEl.onload = function() { imgEl.onerror = null; };
+                imgEl.src = src;
+            }
+            tryNext();
+
+            window._previewProvinceKey = provinceKey;
+            if (modal) {
+                modal.style.display = 'block';
+                modal.classList.remove('hidden');
+                modal.classList.add('active');
+            }
+        }
+
+        // modal button handlers (delegated click listener to ensure elements exist)
+        document.addEventListener('click', function(ev) {
+            const enterBtn = document.getElementById('province-preview-enter-btn');
+            const cancelBtn = document.getElementById('province-preview-cancel-btn');
+            if (!enterBtn || !cancelBtn) return;
+            if (ev.target === enterBtn) {
+                const prov = window._previewProvinceKey;
+                const modal = document.getElementById('province-preview-modal');
+                if (modal) { modal.classList.remove('active'); modal.classList.add('hidden'); modal.style.display = 'none'; }
+                if (prov) enterProvince(prov);
+            }
+            if (ev.target === cancelBtn) {
+                const modal = document.getElementById('province-preview-modal');
+                if (modal) { modal.classList.remove('active'); modal.classList.add('hidden'); modal.style.display = 'none'; }
+            }
+        });
+
+        function enterProvince(provinceKey) {
+            const config = provinceConfig[provinceKey];
+            if (!config) return;
+
+            document.getElementById('province-title').innerText = config.title;
+            document.getElementById('level2-map-content').style.backgroundImage = `url('${config.bg}')`;
+
+            document.querySelectorAll('.landmark-spot').forEach(spot => spot.style.display = 'none');
+
+            config.spots.forEach(spotId => {
+                const spotEl = document.getElementById(spotId);
+                if (spotEl) spotEl.style.display = 'flex';
+            });
+
+            resetMapView();
+            window.showScreen('map-province');
+        }
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const region = urlParams.get('region');
+            
+            if (provinceConfig[region] || region === 'jiangnan') {
+                enterProvince(region === 'jiangnan' ? 'jiangxi' : region);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            
+            if(!localStorage.getItem('playerSkin')) {
+                localStorage.setItem('playerSkin', 'player.png');
+            }
+            checkUnlockedCharacters();
+            
+            document.querySelectorAll('.region-hotspot').forEach(region => {
+                const rect = region.getBoundingClientRect();
+                const area = rect.width * rect.height;
+                if (area > 0) {
+                    region.style.zIndex = Math.round(10000000 / area);
+                }
+            });
+        };
+        function checkUnlockedCharacters() {
+            if (localStorage.getItem('unlocked_wangbo') === 'true') {
+                const card = document.getElementById('card-wangbo');
+                if (card) {
+                    card.classList.remove('locked'); 
+                    document.getElementById('mask-wangbo').style.display = 'none'; 
+                    document.getElementById('img-wangbo').style.opacity = '1'; 
+                }
+            }
+            if (localStorage.getItem('unlocked_qinshihuang') === 'true') {
+                const card = document.getElementById('card-qinshihuang');
+                if (card) {
+                    card.classList.remove('locked'); 
+                    document.getElementById('mask-qinshihuang').style.display = 'none'; 
+                    document.getElementById('img-qinshihuang').style.opacity = '1'; 
+                }
+            }
+            if (localStorage.getItem('unlocked_wenchenggongzhu') === 'true') {
+                const card = document.getElementById('card-wenchenggongzhu');
+                if (card) {
+                    card.classList.remove('locked'); 
+                    document.getElementById('mask-wenchenggongzhu').style.display = 'none'; 
+                    document.getElementById('img-wenchenggongzhu').style.opacity = '1'; 
+                }
+            }
+            if (localStorage.getItem('unlocked_mengtian') === 'true') {
+                const card = document.getElementById('card-mengtian');
+                if (card) {
+                    card.classList.remove('locked'); 
+                    document.getElementById('mask-mengtian').style.display = 'none'; 
+                    document.getElementById('img-mengtian').style.opacity = '1'; 
+                }
+            }
+            if (localStorage.getItem('unlocked_cuihao') === 'true') {
+                const card = document.getElementById('card-cuihao');
+                if (card) {
+                    card.classList.remove('locked'); 
+                    document.getElementById('mask-cuihao').style.display = 'none'; 
+                    document.getElementById('img-cuihao').style.opacity = '1'; 
+                }
+            }
+            if (localStorage.getItem('unlocked_wuzetian') === 'true') {
+                const card = document.getElementById('card-wuzetian');
+                if (card) {
+                    card.classList.remove('locked'); 
+                    document.getElementById('mask-wuzetian').style.display = 'none'; 
+                    document.getElementById('img-wuzetian').style.opacity = '1'; 
+                }
+            }
+            if (localStorage.getItem('unlocked_lvdongbin') === 'true') {
+                const card = document.getElementById('card-lvdongbin');
+                if (card) {
+                    card.classList.remove('locked'); 
+                    document.getElementById('mask-lvdongbin').style.display = 'none'; 
+                    document.getElementById('img-lvdongbin').style.opacity = '1'; 
+                }
+            }
+            if (localStorage.getItem('unlocked_damo') === 'true') {
+                const card = document.getElementById('card-damo');
+                if (card) {
+                    card.classList.remove('locked'); 
+                    document.getElementById('mask-damo').style.display = 'none'; 
+                    document.getElementById('img-damo').style.opacity = '1'; 
+                }
+            }
+            if (localStorage.getItem('unlocked_jiajing') === 'true') {
+                const card = document.getElementById('card-jiajing');
+                if (card) {
+                    card.classList.remove('locked'); 
+                    document.getElementById('mask-jiajing').style.display = 'none'; 
+                    document.getElementById('img-jiajing').style.opacity = '1'; 
+                }
+            }
+            if (localStorage.getItem('unlocked_fanzhongyan') === 'true') {
+                const card = document.getElementById('card-fanzhongyan');
+                if (card) {
+                    card.classList.remove('locked'); 
+                    document.getElementById('mask-fanzhongyan').style.display = 'none'; 
+                    document.getElementById('img-fanzhongyan').style.opacity = '1'; 
+                }
+            }
+            if (localStorage.getItem('unlocked_lichun') === 'true') {
+                const card = document.getElementById('card-lichun');
+                if (card) {
+                    card.classList.remove('locked'); 
+                    document.getElementById('mask-lichun').style.display = 'none'; 
+                    document.getElementById('img-lichun').style.opacity = '1'; 
+                }
+            }
+        }
+        
+        let tempSelectedSkin = 'player.png';
+        function selectChar(cardElement, imagePath) {
+            if (cardElement.classList.contains('locked')) {
+                alert("🔒 该角色尚未解锁！请前往对应景点集齐信物。");
+                return; 
+            }
+            document.querySelectorAll('.char-card').forEach(card => card.classList.remove('selected'));
+            cardElement.classList.add('selected');
+            tempSelectedSkin = imagePath;
+        }
+        function saveCharAndReturn() {
+            localStorage.setItem('playerSkin', tempSelectedSkin);
+            alert("身份设置成功！");
+            window.showScreen('screen-main');
+        }
+
+        let aiGeneratedImageDataURL = null;
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64Data = e.target.result;
+                document.getElementById('ai-preview').style.display = 'none';
+                document.getElementById('btn-save-ai').style.display = 'none';
+                document.getElementById('ai-loading').style.display = 'block';
+                try {
+                    const resultImage = await callVolcengineAPI(base64Data);
+                    document.getElementById('ai-loading').style.display = 'none';
+                    const preview = document.getElementById('ai-preview');
+                    preview.src = resultImage;
+                    preview.style.display = 'block';
+                    aiGeneratedImageDataURL = resultImage;
+                    document.getElementById('btn-save-ai').style.display = 'block';
+                } catch (error) {
+                    document.getElementById('ai-loading').style.display = 'none';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function callVolcengineAPI(originalImageBase64) {
+            const backendUrl = 'http://127.0.0.1:5000/api/generate-avatar';
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: originalImageBase64 })
+                });
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.details || "后端请求失败");
+                }
+                const data = await response.json();
+                if (data.data && data.data.length > 0) {
+                    const aiImageUrl = 'data:image/png;base64,' + data.data[0].b64_json;
+                    const transparentImageBase64 = await removeWhiteBackground(aiImageUrl);
+                    return transparentImageBase64;
+                } else {
+                    throw new Error("API 未返回有效图片数据");
+                }
+            } catch (error) {
+                console.error("生成报错:", error);
+                alert("AI 生成失败！请检查后端黑窗口。\n详情: " + error.message);
+                throw error;
+            }
+        }
+
+        function removeWhiteBackground(imageUrl) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = function() {
+                    const W = 256;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = W; canvas.height = W;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, W, W);
+                    const imageData = ctx.getImageData(0, 0, W, W);
+                    const data = imageData.data;
+                    const isBg = (i) => data[i] > 240 && data[i+1] > 240 && data[i+2] > 240;
+                    const visited = new Uint8Array(W * W);
+                    const queue = [];
+                    // 从四条边的白色像素开始泛洪
+                    for (let x = 0; x < W; x++) {
+                        [0, W - 1].forEach(y => { const p = y * W + x; if (!visited[p] && isBg(p * 4)) { visited[p] = 1; queue.push(p); } });
+                    }
+                    for (let y = 0; y < W; y++) {
+                        [0, W - 1].forEach(x => { const p = y * W + x; if (!visited[p] && isBg(p * 4)) { visited[p] = 1; queue.push(p); } });
+                    }
+                    // BFS泛洪：只去掉和边缘相连的白色区域
+                    let head = 0;
+                    while (head < queue.length) {
+                        const p = queue[head++];
+                        data[p * 4 + 3] = 0;
+                        const px = p % W, py = (p - px) / W;
+                        const nb = [p - 1, p + 1, p - W, p + W];
+                        for (const n of nb) {
+                            if (n < 0 || n >= W * W) continue;
+                            const nx = n % W;
+                            if (Math.abs(nx - px) > 1) continue;
+                            if (!visited[n] && isBg(n * 4)) { visited[n] = 1; queue.push(n); }
+                        }
+                    }
+                    ctx.putImageData(imageData, 0, 0);
+                    resolve(canvas.toDataURL("image/png"));
+                };
+                img.onerror = () => reject(new Error("图片加载失败"));
+                img.src = imageUrl;
+            });
+        }
+
+        function saveAICharAndReturn() {
+            if(aiGeneratedImageDataURL) {
+                localStorage.setItem('playerSkin', aiGeneratedImageDataURL);
+                alert("专属化身已保存！即将开始神州游历。");
+                window.showScreen('screen-main');
+            }
+        }
+
+        const mapContent = document.getElementById('level2-map-content');
+        const screenProvince = document.getElementById('map-province');
+        
+        const MAP_RAW_WIDTH = 3000;  
+        const MAP_RAW_HEIGHT = 2000; 
+        
+        let mapScale = 1;
+        let mapTranslateX = 0;
+        let mapTranslateY = 0;
+        let isDraggingMap = false;
+        let mapStartX = 0, mapStartY = 0;
+
+        function getMinScale() {
+            return Math.max(window.innerWidth / MAP_RAW_WIDTH, window.innerHeight / MAP_RAW_HEIGHT);
+        }
+
+        function resetMapView() {
+            mapScale = Math.max(1, getMinScale()); 
+            mapTranslateX = (window.innerWidth - MAP_RAW_WIDTH * mapScale) / 2;
+            mapTranslateY = (window.innerHeight - MAP_RAW_HEIGHT * mapScale) / 2;
+            updateMapTransform();
+        }
+
+        mapContent.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('landmark-spot')) return; 
+            isDraggingMap = true;
+            mapStartX = e.clientX - mapTranslateX;
+            mapStartY = e.clientY - mapTranslateY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDraggingMap || !screenProvince.classList.contains('active')) return;
+            mapTranslateX = e.clientX - mapStartX;
+            mapTranslateY = e.clientY - mapStartY;
+            updateMapTransform();
+        });
+
+        window.addEventListener('mouseup', () => { isDraggingMap = false; });
+
+        screenProvince.addEventListener('wheel', (e) => {
+            if (!screenProvince.classList.contains('active')) return;
+            e.preventDefault(); 
+            
+            const zoomStep = 0.15; 
+            let delta = e.deltaY > 0 ? -zoomStep : zoomStep;
+            let newScale = mapScale + delta;
+            
+            const minScale = getMinScale();
+            newScale = Math.max(minScale, Math.min(newScale, 3)); 
+            
+            if (newScale !== mapScale) {
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
+                const ratio = newScale / mapScale;
+                
+                mapTranslateX = mouseX - (mouseX - mapTranslateX) * ratio;
+                mapTranslateY = mouseY - (mouseY - mapTranslateY) * ratio;
+                
+                mapScale = newScale;
+                updateMapTransform();
+            }
+        }, { passive: false }); 
+
+        function updateMapTransform() {
+            const minScale = getMinScale();
+            if (mapScale < minScale) mapScale = minScale;
+
+            const currentWidth = MAP_RAW_WIDTH * mapScale;
+            const currentHeight = MAP_RAW_HEIGHT * mapScale;
+
+            const minX = window.innerWidth - currentWidth;
+            const maxX = 0;
+            const minY = window.innerHeight - currentHeight;
+            const maxY = 0;
+
+            mapTranslateX = Math.max(minX, Math.min(maxX, mapTranslateX));
+            mapTranslateY = Math.max(minY, Math.min(maxY, mapTranslateY));
+
+            mapContent.style.transform = `translate(${mapTranslateX}px, ${mapTranslateY}px) scale(${mapScale})`;
+        }
+
+        document.getElementById('spot-tengwangge').addEventListener('click', () => { window.location.href = 'tengwangge.html'; });
+        document.getElementById('spot-shaolinsi').addEventListener('click', () => { window.location.href = 'shaolinsi.html'; });
+        document.getElementById('spot-longmenshiku').addEventListener('click', () => { window.location.href = 'longmenshiku.html'; });
+        document.getElementById('spot-zhaozhouqiao').addEventListener('click', () => { window.location.href = 'zhaozhouqiao.html'; });
+        document.getElementById('spot-bingmayong').addEventListener('click', () => { window.location.href = 'bingmayong.html'; });
+        document.getElementById('spot-yinxu').addEventListener('click', () => { window.location.href = 'yinxu.html'; });
+        document.getElementById('spot-suitangluoyang').addEventListener('click', () => { window.location.href = 'suitangluoyang.html'; });
+        document.getElementById('spot-budalagong').addEventListener('click', () => { window.location.href = 'budalagong.html'; });
+        document.getElementById('spot-penglaige').addEventListener('click', () => { window.location.href = 'penglaige.html'; });
+        document.getElementById('spot-changcheng').addEventListener('click', () => { window.location.href = 'changcheng.html'; });
+        document.getElementById('spot-tiantan').addEventListener('click', () => { window.location.href = 'tiantan.html'; });
+        document.getElementById('spot-gugong').addEventListener('click', () => { window.location.href = 'gugong.html'; });
+        document.getElementById('spot-yueyanglou').addEventListener('click', () => { window.location.href = 'yueyanglou.html'; });
+        document.getElementById('spot-huanghelou').addEventListener('click', () => { window.location.href = 'huanghelou.html'; });
+        document.getElementById('spot-foguangsi').addEventListener('click', () => { window.location.href = 'foguangsi.html'; });
+        document.getElementById('spot-zhuozhengyuan').addEventListener('click', () => { window.location.href = 'zhuozhengyuan.html'; });
+        document.getElementById('spot-yuntaishan').addEventListener('click', () => { window.location.href = 'yuntaishan.html'; });
+
+        // ===============================================
+        // 登录注册与背包相关逻辑
+        // ===============================================
+        let currentUser = localStorage.getItem('ancient_username');
+        if (currentUser) {
+            document.getElementById('top-login-btn').innerText = `⛩️ 欢迎，${currentUser}`;
+            document.getElementById('top-backpack-btn').style.display = 'block';
+            syncLocalItemsToDB().then(() => refreshBackpackBadge());
+        }
+
+        function openAuthModal() {
+            if (currentUser) {
+                if (confirm("当前已登录，要退出登录吗？")) {
+                    localStorage.removeItem('ancient_username');
+                    currentUser = null;
+                    document.getElementById('top-login-btn').innerText = '登录 / 注册';
+                    document.getElementById('top-backpack-btn').style.display = 'none';
+                    document.getElementById('bp-badge').style.display = 'none';
+                    document.getElementById('bp-badge').innerText = '0';
+                    alert("已登出");
+                }
+                return;
+            }
+            document.getElementById('auth-modal').style.display = 'block';
+        }
+        function closeAuthModal() {
+            document.getElementById('auth-modal').style.display = 'none';
+        }
+
+        async function handleLogin() {
+            let u = document.getElementById('auth-username').value.trim();
+            let p = document.getElementById('auth-password').value.trim();
+            if(!u || !p) { alert("请输入完整信息"); return; }
+            try {
+                let res = await fetch('http://127.0.0.1:5000/api/login', {
+                    method: 'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({username: u, password: p})
+                });
+                let data = await res.json();
+                if(data.success) {
+                    alert(data.message);
+                    localStorage.setItem('ancient_username', data.username);
+                    currentUser = data.username;
+                    document.getElementById('top-login-btn').innerText = `⛩️ 欢迎，${currentUser}`;
+                    document.getElementById('top-backpack-btn').style.display = 'block';
+                    closeAuthModal();
+                    await syncLocalItemsToDB();
+                    refreshBackpackBadge();
+                } else { alert(data.error); }
+            } catch(e) { console.error(e); alert("网络错误"); }
+        }
+
+        async function handleRegister() {
+            let u = document.getElementById('auth-username').value.trim();
+            let p = document.getElementById('auth-password').value.trim();
+            if(!u || !p) { alert("请输入完整信息"); return; }
+            try {
+                let res = await fetch('http://127.0.0.1:5000/api/register', {
+                    method: 'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({username: u, password: p})
+                });
+                let data = await res.json();
+                if(data.success) {
+                    alert("注册成功！请点击登录");
+                } else { alert(data.error || "注册失败"); }
+            } catch(e) { console.error(e); alert("网络错误"); }
+        }
+
+        // 刷新背包角标：显示信物数量(含localStorage) + 已兑换数量
+        async function refreshBackpackBadge() {
+            if (!currentUser) return;
+            try {
+                let [resItems, resRewards] = await Promise.all([
+                    fetch('http://127.0.0.1:5000/api/get-items', {
+                        method: 'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({username: currentUser})
+                    }),
+                    fetch('http://127.0.0.1:5000/api/rewards', {
+                        method: 'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({username: currentUser})
+                    })
+                ]);
+                let itemsData = await resItems.json();
+                let rewardsData = await resRewards.json();
+
+                // 数据库信物 + localStorage 信物（去重）
+                let dbItemNames = new Set();
+                let count = 0;
+                if (itemsData.success && itemsData.items) {
+                    count += itemsData.items.length;
+                    itemsData.items.forEach(i => dbItemNames.add(i.item_name));
+                }
+                getLocalStorageItems().forEach(li => {
+                    if (!dbItemNames.has(li.item_name)) count++;
+                });
+                if (rewardsData.success && rewardsData.user_redeemed) count += rewardsData.user_redeemed.length;
+
+                let badge = document.getElementById('bp-badge');
+                if (count > 0) {
+                    badge.innerText = count > 99 ? '99+' : count;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function openBackpackModal() {
+            document.getElementById('backpack-modal').style.display = 'block';
+            switchBpTab('items'); // 默认打开信物展墙
+        }
+        function closeBackpackModal() {
+            document.getElementById('backpack-modal').style.display = 'none';
+        }
+
+        function switchBpTab(tab) {
+            document.getElementById('tab-items-btn').classList.remove('active');
+            document.getElementById('tab-rewards-btn').classList.remove('active');
+            document.getElementById('tab-codes-btn').classList.remove('active');
+            document.getElementById('bp-list-container').style.display = 'none';
+            document.getElementById('bp-rewards-container').style.display = 'none';
+            document.getElementById('bp-codes-container').style.display = 'none';
+
+            if (tab === 'items') {
+                document.getElementById('tab-items-btn').classList.add('active');
+                document.getElementById('bp-list-container').style.display = 'flex';
+                loadBackpackItems();
+            } else if (tab === 'rewards') {
+                document.getElementById('tab-rewards-btn').classList.add('active');
+                document.getElementById('bp-rewards-container').style.display = 'flex';
+                loadRewards();
+            } else if (tab === 'codes') {
+                document.getElementById('tab-codes-btn').classList.add('active');
+                document.getElementById('bp-codes-container').style.display = 'flex';
+                loadRedeemedCodes();
+            }
+        }
+
+        // 景区分组关键词映射
+        const AREA_KEYWORDS = {
+            '安阳殷墟': ['殷墟', '妇好', '盘庚', '武丁', '甲骨', '青铜鼎'],
+            '秦始皇兵马俑': ['兵马俑', '秦皇', '陶土', '大秦', '秦始皇'],
+            '嵩山少林寺': ['少林', '达摩', '嵩山', '武术', '禅宗'],
+            '北京故宫': ['故宫', '太和殿', '紫禁城', '乾清宫', '御花园'],
+            '万里长城': ['长城', '烽火台', '八达岭', '山海关', '嘉峪关'],
+            '黄鹤楼': ['黄鹤楼', '崔颢', '鹤归', '蛇山'],
+            '敦煌莫高窟': ['莫高窟', '敦煌', '飞天', '壁画', '藏经洞'],
+            '苏州园林': ['苏州', '园林', '拙政园', '虎丘', '寒山寺'],
+            '丽江古城': ['丽江', '纳西', '玉龙雪山', '古城'],
+            '杭州西湖': ['西湖', '断桥', '雷峰塔', '灵隐寺', '杭州']
+        };
+
+        // localStorage 解锁角色 -> 信物映射
+        const LS_CHAR_MAP = [
+            { key: 'unlocked_wangbo',         name: '滕王阁序·王勃',   desc: '初唐四杰之首王勃的传世之作，落霞与孤鹜齐飞的千古绝唱。', area: '其他景区' },
+            { key: 'unlocked_qinshihuang',     name: '大秦虎符',       desc: '秦始皇调兵遣将之信物，象征千古一帝的无上权威。', area: '秦始皇兵马俑' },
+            { key: 'unlocked_wenchenggongzhu', name: '唐蕃会盟碑拓片',  desc: '文成公主入藏和亲的历史见证，汉藏友谊的永恒丰碑。', area: '其他景区' },
+            { key: 'unlocked_mengtian',        name: '蒙恬将军令',     desc: '大秦名将蒙恬的军令箭，北击匈奴、修筑长城的赫赫战功。', area: '秦始皇兵马俑' },
+            { key: 'unlocked_cuihao',          name: '黄鹤楼诗笺',     desc: '崔颢题写黄鹤楼的墨宝，昔人已乘黄鹤去的千古名篇。', area: '黄鹤楼' },
+            { key: 'unlocked_wuzetian',        name: '则天金简',       desc: '武则天的祈福金简，一代女皇的传奇见证。', area: '北京故宫' },
+            { key: 'unlocked_lvdongbin',       name: '纯阳剑令',       desc: '吕洞宾的道家信物，八仙之首的修仙印记。', area: '其他景区' },
+            { key: 'unlocked_damo',            name: '达摩面壁石',     desc: '禅宗初祖达摩面壁九年所遗之石，少林武学的精神之源。', area: '嵩山少林寺' },
+            { key: 'unlocked_jiajing',         name: '嘉靖通宝',       desc: '明世宗嘉靖年间铸造的钱币，见证大明王朝的兴衰。', area: '北京故宫' },
+            { key: 'unlocked_fanzhongyan',     name: '岳阳楼记手稿',   desc: '范仲淹先天下之忧而忧的千古名篇原稿。', area: '其他景区' },
+            { key: 'unlocked_lichun',          name: '赵州桥图纸',     desc: '隋代工匠李春设计赵州桥的原始图纸，千年古桥的智慧结晶。', area: '其他景区' },
+        ];
+
+        function getAreaGroup(itemName, itemDesc) {
+            let text = (itemName + ' ' + (itemDesc || '')).toLowerCase();
+            for (let area in AREA_KEYWORDS) {
+                for (let kw of AREA_KEYWORDS[area]) {
+                    if (text.includes(kw.toLowerCase())) return area;
+                }
+            }
+            return '其他景区';
+        }
+
+        // 获取 localStorage 中已解锁的角色信物
+        function getLocalStorageItems() {
+            let items = [];
+            LS_CHAR_MAP.forEach(ch => {
+                if (localStorage.getItem(ch.key) === 'true') {
+                    items.push({
+                        item_name: ch.name,
+                        item_desc: ch.desc,
+                        acquired_at: new Date().toISOString(),
+                        _source: 'local'
+                    });
+                }
+            });
+            return items;
+        }
+
+        // 登录后将 localStorage 信物同步到数据库
+        async function syncLocalItemsToDB() {
+            if (!currentUser) return;
+            let localItems = getLocalStorageItems();
+            for (let it of localItems) {
+                try {
+                    await fetch('http://127.0.0.1:5000/api/add-item', {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({username: currentUser, item_name: it.item_name, item_desc: it.item_desc})
+                    });
+                } catch(e) { /* 静默失败，不影响用户体验 */ }
+            }
+        }
+
+        async function loadBackpackItems() {
+            if(!currentUser) return;
+            let container = document.getElementById('bp-list-container');
+            container.innerHTML = '<div style="font-size:20px; color:#ceae75;">正在开启天机锦囊...</div>';
+            try {
+                let [resItems, resPoints] = await Promise.all([
+                    fetch('http://127.0.0.1:5000/api/get-items', {
+                        method: 'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({username: currentUser})
+                    }),
+                    fetch('http://127.0.0.1:5000/api/rewards', {
+                        method: 'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({username: currentUser})
+                    })
+                ]);
+                let data = await resItems.json();
+                let pData = await resPoints.json();
+
+                if (pData.success) {
+                    document.getElementById('bp-points').innerText = "当前积分：" + pData.user_points;
+                }
+
+                // 合并数据库信物 + localStorage 信物（去重）
+                let dbItems = (data.success && data.items) ? data.items : [];
+                let localItems = getLocalStorageItems();
+                let allItems = [...dbItems];
+                let dbNames = new Set(dbItems.map(i => i.item_name));
+                localItems.forEach(li => {
+                    if (!dbNames.has(li.item_name)) allItems.push(li);
+                });
+
+                if (allItems.length === 0) {
+                    container.innerHTML = '<div style="font-size:20px; color:#aaa; width:100%;">行囊空空如也，快去遗址中探寻吧！</div>';
+                    return;
+                }
+
+                let grouped = {};
+                allItems.forEach(it => {
+                    let groupStr = it.area || getAreaGroup(it.item_name, it.item_desc);
+                    if (!grouped[groupStr]) grouped[groupStr] = [];
+                    grouped[groupStr].push(it);
+                });
+
+                let html = '';
+                for (let area in grouped) {
+                    html += `<div style="width: 100%; border-bottom: 1px solid #ceae75; margin-top: 20px; padding-bottom: 10px; color: #ffd700; font-size: 26px; text-align: left;">➢ ${area} <span style="font-size:16px; color:#aaa;">(${grouped[area].length}件)</span></div>`;
+                    html += '<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: flex-start; width: 100%; padding-top: 15px;">';
+                    grouped[area].forEach(it => {
+                        let sourceTag = it._source === 'local' ? '<span style="font-size:12px; color:#00ffcc; background:rgba(0,255,204,0.1); padding:2px 8px; border-radius:4px; margin-left:8px;">本地</span>' : '';
+                        html += `
+                        <div class="bp-item-card" style="width: 45%;">
+                            <div class="bp-item-title">${it.item_name}${sourceTag}</div>
+                            <div class="bp-item-desc">${it.item_desc || '来自遥远历史长河的信物。'}</div>
+                            <div class="bp-item-time">收录于：${new Date(it.acquired_at).toLocaleDateString()}</div>
+                        </div>`;
+                    });
+                    html += "</div>";
+                }
+                container.innerHTML = html;
+                refreshBackpackBadge();
+            } catch(e) { console.error(e); container.innerHTML = '<div style="color:red; width:100%;">网络请求失败，请确保后台已运行。</div>'; }
+        }
+
+        async function loadRewards() {
+            if(!currentUser) return;
+            let container = document.getElementById('bp-rewards-container');
+            container.innerHTML = '<div style="font-size:20px; color:#ceae75;">正在获取商行物资...</div>';
+            try {
+                let res = await fetch('http://127.0.0.1:5000/api/rewards', {
+                    method: 'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({username: currentUser})
+                });
+                let data = await res.json();
+                if(data.success) {
+                    document.getElementById('bp-points').innerText = "当前积分：" + data.user_points;
+
+                    let html = '';
+                    data.rewards.forEach(r => {
+                        let canRedeem = data.user_points >= r.required_points && r.stock > 0;
+                        html += `
+                        <div class="reward-card">
+                            <div class="reward-title">${r.name}</div>
+                            <div style="font-size:14px; color:#ddd; margin-bottom:10px; height: 42px; overflow:hidden;">${r.description}</div>
+                            <div class="reward-req">消耗积分: ${r.required_points}</div>
+                            <div class="reward-stock">剩余库存: ${r.stock}</div>
+                            <button class="reward-btn"
+                                onclick="redeemReward(${r.id})"
+                                ${!canRedeem ? 'disabled' : ''}>
+                                ${r.stock <= 0 ? '已兑空' : (data.user_points < r.required_points ? '积分不足' : '立 即 兑 换')}
+                            </button>
+                        </div>`;
+                    });
+
+                    if (data.user_redeemed && data.user_redeemed.length > 0) {
+                        html += '<h3 style="width:100%; color:#00ffcc; text-align:left; border-bottom:1px solid #00ffcc; margin-top:20px; padding-bottom:10px;">📋 我的兑换记录</h3>';
+                        let historyHtml = '<div style="width:100%; text-align:left; margin-bottom:20px;">';
+                        data.user_redeemed.forEach(ur => {
+                            historyHtml += `<div style="font-size:16px; color:#ccc; margin-bottom:8px; padding:8px 12px; background:rgba(0,255,204,0.05); border-radius:6px; border-left:3px solid #00ffcc;">[${new Date(ur.redeemed_at).toLocaleString()}] 兑换 <b>${ur.name}</b><br>凭证码：<span style="color:#ffd700; font-size:18px; font-weight:bold; letter-spacing:1px;">${ur.redeem_code}</span></div>`;
+                        });
+                        historyHtml += '</div>';
+                        html += historyHtml;
+                    }
+
+                    container.innerHTML = html;
+                    refreshBackpackBadge();
+                } else {
+                    container.innerHTML = '<div style="color:red; width:100%;">获取福利失败。</div>';
+                }
+            } catch(e) { console.error(e); container.innerHTML = '<div style="color:red; width:100%;">网络连接错误</div>'; }
+        }
+
+        async function loadRedeemedCodes() {
+            if(!currentUser) return;
+            let container = document.getElementById('bp-codes-container');
+            container.innerHTML = '<div style="font-size:20px; color:#ceae75;">正在查阅兑换密档...</div>';
+            try {
+                let res = await fetch('http://127.0.0.1:5000/api/rewards', {
+                    method: 'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({username: currentUser})
+                });
+                let data = await res.json();
+                if(data.success) {
+                    document.getElementById('bp-points').innerText = "当前积分：" + data.user_points;
+
+                    if (data.user_redeemed && data.user_redeemed.length > 0) {
+                        let html = '<div style="width:100%;">';
+                        html += `<div style="color:#00ffcc; font-size:22px; margin-bottom:16px; text-align:left;">共 ${data.user_redeemed.length} 个兑换凭证</div>`;
+                        data.user_redeemed.forEach((ur, idx) => {
+                            html += `
+                            <div style="background:rgba(0,255,204,0.06); border:1px solid rgba(0,255,204,0.3); border-radius:10px; padding:16px 20px; margin-bottom:12px; text-align:left;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                                    <span style="color:#ffd700; font-size:20px; font-weight:bold;">${ur.name}</span>
+                                    <span style="color:#999; font-size:14px;">${new Date(ur.redeemed_at).toLocaleString()}</span>
+                                </div>
+                                <div style="margin-top:10px; display:flex; align-items:center; gap:12px;">
+                                    <span style="color:#aaa; font-size:14px;">兑换码：</span>
+                                    <span id="code-text-${idx}" style="color:#00ffcc; font-size:22px; font-weight:bold; letter-spacing:2px; font-family:monospace; background:rgba(0,0,0,0.3); padding:6px 16px; border-radius:6px; border:1px dashed #00ffcc;">${ur.redeem_code}</span>
+                                    <button onclick="copyCode('${ur.redeem_code}')" style="background:rgba(0,255,204,0.15); color:#00ffcc; border:1px solid #00ffcc; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:14px;">复制</button>
+                                </div>
+                            </div>`;
+                        });
+                        html += '</div>';
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<div style="font-size:20px; color:#aaa; width:100%;">暂无兑换记录，快去福利兑换区看看吧！</div>';
+                    }
+                    refreshBackpackBadge();
+                } else {
+                    container.innerHTML = '<div style="color:red; width:100%;">获取兑换记录失败。</div>';
+                }
+            } catch(e) { console.error(e); container.innerHTML = '<div style="color:red; width:100%;">网络连接错误</div>'; }
+        }
+
+        function copyCode(code) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(code).then(() => {
+                    alert('兑换码已复制到剪贴板！');
+                }).catch(() => {
+                    promptManualCopy(code);
+                });
+            } else {
+                promptManualCopy(code);
+            }
+        }
+        function promptManualCopy(code) {
+            let ta = document.createElement('textarea');
+            ta.value = code;
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); alert('兑换码已复制！'); } catch(e) { alert('请手动复制：' + code); }
+            document.body.removeChild(ta);
+        }
+
+        async function redeemReward(rewardId) {
+            try {
+                let res = await fetch('http://127.0.0.1:5000/api/redeem', {
+                    method: 'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({username: currentUser, reward_id: rewardId})
+                });
+                
+
+
+                
+                let data = await res.json();
+                if(data.success) {
+                    alert(data.message);
+                    loadRewards();
+
+
+                    
+                } else {
+                    alert(data.error || "兑换失败");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("请求失败，请稍后再试。");
+            }
+        }
+    </script>
+    <script src="digital_human.js"></script>
+</body>
+</html>
+

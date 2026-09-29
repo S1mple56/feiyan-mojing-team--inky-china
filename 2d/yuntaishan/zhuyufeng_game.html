@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>茱萸峰 - 重阳登高</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+        body {
+            background: #121c12;
+            color: #f3e5bd;
+            font-family: "KaiTi", "STKaiti", "Microsoft YaHei", serif;
+            touch-action: none;
+        }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        button { font-family: inherit; }
+
+        #start-screen, #result-modal {
+            position: fixed; inset: 0; z-index: 80;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 28px; text-align: center;
+            background:
+                linear-gradient(rgba(6, 12, 8, 0.55), rgba(6, 12, 8, 0.88)),
+                url('zhuyufeng-denggao.png') center / contain no-repeat,
+                radial-gradient(circle at 50% 20%, #435129, #101b10 58%, #050805 100%);
+        }
+        #start-screen.hide { opacity: 0; pointer-events: none; transition: opacity 0.45s ease; }
+        h1 { color: #ffd867; font-size: 52px; letter-spacing: 8px; text-shadow: 0 3px 18px rgba(0,0,0,0.75); }
+        .sub { margin-top: 8px; color: #d3b36f; font-size: 20px; letter-spacing: 4px; }
+        .intro {
+            max-width: 760px; margin: 28px auto 32px; line-height: 2;
+            color: rgba(245, 231, 197, 0.9); font-size: 18px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.65);
+        }
+        .primary-btn, .plain-btn {
+            font-size: 22px; cursor: pointer; border-radius: 8px;
+            padding: 12px 30px; border: 2px solid #d2aa48; transition: 0.2s ease;
+        }
+        .primary-btn { background: linear-gradient(135deg, #ffe17a, #b88618); color: #1a1207; font-weight: bold; }
+        .plain-btn { background: rgba(0,0,0,0.48); color: #e2c579; }
+        .primary-btn:hover, .plain-btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+
+        #hud {
+            position: fixed; top: 14px; left: 14px; z-index: 20;
+            width: min(350px, calc(100vw - 28px));
+            background: rgba(18, 22, 13, 0.84); border: 1px solid rgba(218, 178, 84, 0.38);
+            border-radius: 8px; padding: 12px 14px; backdrop-filter: blur(5px); display: none;
+        }
+        .hud-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 6px 0; }
+        .hud-label { color: #bfa56d; font-size: 14px; white-space: nowrap; }
+        .hud-value { color: #ffe07b; font-size: 15px; text-align: right; }
+        .bar { height: 10px; background: rgba(255,255,255,0.12); border-radius: 8px; overflow: hidden; flex: 1; }
+        .bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #4cb66a, #ffe072); transition: width 0.18s ease; }
+        #stamina-fill.low { background: linear-gradient(90deg, #c84f3f, #f0a24a); }
+
+        #supplies-panel {
+            position: fixed; top: 14px; right: 14px; z-index: 22; display: none;
+            min-width: 220px; background: rgba(18, 22, 13, 0.84);
+            border: 1px solid rgba(218, 178, 84, 0.38); border-radius: 8px;
+            padding: 10px 14px; color: #ffe07b; backdrop-filter: blur(5px);
+            text-align: right; font-size: 17px;
+        }
+        #supplies-panel .small { display: block; margin-top: 4px; color: #c9b277; font-size: 13px; }
+
+        #side-progress {
+            position: fixed; right: 18px; top: 118px; bottom: 116px; z-index: 21; display: none;
+            width: 52px; pointer-events: none;
+        }
+        #height-track { position: relative; width: 10px; height: calc(100% - 44px); margin: 0 auto; border-radius: 10px; background: rgba(255,255,255,0.14); overflow: hidden; box-shadow: 0 0 18px rgba(0,0,0,0.28); }
+        #height-fill { position: absolute; left: 0; bottom: 0; width: 100%; height: 0%; background: linear-gradient(0deg, #80b46c, #ffd867); transition: height 0.18s ease; }
+        #hud-height { display: block; margin-top: 8px; color: #ffe07b; text-align: center; font-size: 14px; }
+
+        #stamina-panel {
+            position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 24; display: none;
+            width: min(520px, calc(100vw - 220px)); min-width: 260px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+        }
+        #stamina-panel .hud-label { display: inline-block; margin-bottom: 7px; }
+        #stamina-panel .hud-value { float: right; }
+        #stamina-panel .bar { width: 100%; height: 13px; }
+
+        #poem-panel {
+            position: fixed; top: 92px; right: 14px; z-index: 20;
+            width: min(330px, calc(100vw - 28px));
+            background: rgba(18, 22, 13, 0.84); border: 1px solid rgba(218, 178, 84, 0.38);
+            border-radius: 8px; padding: 12px 16px; display: none;
+        }
+        #poem-panel h3 { font-size: 15px; color: #c9b277; letter-spacing: 2px; text-align: center; margin-bottom: 8px; }
+        .verse { color: rgba(238, 222, 181, 0.38); font-size: 16px; line-height: 1.8; letter-spacing: 1px; }
+        .verse.active { color: #ffed9a; }
+        .verse.done { color: #ffd653; text-shadow: 0 0 10px rgba(255, 211, 74, 0.32); }
+
+        #toast {
+            position: fixed; left: 50%; top: 18%; transform: translateX(-50%); z-index: 50;
+            min-width: 220px; max-width: min(680px, 86vw); padding: 12px 20px;
+            background: rgba(38, 26, 12, 0.93); border: 1px solid rgba(255, 218, 112, 0.52);
+            border-radius: 8px; color: #ffe07b; text-align: center; font-size: 18px; display: none;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+        }
+
+        #top-actions { position: fixed; left: 14px; bottom: 14px; z-index: 25; display: none; gap: 10px; }
+        #top-actions button {
+            font-size: 18px; color: #e3c474; background: rgba(0,0,0,0.54);
+            border: 1px solid rgba(218,178,84,0.58); border-radius: 8px; padding: 8px 14px; cursor: pointer;
+        }
+
+        #mobile-pad { display: none; position: fixed; right: 20px; bottom: 22px; z-index: 35; width: 170px; height: 170px; }
+        .pad-btn {
+            position: absolute; width: 54px; height: 54px; border-radius: 50%; border: 1px solid rgba(255,230,150,0.58);
+            background: rgba(25, 20, 12, 0.58); color: #ffe07b; font-size: 24px;
+            display: flex; align-items: center; justify-content: center; user-select: none;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+        }
+        .pad-btn:active, .pad-btn.pressed { background: rgba(255,216,103,0.34); }
+        .pad-btn.toggled { background: rgba(255, 216, 103, 0.5); color: #201305; border-color: rgba(255,240,180,0.82); }
+        .pad-up { left: 58px; top: 0; }
+        .pad-left { left: 0; top: 58px; }
+        .pad-right { right: 0; top: 58px; }
+        .pad-down { left: 58px; bottom: 0; }
+        .pad-sprint { right: -2px; bottom: -2px; width: 50px; height: 50px; font-size: 18px; background: rgba(126, 58, 24, 0.64); }
+
+        #result-modal { display: none; z-index: 90; }
+        #result-modal.show { display: flex; }
+        #result-title { color: #ffd867; font-size: 46px; margin-bottom: 12px; }
+        #result-detail { max-width: 760px; line-height: 2; color: #ead7a2; font-size: 20px; margin-bottom: 24px; }
+        #result-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+
+        @media (max-width: 760px) {
+            h1 { font-size: 38px; letter-spacing: 5px; }
+            .intro { font-size: 16px; }
+            #hud { top: 8px; left: 8px; width: calc(100vw - 112px); }
+            #supplies-panel { top: 8px; right: 8px; min-width: 96px; max-width: 108px; font-size: 14px; padding: 8px 10px; }
+            #side-progress { right: 8px; top: 96px; bottom: 210px; width: 42px; }
+            #poem-panel { top: 96px; left: 8px; right: auto; width: calc(100vw - 70px); padding: 10px 14px; }
+            #stamina-panel { left: 10px; right: 10px; bottom: 8px; transform: none; width: auto; min-width: 0; }
+            #mobile-pad { display: block; }
+            #top-actions { bottom: 74px; left: 10px; }
+        }
+    </style>
+</head>
+<body>
+<div id="start-screen">
+    <h1>茱萸峰</h1>
+    <div class="sub">重阳登高 · 四句寻诗</div>
+    <div class="intro">
+        沿山路按顺序点亮王维《九月九日忆山东兄弟》的四句诗；途中采集 5 枝茱萸与 3 朵菊花，避开山风和落石，最后抵达峰顶完成登高。
+        <br>键盘使用 W/A/S/D 或方向键移动，按住 Shift 疾行；移动端可用右下角方向键和“快”按钮。
+    </div>
+    <button class="primary-btn" onclick="startGame()">开始登高</button>
+</div>
+
+<div id="hud">
+    <div class="hud-row"><span class="hud-label">当前目标</span><span class="hud-value" id="hud-goal">寻找第一句诗</span></div>
+    <div class="hud-row"><span class="hud-label">诗句进度</span><span class="hud-value" id="hud-poem">0/4</span></div>
+    <div class="hud-row"><span class="hud-label">得分</span><span class="hud-value" id="hud-score">0</span></div>
+</div>
+
+<div id="supplies-panel">
+    <span id="hud-supplies">茱萸 0/5 · 菊花 0/3</span>
+    <span class="small">登顶物资</span>
+</div>
+
+<div id="side-progress">
+    <div id="height-track"><div id="height-fill"></div></div>
+    <span id="hud-height">0%</span>
+</div>
+
+<div id="stamina-panel">
+    <span class="hud-label" id="stamina-mode">体力</span><span class="hud-value" id="hud-stamina">100</span>
+    <div class="bar"><div class="bar-fill" id="stamina-fill"></div></div>
+</div>
+
+<div id="poem-panel">
+    <h3>九月九日忆山东兄弟</h3>
+    <div class="verse active" id="verse-0">独在异乡为异客</div>
+    <div class="verse" id="verse-1">每逢佳节倍思亲</div>
+    <div class="verse" id="verse-2">遥知兄弟登高处</div>
+    <div class="verse" id="verse-3">遍插茱萸少一人</div>
+</div>
+
+<div id="toast"></div>
+
+<div id="top-actions">
+    <button onclick="restartGame()">重新开始</button>
+    <button onclick="window.location.href='zhuyufeng.html'">返回茱萸峰</button>
+</div>
+
+<div id="mobile-pad" aria-label="移动控制">
+    <div class="pad-btn pad-up" data-key="up">W</div>
+    <div class="pad-btn pad-left" data-key="left">A</div>
+    <div class="pad-btn pad-right" data-key="right">D</div>
+    <div class="pad-btn pad-down" data-key="down">S</div>
+    <div class="pad-btn pad-sprint" data-key="sprint">快</div>
+</div>
+
+<div id="result-modal">
+    <h2 id="result-title"></h2>
+    <div id="result-detail"></div>
+    <div id="result-actions">
+        <button class="primary-btn" onclick="restartGame()">再次登高</button>
+        <button class="plain-btn" onclick="window.location.href='zhuyufeng.html'">返回茱萸峰</button>
+        <button class="plain-btn" onclick="window.location.href='../yuntaishan.html'">返回云台山</button>
+    </div>
+</div>
+
+<canvas id="game"></canvas>
+
+<script>
+var canvas = document.getElementById('game');
+var ctx = canvas.getContext('2d');
+var W = 0, H = 0, DPR = 1;
+var bgImage = new Image();
+bgImage.src = 'zhuyufeng-denggao.png';
+
+var MAP = { width: 1800, height: 1400 };
+var PLAYER_RADIUS = 16;
+var SUPPLY_NEED = { branch: 5, flower: 3 };
+var keys = { up:false, down:false, left:false, right:false, sprint:false };
+var camera = { x: 0, y: 0 };
+var lastTime = 0;
+
+var poems = [
+    { text: '独在异乡为异客', hint: '先到山脚客亭，点亮第一句诗。' },
+    { text: '每逢佳节倍思亲', hint: '再到思亲亭，听一听重阳山风。' },
+    { text: '遥知兄弟登高处', hint: '然后登望兄台，望向远山。' },
+    { text: '遍插茱萸少一人', hint: '最后前往茱萸台，完成全诗。' }
+];
+
+var routeAreas = [
+    { type: 'circle', cx: 850, cy: 1290, radius: 170 },
+    { type: 'circle', cx: 1000, cy: 1285, radius: 230 },
+    { type: 'circle', cx: 980, cy: 1290, radius: 80 },
+    { type: 'circle', cx: 885, cy: 1282, radius: 80 },
+    { type: 'circle', cx: 791, cy: 1272, radius: 80 },
+    { type: 'circle', cx: 700, cy: 1245, radius: 80 },
+    { type: 'circle', cx: 701, cy: 1169, radius: 80 },
+    { type: 'circle', cx: 777, cy: 1119, radius: 80 },
+    { type: 'circle', cx: 871, cy: 1105, radius: 80 },
+    { type: 'circle', cx: 966, cy: 1098, radius: 80 },
+    { type: 'circle', cx: 1061, cy: 1093, radius: 80 },
+    { type: 'circle', cx: 1156, cy: 1089, radius: 80 },
+    { type: 'circle', cx: 1249, cy: 1075, radius: 80 },
+    { type: 'circle', cx: 1309, cy: 1010, radius: 80 },
+    { type: 'circle', cx: 1258, cy: 932, radius: 80 },
+    { type: 'circle', cx: 1176, cy: 892, radius: 80 },
+    { type: 'circle', cx: 1110, cy: 848, radius: 80 },
+    { type: 'circle', cx: 1089, cy: 795, radius: 80 },
+    { type: 'circle', cx: 994, cy: 789, radius: 80 },
+    { type: 'circle', cx: 899, cy: 782, radius: 80 },
+    { type: 'circle', cx: 804, cy: 781, radius: 80 },
+    { type: 'circle', cx: 757, cy: 747, radius: 80 },
+    { type: 'circle', cx: 849, cy: 726, radius: 80 },
+    { type: 'circle', cx: 943, cy: 714, radius: 80 },
+    { type: 'circle', cx: 1023, cy: 716, radius: 80 },
+    { type: 'circle', cx: 929, cy: 700, radius: 80 },
+    { type: 'circle', cx: 917, cy: 672, radius: 80 },
+    { type: 'circle', cx: 1011, cy: 660, radius: 80 },
+    { type: 'circle', cx: 961, cy: 646, radius: 80 },
+    { type: 'circle', cx: 866, cy: 641, radius: 80 },
+    { type: 'circle', cx: 878, cy: 602, radius: 80 },
+    { type: 'circle', cx: 972, cy: 588, radius: 80 },
+    { type: 'circle', cx: 1067, cy: 586, radius: 80 },
+    { type: 'circle', cx: 1159, cy: 566, radius: 80 },
+    { type: 'circle', cx: 1239, cy: 524, radius: 80 },
+    { type: 'circle', cx: 1309, cy: 499, radius: 80 },
+    { type: 'circle', cx: 1249, cy: 487, radius: 80 },
+    { type: 'circle', cx: 1154, cy: 483, radius: 80 },
+    { type: 'circle', cx: 1059, cy: 479, radius: 80 },
+    { type: 'circle', cx: 964, cy: 475, radius: 80 },
+    { type: 'circle', cx: 869, cy: 472, radius: 80 },
+    { type: 'circle', cx: 774, cy: 467, radius: 80 },
+    { type: 'circle', cx: 812, cy: 449, radius: 80 },
+    { type: 'circle', cx: 907, cy: 442, radius: 80 },
+    { type: 'circle', cx: 950, cy: 427, radius: 80 },
+    { type: 'circle', cx: 855, cy: 424, radius: 80 },
+    { type: 'circle', cx: 760, cy: 420, radius: 80 },
+    { type: 'circle', cx: 665, cy: 416, radius: 80 },
+    { type: 'circle', cx: 570, cy: 412, radius: 80 },
+    { type: 'circle', cx: 620, cy: 400, radius: 80 },
+    { type: 'circle', cx: 715, cy: 398, radius: 80 },
+    { type: 'circle', cx: 810, cy: 396, radius: 80 },
+    { type: 'circle', cx: 905, cy: 394, radius: 80 },
+    { type: 'circle', cx: 1000, cy: 392, radius: 80 },
+    { type: 'circle', cx: 1095, cy: 390, radius: 80 },
+    { type: 'circle', cx: 1190, cy: 388, radius: 80 },
+    { type: 'circle', cx: 1285, cy: 385, radius: 80 },
+    { type: 'circle', cx: 1380, cy: 381, radius: 80 },
+    { type: 'circle', cx: 1363, cy: 339, radius: 80 },
+    { type: 'circle', cx: 1307, cy: 277, radius: 80 },
+    { type: 'circle', cx: 1212, cy: 275, radius: 80 },
+    { type: 'circle', cx: 1117, cy: 274, radius: 80 },
+    { type: 'circle', cx: 1022, cy: 272, radius: 80 },
+    { type: 'circle', cx: 927, cy: 270, radius: 80 },
+    { type: 'circle', cx: 832, cy: 268, radius: 80 },
+    { type: 'circle', cx: 737, cy: 266, radius: 80 },
+    { type: 'circle', cx: 642, cy: 264, radius: 80 },
+    { type: 'circle', cx: 547, cy: 261, radius: 80 },
+    { type: 'circle', cx: 452, cy: 256, radius: 80 },
+    { type: 'circle', cx: 361, cy: 238, radius: 80 },
+    { type: 'circle', cx: 313, cy: 197, radius: 80 },
+    { type: 'circle', cx: 407, cy: 190, radius: 80 },
+    { type: 'circle', cx: 502, cy: 184, radius: 80 },
+    { type: 'circle', cx: 597, cy: 178, radius: 80 },
+    { type: 'circle', cx: 692, cy: 173, radius: 80 },
+    { type: 'circle', cx: 732, cy: 138, radius: 80 },
+    { type: 'circle', cx: 640, cy: 114, radius: 80 },
+    { type: 'circle', cx: 560, cy: 113, radius: 80 },
+    { type: 'circle', cx: 653, cy: 96, radius: 80 },
+    { type: 'circle', cx: 723, cy: 79, radius: 80 },
+    { type: 'circle', cx: 818, cy: 75, radius: 80 },
+    { type: 'circle', cx: 911, cy: 61, radius: 80 },
+    { type: 'circle', cx: 1006, cy: 55, radius: 80 },
+    { type: 'circle', cx: 1090, cy: 48, radius: 80 },
+    { type: 'circle', cx: 1137, cy: 35, radius: 80 },
+    { type: 'circle', cx: 1186, cy: 0, radius: 80 }
+];
+
+var poemSites = [
+    { x: 676, y: 1218, r: 34, name: '山脚客亭' },
+    { x: 1000, y: 1095, r: 34, name: '思亲亭' },
+    { x: 790, y: 745, r: 34, name: '望兄台' },
+    { x: 1310, y: 505, r: 34, name: '茱萸台' }
+];
+
+var supplySpots = [
+    { x: 620, y: 1230, type: 'branch', name: '崖边茱萸' }, { x: 760, y: 1125, type: 'branch', name: '亭后茱萸' },
+    { x: 1280, y: 1045, type: 'branch', name: '东坡茱萸' }, { x: 1110, y: 830, type: 'branch', name: '石隙茱萸' },
+    { x: 760, y: 470, type: 'branch', name: '北崖茱萸' }, { x: 1380, y: 381, type: 'flower', name: '山顶菊花' },
+    { x: 723, y: 79, type: 'flower', name: '云边菊花' }, { x: 560, y: 113, type: 'flower', name: '古道菊花' }
+];
+
+var windZones = [
+    { x: 1020, y: 750, w: 220, h: 100, vx: -95, vy: 34, name: '西卷山风' },
+    { x: 1120, y: 500, w: 240, h: 100, vx: 80, vy: -28, name: '上坡横风' },
+    { x: 1280, y: 330, w: 220, h: 110, vx: -70, vy: 56, name: '峰顶乱风' }
+];
+
+var rockSpawnZones = [
+    { x: 1040, y: 760, w: 180, h: 110 }, { x: 1120, y: 480, w: 220, h: 100 }, { x: 1280, y: 300, w: 220, h: 130 }
+];
+var summit = { x: 1186, y: 20, r: 46, name: '茱萸峰顶' };
+var game = {};
+
+var GameStore = {
+    complete: function(result) {
+        var progress = JSON.parse(localStorage.getItem('game.progress') || '{}');
+        var old = progress[result.taskId];
+        if (!old || result.score > old.score) progress[result.taskId] = result;
+        localStorage.setItem('game.progress', JSON.stringify(progress));
+        var bag = JSON.parse(localStorage.getItem('game.bag') || '[]');
+        if (!bag.some(function(item) { return item.id === result.item.id; })) bag.push(result.item);
+        localStorage.setItem('game.bag', JSON.stringify(bag));
+    }
+};
+
+function resize() {
+    DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.floor(W * DPR); canvas.height = Math.floor(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+function resetGameState() {
+    keys.up = false; keys.down = false; keys.left = false; keys.right = false; setSprint(false);
+    game = {
+        running: false,
+        player: { x: 850, y: 1290, walkSpeed: 185, sprintSpeed: 285, tiredSpeed: 92 },
+        stamina: 100, poemIndex: 0, poemDone: [false, false, false, false],
+        supplies: { branch: 0, flower: 0 }, collected: {}, fallingRocks: [], rockBursts: [],
+        rockTimer: 0.8, animTime: 0, score: 0, hazardCooldown: 0
+    };
+}
+resetGameState();
+
+function startGame() {
+    resetGameState(); game.running = true;
+    document.getElementById('start-screen').classList.add('hide');
+    document.getElementById('result-modal').classList.remove('show');
+    ['hud','supplies-panel','side-progress','stamina-panel','poem-panel'].forEach(function(id) { document.getElementById(id).style.display = 'block'; });
+    document.getElementById('top-actions').style.display = 'flex';
+    setPoemClasses(); updateHud(); toast('从山脚出发，按顺序寻找四句诗的位置。', 2600);
+}
+
+function restartGame() {
+    document.getElementById('result-modal').classList.remove('show');
+    startGame();
+}
+
+function setPoemClasses() {
+    poems.forEach(function(_, i) {
+        var el = document.getElementById('verse-' + i);
+        el.className = 'verse' + (game.poemDone[i] ? ' done' : (i === game.poemIndex ? ' active' : ''));
+    });
+}
+
+function isInsideRoute(x, y) {
+    return routeAreas.some(function(r) {
+        if (r.type === 'circle') {
+            var dx = x - r.cx, dy = y - r.cy;
+            return dx * dx + dy * dy <= r.radius * r.radius;
+        }
+        return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+    });
+}
+
+function tryMove(nx, ny) {
+    nx = Math.max(PLAYER_RADIUS, Math.min(MAP.width - PLAYER_RADIUS, nx));
+    ny = Math.max(PLAYER_RADIUS, Math.min(MAP.height - PLAYER_RADIUS, ny));
+    if (isInsideRoute(nx, ny)) { game.player.x = nx; game.player.y = ny; }
+}
+
+function getCurrentWind() {
+    for (var i = 0; i < windZones.length; i++) {
+        var z = windZones[i];
+        if (game.player.x >= z.x && game.player.x <= z.x + z.w && game.player.y >= z.y && game.player.y <= z.y + z.h) return z;
+    }
+    return null;
+}
+
+function update(dt) {
+    if (!game.running) return;
+    game.animTime += dt;
+    var dx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+    var dy = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
+    var moving = dx !== 0 || dy !== 0;
+    if (keys.sprint && game.stamina <= 0) setSprint(false);
+    var sprinting = moving && keys.sprint && game.stamina > 4;
+    var tired = moving && game.stamina <= 0;
+    var wind = getCurrentWind();
+    var moveX = 0, moveY = 0;
+
+    if (moving) {
+        var len = Math.hypot(dx, dy) || 1;
+        var speed = tired ? game.player.tiredSpeed : (sprinting ? game.player.sprintSpeed : game.player.walkSpeed);
+        moveX += dx / len * speed; moveY += dy / len * speed;
+    }
+
+    if (sprinting) game.stamina = Math.max(0, game.stamina - 24 * dt);
+    else if (moving && game.stamina <= 0) game.stamina = Math.min(12, game.stamina + 5 * dt);
+    else game.stamina = Math.min(100, game.stamina + (moving ? 7 : 18) * dt);
+
+    if (wind) {
+        moveX += wind.vx; moveY += wind.vy;
+        if (game.hazardCooldown <= 0) { game.hazardCooldown = 1.2; toast(wind.name + '，方向被吹偏。', 1200); }
+    }
+    if (moving || wind) tryMove(game.player.x + moveX * dt, game.player.y + moveY * dt);
+    if (game.hazardCooldown > 0) game.hazardCooldown -= dt;
+
+    updateRocks(dt); handlePoemSites(); handleSupplies(); handleHazards(); handleSummit(); updateHud();
+}
+
+function handlePoemSites() {
+    poemSites.forEach(function(site, idx) {
+        if (game.poemDone[idx]) return;
+        if (Math.hypot(game.player.x - site.x, game.player.y - site.y) < site.r + PLAYER_RADIUS) {
+            if (idx === game.poemIndex) {
+                game.poemDone[idx] = true; game.poemIndex++; game.score += 80; setPoemClasses();
+                toast('已点亮：' + poems[idx].text, 2200);
+            } else toast('这里还不能计数，请先寻找第 ' + (game.poemIndex + 1) + ' 句诗。', 1800);
+        }
+    });
+}
+
+function handleSupplies() {
+    supplySpots.forEach(function(item, idx) {
+        if (game.collected[idx]) return;
+        if (Math.hypot(game.player.x - item.x, game.player.y - item.y) < 32) {
+            game.collected[idx] = true; game.supplies[item.type]++; game.score += item.type === 'branch' ? 35 : 28;
+            toast('收集到：' + item.name, 1500);
+        }
+    });
+}
+
+function handleHazards() {
+    game.fallingRocks.forEach(function(rock) {
+        if (rock.state !== 'falling') return;
+        if (rock.z < 20 && Math.hypot(game.player.x - rock.x, game.player.y - rock.targetY) < rock.r + PLAYER_RADIUS) {
+            failGame('被落石砸中，登高失败。');
+        }
+    });
+}
+
+function updateRocks(dt) {
+    game.rockTimer -= dt;
+    if (game.rockTimer <= 0) {
+        spawnRock();
+        game.rockTimer = 0.9 + Math.random() * 0.9;
+    }
+    for (var i = game.fallingRocks.length - 1; i >= 0; i--) {
+        var rock = game.fallingRocks[i]; rock.age += dt;
+        if (rock.state === 'warning' && rock.age > rock.warningTime) { rock.state = 'falling'; rock.age = 0; }
+        else if (rock.state === 'falling') {
+            rock.z -= rock.speed * dt; rock.spin += dt * 3;
+            if (rock.z <= 0) {
+                game.rockBursts.push({ x: rock.x, y: rock.targetY, age: 0, life: 0.55, r: rock.r });
+                game.fallingRocks.splice(i, 1);
+            }
+        }
+    }
+    for (var j = game.rockBursts.length - 1; j >= 0; j--) {
+        game.rockBursts[j].age += dt;
+        if (game.rockBursts[j].age >= game.rockBursts[j].life) game.rockBursts.splice(j, 1);
+    }
+}
+
+function spawnRock() {
+    var zone = chooseRockZone();
+    game.fallingRocks.push({
+        x: zone.x + 24 + Math.random() * Math.max(20, zone.w - 48),
+        targetY: zone.y + 20 + Math.random() * Math.max(20, zone.h - 40),
+        z: 220 + Math.random() * 110, r: 18 + Math.random() * 8,
+        speed: 260 + Math.random() * 80, warningTime: 0.55, state: 'warning', age: 0, spin: Math.random() * Math.PI
+    });
+}
+
+function chooseRockZone() {
+    var active = rockSpawnZones.filter(function(z) {
+        return game.player.x >= z.x - 180 && game.player.x <= z.x + z.w + 180 && game.player.y >= z.y - 180 && game.player.y <= z.y + z.h + 180;
+    });
+    var pool = active.length ? active : rockSpawnZones;
+    return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function failGame(reason) {
+    if (!game.running) return;
+    game.running = false;
+    document.getElementById('result-title').textContent = '登高失败';
+    document.getElementById('result-detail').innerHTML = reason + '<br>观察地面的落石预警，避开坠落点，再借风势登顶。<br>当前进度：诗句 ' + game.poemDone.filter(Boolean).length + '/4，物资 茱萸 ' + game.supplies.branch + '/5 · 菊花 ' + game.supplies.flower + '/3';
+    document.getElementById('result-modal').classList.add('show');
+}
+
+function hasEnoughSupplies() { return game.supplies.branch >= SUPPLY_NEED.branch && game.supplies.flower >= SUPPLY_NEED.flower; }
+
+function handleSummit() {
+    if (Math.hypot(game.player.x - summit.x, game.player.y - summit.y) >= summit.r) return;
+    if (game.poemIndex < 4) { toast('还未按顺序点亮四句诗，不能完成登高。', 1800); return; }
+    if (!hasEnoughSupplies()) { toast('物资还不够：需要 5 枝茱萸和 3 朵菊花。', 1800); return; }
+    finishGame();
+}
+
+function finishGame() {
+    if (!game.running) return;
+    game.running = false;
+    var result = {
+        taskId: 'yuntaishan.zhuyufeng.climb', spotId: 'yuntaishan.zhuyufeng', score: game.score + Math.round(game.stamina),
+        stars: game.stamina > 55 ? 3 : 2, completedAt: new Date().toISOString(),
+        item: { id: 'item.yuntaishan.zhuyufeng.climb_seal', name: '茱萸登高印', type: '云台山信物' }
+    };
+    GameStore.complete(result);
+    document.getElementById('result-title').textContent = '登高成功';
+    document.getElementById('result-detail').innerHTML = '四句诗已依次点亮，茱萸与菊花也已备齐。<br>获得信物：<span style="color:#ffd867;">茱萸登高印</span><br>评分：' + '★'.repeat(result.stars) + '☆'.repeat(3 - result.stars) + ' · 得分 ' + result.score;
+    document.getElementById('result-modal').classList.add('show');
+}
+
+function updateHud() {
+    var poemCount = game.poemDone.filter(Boolean).length;
+    var goal = game.poemIndex < 4 ? poems[game.poemIndex].hint : (hasEnoughSupplies() ? '前往茱萸峰顶完成登高。' : '去四角山路收集足够物资。');
+    var height = Math.round((1 - game.player.y / MAP.height) * 100);
+    var moving = keys.up || keys.down || keys.left || keys.right;
+    var staminaMode = keys.sprint && moving && game.stamina > 4 ? '体力 · 疾行消耗' : (moving && game.stamina <= 8 ? '体力 · 慢走恢复' : (moving ? '体力 · 行走恢复' : '体力 · 休息恢复'));
+    document.getElementById('hud-goal').textContent = goal;
+    document.getElementById('stamina-mode').textContent = staminaMode;
+    document.getElementById('hud-stamina').textContent = Math.round(game.stamina);
+    document.getElementById('stamina-fill').style.width = game.stamina + '%';
+    document.getElementById('stamina-fill').classList.toggle('low', game.stamina < 28);
+    document.getElementById('height-fill').style.height = Math.max(0, Math.min(100, height)) + '%';
+    document.getElementById('hud-height').textContent = Math.max(0, Math.min(100, height)) + '%';
+    document.getElementById('hud-supplies').textContent = '茱萸 ' + game.supplies.branch + '/5 · 菊花 ' + game.supplies.flower + '/3';
+    document.getElementById('hud-poem').textContent = poemCount + '/4';
+    document.getElementById('hud-score').textContent = game.score;
+}
+
+function worldToScreen(x, y) { return { x: x - camera.x, y: y - camera.y }; }
+function updateCamera() { camera.x = Math.max(0, Math.min(MAP.width - W, game.player.x - W * 0.5)); camera.y = Math.max(0, Math.min(MAP.height - H, game.player.y - H * 0.55)); }
+
+function render() { updateCamera(); drawBackground(); drawSites(); drawSupplies(); drawHazards(); drawSummit(); drawPlayer(); drawMiniMap(); }
+
+function drawBackground() {
+    if (bgImage.complete && bgImage.naturalWidth) {
+        // 背景图铺满整个游戏世界（MAP），跟随相机滚动，与路径坐标严格对齐
+        var s = worldToScreen(0, 0);
+        ctx.drawImage(bgImage, s.x, s.y, MAP.width, MAP.height);
+        ctx.fillStyle = 'rgba(8, 18, 12, 0.35)'; ctx.fillRect(s.x, s.y, MAP.width, MAP.height);
+    } else {
+        var grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#1d3028'); grad.addColorStop(0.48, '#304226'); grad.addColorStop(1, '#182113');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+        drawMountainLayer(0.08, '#314537', 0.46, 170); drawMountainLayer(0.14, '#263827', 0.5, 110);
+        ctx.fillStyle = 'rgba(255,255,255,0.045)';
+    for (var i = 0; i < 42; i++) {
+        var x = ((i * 193 - camera.x * 0.16) % (W + 260)) - 130;
+        var y = ((i * 89 - camera.y * 0.12) % (H + 160)) - 80;
+        ctx.beginPath(); ctx.ellipse(x, y, 52 + (i % 5) * 8, 12 + (i % 4) * 3, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    }
+}
+
+function drawMountainLayer(speed, color, alpha, baseOffset) {
+    ctx.fillStyle = color; ctx.globalAlpha = alpha; ctx.beginPath(); ctx.moveTo(0, H);
+    for (var x = -80; x <= W + 80; x += 160) {
+        var peakY = H * 0.42 + Math.sin((x + camera.x * speed) * 0.008) * 36 - baseOffset;
+        ctx.lineTo(x, peakY); ctx.lineTo(x + 80, peakY - 86 - (x % 3) * 18);
+    }
+    ctx.lineTo(W, H); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+}
+
+function drawElevationGuide() {
+    ctx.strokeStyle = 'rgba(245, 226, 164, 0.07)'; ctx.lineWidth = 1;
+    for (var y = 160 - (camera.y % 120); y < H; y += 120) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.bezierCurveTo(W * 0.28, y - 24, W * 0.68, y + 26, W, y - 8); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255, 216, 103, 0.45)'; ctx.font = '14px KaiTi'; ctx.textAlign = 'center'; ctx.fillText('山顶方向', W * 0.5, 32);
+}
+
+function drawRoutes() {
+    routeAreas.forEach(function(r) {
+        if (r.type === 'circle') {
+            var p = worldToScreen(r.cx, r.cy);
+            var grad = ctx.createRadialGradient(p.x, p.y, r.radius * 0.2, p.x, p.y, r.radius);
+            grad.addColorStop(0, 'rgba(158, 126, 70, 0.62)');
+            grad.addColorStop(1, 'rgba(103, 76, 43, 0.66)');
+            ctx.fillStyle = grad;
+            ctx.strokeStyle = 'rgba(239, 203, 123, 0.30)';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(p.x, p.y, r.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            return;
+        }
+        var s = worldToScreen(r.x, r.y);
+        var routeGrad = ctx.createLinearGradient(s.x, s.y + r.h, s.x, s.y);
+        routeGrad.addColorStop(0, 'rgba(103, 76, 43, 0.72)'); routeGrad.addColorStop(1, 'rgba(154, 122, 67, 0.66)');
+        ctx.fillStyle = routeGrad; ctx.strokeStyle = 'rgba(239, 203, 123, 0.32)'; ctx.lineWidth = 2;
+        roundRect(s.x, s.y, r.w, r.h, 42, true, true); drawRouteSteps(s.x, s.y, r.w, r.h);
+    });
+}
+
+function drawRouteSteps(x, y, w, h) {
+    ctx.strokeStyle = 'rgba(255, 231, 168, 0.12)'; ctx.lineWidth = 2;
+    var stepGap = Math.max(26, Math.min(48, h * 0.28));
+    for (var sy = y + stepGap; sy < y + h - 8; sy += stepGap) { ctx.beginPath(); ctx.moveTo(x + 20, sy); ctx.lineTo(x + w - 20, sy - 8); ctx.stroke(); }
+}
+
+function drawSites() {
+    poemSites.forEach(function(site, idx) {
+        var p = worldToScreen(site.x, site.y); var isNext = idx === game.poemIndex;
+        ctx.fillStyle = game.poemDone[idx] ? 'rgba(255,214,83,0.55)' : (isNext ? 'rgba(255,238,154,0.34)' : 'rgba(80,80,80,0.35)');
+        ctx.strokeStyle = isNext ? '#ffed9a' : 'rgba(255,255,255,0.24)'; ctx.lineWidth = isNext ? 3 : 1;
+        ctx.beginPath(); ctx.arc(p.x, p.y, site.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fff0b0'; ctx.font = '16px KaiTi'; ctx.textAlign = 'center'; ctx.fillText((idx + 1) + ' ' + site.name, p.x, p.y - 44);
+    });
+}
+
+function drawSupplies() {
+    supplySpots.forEach(function(item, idx) {
+        if (game.collected[idx]) return;
+        var p = worldToScreen(item.x, item.y); ctx.save(); ctx.translate(p.x, p.y); item.type === 'branch' ? drawBranch(0, 0) : drawFlower(0, 0); ctx.restore();
+    });
+}
+
+function drawHazards() {
+    windZones.forEach(function(z) {
+        var p = worldToScreen(z.x, z.y);
+        ctx.fillStyle = 'rgba(142, 210, 230, 0.22)'; ctx.strokeStyle = 'rgba(214, 241, 255, 0.62)'; ctx.lineWidth = 2;
+        roundRect(p.x, p.y, z.w, z.h, 30, true, true); ctx.fillStyle = '#e0f7ff'; ctx.font = '14px KaiTi'; ctx.textAlign = 'center'; ctx.fillText('风区', p.x + z.w / 2, p.y + 26);
+        drawWindStreams(p.x, p.y, z); drawWindArrow(p.x + z.w / 2, p.y + z.h / 2, z.vx, z.vy);
+    });
+    drawRocks();
+}
+
+function drawWindStreams(x, y, z) {
+    var len = Math.hypot(z.vx, z.vy) || 1, ux = z.vx / len, uy = z.vy / len, px = -uy, py = ux;
+    ctx.strokeStyle = 'rgba(220, 248, 255, 0.42)'; ctx.lineWidth = 2;
+    for (var i = 0; i < 5; i++) {
+        var offset = ((game.animTime * 72 + i * 43) % (z.w + z.h)) - 40;
+        var cx = x + z.w * 0.5 + px * (i - 2) * 22 + ux * offset, cy = y + z.h * 0.5 + py * (i - 2) * 22 + uy * offset;
+        ctx.beginPath(); ctx.moveTo(cx - ux * 24, cy - uy * 24); ctx.quadraticCurveTo(cx + px * 10, cy + py * 10, cx + ux * 34, cy + uy * 34); ctx.stroke();
+    }
+}
+
+function drawRocks() {
+    game.rockBursts.forEach(function(burst) {
+        var p = worldToScreen(burst.x, burst.y), t = burst.age / burst.life;
+        ctx.strokeStyle = 'rgba(226, 184, 120, ' + (1 - t) * 0.65 + ')'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p.x, p.y, burst.r + t * 42, 0, Math.PI * 2); ctx.stroke();
+    });
+    game.fallingRocks.forEach(function(rock) {
+        var ground = worldToScreen(rock.x, rock.targetY), pulse = 0.5 + Math.sin((rock.age + game.animTime) * 18) * 0.5;
+        ctx.strokeStyle = 'rgba(255, 116, 82, ' + (0.35 + pulse * 0.35) + ')'; ctx.fillStyle = 'rgba(255, 78, 57, ' + (0.12 + pulse * 0.12) + ')'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(ground.x, ground.y, rock.r + 8 + pulse * 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        if (rock.state === 'warning') { ctx.fillStyle = 'rgba(255, 210, 150, 0.78)'; ctx.font = '13px KaiTi'; ctx.textAlign = 'center'; ctx.fillText('落石预警', ground.x, ground.y - rock.r - 14); return; }
+        var y = ground.y - rock.z; ctx.strokeStyle = 'rgba(255, 214, 142, 0.36)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ground.x, y - 58); ctx.lineTo(ground.x, ground.y - 8); ctx.stroke();
+        ctx.save(); ctx.translate(ground.x, y); ctx.rotate(rock.spin); ctx.fillStyle = '#5e4937'; ctx.strokeStyle = '#d0a16f'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-rock.r * 0.9, -rock.r * 0.2); ctx.lineTo(-rock.r * 0.35, -rock.r * 0.92); ctx.lineTo(rock.r * 0.65, -rock.r * 0.75); ctx.lineTo(rock.r, rock.r * 0.18); ctx.lineTo(rock.r * 0.25, rock.r * 0.86); ctx.lineTo(-rock.r * 0.82, rock.r * 0.55); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+    });
+}
+
+function drawWindArrow(x, y, vx, vy) {
+    var len = Math.hypot(vx, vy) || 1, ux = vx / len, uy = vy / len, size = 38;
+    ctx.strokeStyle = '#d6f1ff'; ctx.fillStyle = '#d6f1ff'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x - ux * size * 0.5, y - uy * size * 0.5); ctx.lineTo(x + ux * size * 0.5, y + uy * size * 0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + ux * size * 0.5, y + uy * size * 0.5); ctx.lineTo(x + ux * size * 0.22 - uy * 8, y + uy * size * 0.22 + ux * 8); ctx.lineTo(x + ux * size * 0.22 + uy * 8, y + uy * size * 0.22 - ux * 8); ctx.closePath(); ctx.fill();
+}
+
+function drawSummit() {
+    var p = worldToScreen(summit.x, summit.y);
+    ctx.fillStyle = game.poemIndex >= 4 && hasEnoughSupplies() ? 'rgba(255,216,103,0.58)' : 'rgba(120,110,90,0.36)';
+    ctx.strokeStyle = '#ffd867'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p.x, p.y, summit.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffd867'; ctx.font = '19px KaiTi'; ctx.textAlign = 'center'; ctx.fillText('峰顶', p.x, p.y + 6);
+}
+
+function drawPlayer() {
+    var p = worldToScreen(game.player.x, game.player.y), moving = keys.up || keys.down || keys.left || keys.right;
+    var bob = moving ? Math.sin(game.animTime * (keys.sprint ? 14 : 9)) * 2.5 : 0, stride = moving ? Math.sin(game.animTime * (keys.sprint ? 12 : 8)) : 0;
+    ctx.save(); ctx.translate(p.x, p.y + bob); ctx.rotate(-0.12);
+    ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.ellipse(0, 18, 17, 7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#d9b36a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(24, -23); ctx.lineTo(28, 24); ctx.stroke();
+    ctx.fillStyle = '#5b3225'; roundRect(-15, -20, 30, 32, 7, true, false); ctx.fillStyle = '#273757'; roundRect(-9, -23, 24, 30, 8, true, false);
+    ctx.strokeStyle = '#202438'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-6, 5); ctx.lineTo(-15 - stride * 5, 24); ctx.stroke(); ctx.beginPath(); ctx.moveTo(7, 5); ctx.lineTo(14 + stride * 5, 24); ctx.stroke();
+    ctx.fillStyle = '#e0b88f'; ctx.beginPath(); ctx.arc(1, -31, 9, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#4b2e1c'; ctx.beginPath(); ctx.moveTo(-11, -34); ctx.lineTo(1, -46); ctx.lineTo(13, -34); ctx.fill();
+    ctx.fillStyle = '#ffe07b'; ctx.font = '13px KaiTi'; ctx.textAlign = 'center'; ctx.fillText('登', 1, -12); ctx.restore();
+}
+
+function drawMiniMap() {
+    if (W < 760) return;
+    var mw = 150, mh = 116, x = W - mw - 14, y = H - mh - 14;
+    ctx.fillStyle = 'rgba(0,0,0,0.42)'; roundRect(x, y, mw, mh, 8, true, false); ctx.strokeStyle = 'rgba(255,216,103,0.35)'; ctx.strokeRect(x, y, mw, mh);
+    routeAreas.forEach(function(r) {
+        ctx.fillStyle = 'rgba(180,135,70,0.55)';
+        if (r.type === 'circle') {
+            ctx.beginPath();
+            ctx.arc(x + r.cx / MAP.width * mw, y + r.cy / MAP.height * mh, Math.max(2, r.radius / MAP.width * mw), 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            ctx.fillRect(x + r.x / MAP.width * mw, y + r.y / MAP.height * mh, r.w / MAP.width * mw, r.h / MAP.height * mh);
+        }
+    });
+    ctx.fillStyle = '#ffef8b'; ctx.beginPath(); ctx.arc(x + game.player.x / MAP.width * mw, y + game.player.y / MAP.height * mh, 3.5, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawBranch(x, y) { ctx.fillStyle = '#c51e16'; for (var i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(x + Math.cos(i * 1.26) * 8, y + Math.sin(i * 1.26) * 8, 4, 0, Math.PI * 2); ctx.fill(); } ctx.fillStyle = '#2d8b45'; ctx.beginPath(); ctx.ellipse(x + 10, y - 8, 8, 4, -0.5, 0, Math.PI * 2); ctx.fill(); }
+function drawFlower(x, y) { ctx.fillStyle = '#ffe16d'; for (var i = 0; i < 8; i++) { var a = i * Math.PI / 4; ctx.beginPath(); ctx.ellipse(x + Math.cos(a) * 9, y + Math.sin(a) * 9, 6, 3, a, 0, Math.PI * 2); ctx.fill(); } ctx.fillStyle = '#d98922'; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill(); }
+
+function roundRect(x, y, w, h, r, fill, stroke) {
+    var rr = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + rr, y); ctx.lineTo(x + w - rr, y); ctx.quadraticCurveTo(x + w, y, x + w, y + rr); ctx.lineTo(x + w, y + h - rr); ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h); ctx.lineTo(x + rr, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rr); ctx.lineTo(x, y + rr); ctx.quadraticCurveTo(x, y, x + rr, y); ctx.closePath(); if (fill) ctx.fill(); if (stroke) ctx.stroke();
+}
+
+function toast(msg, dur) {
+    var el = document.getElementById('toast'); el.textContent = msg; el.style.display = 'block'; clearTimeout(el._timer); el._timer = setTimeout(function() { el.style.display = 'none'; }, dur || 1800);
+}
+
+function setKey(name, pressed) { keys[name] = pressed; }
+function setSprint(active) { keys.sprint = active; document.querySelectorAll('[data-key="sprint"]').forEach(function(btn) { btn.classList.toggle('toggled', active); }); }
+
+document.addEventListener('keydown', function(e) {
+    var map = { KeyW:'up', ArrowUp:'up', KeyS:'down', ArrowDown:'down', KeyA:'left', ArrowLeft:'left', KeyD:'right', ArrowRight:'right', ShiftLeft:'sprint', ShiftRight:'sprint' };
+    if (map[e.code]) { setKey(map[e.code], true); e.preventDefault(); }
+});
+document.addEventListener('keyup', function(e) {
+    var map = { KeyW:'up', ArrowUp:'up', KeyS:'down', ArrowDown:'down', KeyA:'left', ArrowLeft:'left', KeyD:'right', ArrowRight:'right', ShiftLeft:'sprint', ShiftRight:'sprint' };
+    if (map[e.code]) { setKey(map[e.code], false); e.preventDefault(); }
+});
+
+document.querySelectorAll('.pad-btn').forEach(function(btn) {
+    var key = btn.dataset.key;
+    if (key === 'sprint') {
+        function toggleSprint(e) { e.preventDefault(); if (e.type === 'mousedown' && btn._lastTouch && Date.now() - btn._lastTouch < 450) return; if (e.type === 'touchstart') btn._lastTouch = Date.now(); setSprint(!keys.sprint); }
+        btn.addEventListener('touchstart', toggleSprint, { passive:false }); btn.addEventListener('mousedown', toggleSprint); return;
+    }
+    function press(e) { e.preventDefault(); setKey(key, true); btn.classList.add('pressed'); }
+    function release(e) { e.preventDefault(); setKey(key, false); btn.classList.remove('pressed'); }
+    btn.addEventListener('touchstart', press, { passive:false }); btn.addEventListener('touchend', release, { passive:false }); btn.addEventListener('touchcancel', release, { passive:false }); btn.addEventListener('mousedown', press); btn.addEventListener('mouseup', release); btn.addEventListener('mouseleave', release);
+});
+
+function loop(ts) {
+    var dt = Math.min(0.033, (ts - lastTime) / 1000 || 0); lastTime = ts; update(dt); render(); requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

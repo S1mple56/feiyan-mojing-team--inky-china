@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>古建游览 - 安阳殷墟 (跨时空考古)</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
+        #game-container { width: 100%; height: 100%; }
+        #top-right-ui { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; z-index: 100; }
+        .sys-btn { background-color: rgba(0, 0, 0, 0.7); border: 2px solid #ceae75; color: #ceae75; padding: 10px 20px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px; cursor: pointer; transition: 0.3s; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+        .sys-btn:hover { background-color: #ceae75; color: #000; }
+        
+        #ui-layer { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: min(800px, 90vw); display: none; flex-direction: column; gap: 10px; pointer-events: none; z-index: 90; box-sizing: border-box; }
+        .dialog-box { background-color: rgba(139, 69, 19, 0.95); border: 3px solid #ceae75; color: #fff; padding: 25px; font-size: 24px; border-radius: 8px; text-align: center; line-height: 1.6; text-shadow: 1px 1px 2px #000; position: relative; word-wrap: break-word; overflow-wrap: break-word; box-sizing: border-box; max-width: 100%; }
+        .options-container { display: none; flex-direction: column; gap: 10px; pointer-events: auto; }
+        .option-btn { background-color: rgba(0, 0, 0, 0.8); border: 2px solid #ceae75; color: #ceae75; padding: 15px; font-size: 22px; border-radius: 5px; cursor: pointer; transition: 0.3s; text-align: left; font-family: "KaiTi"; word-wrap: break-word; overflow-wrap: break-word; box-sizing: border-box; }
+        .option-btn:hover { background-color: #ceae75; color: #000; }
+        .highlight { color: #ffd700; font-weight: bold; }
+        
+        .modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(15, 15, 15, 0.95); border: 4px solid #ceae75; color: #fff; padding: 40px; border-radius: 12px; display: none; z-index: 200; text-align: center; min-width: 450px; box-shadow: 0 10px 40px rgba(0,0,0,0.9); }
+        .modal h2 { margin-top: 0; color: #ffd700; font-size: 32px; border-bottom: 1px solid #ceae75; padding-bottom: 10px; }
+        .close-btn { background-color: #ceae75; color: #000; border: none; padding: 10px 30px; font-size: 22px; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: "KaiTi"; }
+        .close-btn:hover { background-color: #fff; }
+        .btn-group { margin-top: 30px; display: flex; justify-content: center; gap: 30px; }
+        #toast { position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(139, 69, 19, 0.9); border: 2px solid #ffd700; color: #fff; padding: 15px 30px; font-size: 24px; border-radius: 8px; display: none; z-index: 300; opacity: 0; transition: opacity 0.5s; text-align: center; }
+        
+        /* 卜骨焚烧特效 */
+        @keyframes burn-flash {
+            0% { filter: sepia(1) hue-rotate(35deg) saturate(5) brightness(1); box-shadow: inset 0 0 20px #ff5500; }
+            50% { filter: sepia(1) hue-rotate(15deg) saturate(8) brightness(1.8); box-shadow: inset 0 0 50px #ffaa00; }
+            100% { filter: sepia(1) hue-rotate(35deg) saturate(5) brightness(1); box-shadow: inset 0 0 20px #ff5500; }
+        }
+        .fire-effect { animation: burn-flash 0.15s infinite; }
+
+        /* NPC 多态视频容器 */
+        #npc-video-container { display:none; position:absolute; left:-220px; bottom:0; width:200px; height:260px; border:2px solid #ceae75; border-radius:10px; overflow:hidden; background:#000; box-shadow: 0 5px 20px rgba(0,0,0,0.8); }
+        .npc-vid { position:absolute; width:100%; height:100%; object-fit:cover; transition: opacity 0.2s ease-in-out; }
+        /* ================= 始皇呼吸与悬浮动画 ================= */
+        @keyframes breathing {
+            0% { transform: scale(1.08) translateY(0px); filter: brightness(1); }
+            50% { transform: scale(1.12) translateY(-8px); filter: brightness(1.05); } 
+            100% { transform: scale(1.08) translateY(0px); filter: brightness(1); }
+        }
+
+        /* ================= 始皇推演天机文字动画 ================= */
+        @keyframes text-pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; text-shadow: 0 0 15px rgba(206,174,117,0.8); }
+            100% { opacity: 0.6; }
+        }
+        .thinking-text {
+            animation: text-pulse 2s infinite ease-in-out;
+            color: #ceae75;
+            font-style: italic;
+        }
+
+        /* ================= 视频切换白光闪烁特效 ================= */
+        @keyframes flash-transition {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(4) drop-shadow(0 0 30px #ffd700); }
+            100% { filter: brightness(1); }
+        }
+        .flash-effect {
+            animation: flash-transition 0.6s ease-in-out;
+        }
+
+        /* 隐藏对话框的滚动条但保持可滚动 */
+        #dialogue-content::-webkit-scrollbar { width: 6px; }
+        #dialogue-content::-webkit-scrollbar-track { background: transparent; }
+        #dialogue-content::-webkit-scrollbar-thumb { background: rgba(206,174,117,0.5); border-radius: 3px; }
+
+        #chat-input:focus { border-bottom: 2px solid #ceae75 !important; }
+
+        @media (max-width: 1100px) {
+            #ui-layer { width: min(800px, 95vw); }
+            #npc-video-container { width: 160px; height: 210px; left: -180px; }
+        }
+        @media (max-width: 768px) {
+            #ui-layer { width: 95vw; bottom: 20px; }
+            #npc-video-container { display: none !important; }
+            .dialog-box { font-size: 20px; padding: 18px; }
+            .option-btn { font-size: 18px; padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container"></div>
+
+<!-- 音效库预留 -->
+<audio id="sound-crack" src="audio/crack.mp3" preload="auto"></audio>
+<audio id="sound-forge" src="audio/forge.mp3" preload="auto"></audio>
+<audio id="sound-stone" src="audio/stone.mp3" preload="auto"></audio>
+
+<div id="top-right-ui" style="top: 25px;">
+    <button class="sys-btn" onclick="toggleCollection()">🏛️ 藏品馆</button>
+    <button class="sys-btn" onclick="toggleBackpack()">🎒 考古行囊</button>
+    <button class="sys-btn" onclick="togglePause()">⏸ 暂停</button>
+</div>
+
+<div id="ui-layer">
+    <div id="npc-video-container">
+        <video id="vid-idle" class="npc-vid" autoplay loop muted style="opacity: 1;"><source src="video/fuhao_idle.mp4" type="video/mp4"></video>
+        <video id="vid-talk" class="npc-vid" autoplay loop muted style="opacity: 0;"><source src="video/fuhao_idle.mp4" type="video/mp4"></video>
+        <video id="vid-praise" class="npc-vid" autoplay loop muted style="opacity: 0;"><source src="video/fuhao_idle.mp4" type="video/mp4"></video>
+    </div>
+    <div id="dialog-text" class="dialog-box"></div>
+    <div id="options-box" class="options-container">
+        <button class="option-btn" onclick="answerQuestion(0)" id="opt-0"></button>
+        <button class="option-btn" onclick="answerQuestion(1)" id="opt-1"></button>
+        <button class="option-btn" onclick="answerQuestion(2)" id="opt-2"></button>
+    </div>
+</div>
+
+<!-- 甲骨占卜核心玩法 -->
+<div id="oracle-modal" class="modal" style="min-width: 600px;">
+    <h2 style="color:#ffae00;">🔥 烧骨问天 —— 甲骨占卜</h2>
+    <div id="bone-fx-box" style="position:relative; width:400px; height:300px; margin: 0 auto; background:#221100; border:2px solid #ceae75; border-radius:8px; overflow:hidden;">
+        <img id="bone-img" src="province/henan/Architecture/location/bone.png" style="width:100%;height:100%; position:absolute; top:0;left:0; object-fit:contain; transition: all 0.3s;">
+        <img id="oracle-crack" src="province/henan/Architecture/location/bone_crack.png" style="width:100%;height:100%; position:absolute; top:0;left:0; object-fit:contain; opacity:0; transition: opacity 0.5s;">
+    </div>
+    <div style="margin-top:25px; display:flex; gap:15px; justify-content:center;">
+         <button class="option-btn" onclick="burnOracle(true)" style="text-align:center;">刻辞：[日] 祈求王师凯旋</button>
+         <button class="option-btn" onclick="burnOracle(false)" style="text-align:center;">刻辞：[雨] 暂缓征戎大狱</button>
+    </div>
+    <p style="color:#aaa; font-size:18px; margin-top:20px;">跨时空学者，请选出契合妇好征伐羌方史实的卜辞，钻凿火烤。</p>
+</div>
+
+<!-- 殷代宫殿宗庙建筑拆解体系 -->
+<div id="palace-modal" class="modal" style="min-width: 600px;">
+    <h2 style="color:#00ffcc;">🏛️ 殷墟宫殿宗庙遗址 —— 建筑图纸拆解</h2>
+    <div style="position:relative; width:450px; height:300px; margin: 0 auto; background:linear-gradient(to top, #1a0f00, #3a2200); border:2px solid #ceae75; border-radius:8px; overflow:hidden; box-shadow: inset 0 0 50px rgba(0,0,0,0.8);">
+        <!-- 动态CSS绘制的结构分解 -->
+        <div id="palace-layer-1" style="position:absolute; width:80%; height:40px; bottom:20px; left:10%; background:url('province/henan/Architecture/location/stone.png') center/cover; border:2px solid #5c3a21; box-shadow: 0 10px 20px rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:bold; color:#ffd700; transition:all 0.8s ease;">版筑夯土台基</div>
+        <div id="palace-layer-2" style="position:absolute; width:80%; height:130px; bottom:60px; left:10%; display:flex; gap:35px; justify-content:center; align-items:flex-end; opacity:0; transition:all 0.8s ease; transform:translateY(-20px);">
+            <div style="width:25px; height:120px; background:linear-gradient(to right, #6b4423, #4a2f18); border-bottom:12px solid #555; position:relative;"><div style="position:absolute; bottom:-12px; left:-5px; width:35px; height:12px; background:#aaa; border-radius:50%;"></div></div>
+            <div style="width:25px; height:120px; background:linear-gradient(to right, #6b4423, #4a2f18); border-bottom:12px solid #555; position:relative;"><div style="position:absolute; bottom:-12px; left:-5px; width:35px; height:12px; background:#aaa; border-radius:50%;"></div></div>
+            <div style="width:25px; height:120px; background:linear-gradient(to right, #6b4423, #4a2f18); border-bottom:12px solid #555; position:relative;"><div style="position:absolute; bottom:-12px; left:-5px; width:35px; height:12px; background:#aaa; border-radius:50%;"></div></div>
+        </div>
+        <div id="palace-layer-3" style="position:absolute; width:100%; height:100%; top:0; left:0; display:flex; flex-direction:column; align-items:center; opacity:0; transition:all 0.8s ease; transform:translateY(-40px);">
+            <div style="width:90%; height:110px; background:transparent; border-bottom: 90px solid #a67c00; border-left: 50px solid transparent; border-right: 50px solid transparent; margin-top:15px; position:relative; box-sizing:border-box;">
+                <div style="position:absolute; top:40px; left:-10px; width:105%; text-align:center; color:#553300; font-weight:bold; font-size:22px; text-shadow:1px 1px 2px rgba(255,255,255,0.4);">茅茨土阶 · 四阿重屋</div>
+            </div>
+        </div>
+    </div>
+    <p id="palace-desc" style="font-size:26px; color:#ceae75; margin-top:20px; font-weight:bold; font-family:'KaiTi';">阶段 1：版筑夯土台基</p>
+    <p id="palace-detail" style="font-size:18px; color:#aaa; margin-top:10px; line-height:1.6; padding: 0 30px; text-align:left;">商代建筑讲究“高台榭，美宫室”。多采用黄土逐层夯打，形成高出地面的巨大基座。不仅防水防潮，更彰显商王至高无上的威严（如同殷墟54号宫殿遗址）。</p>
+    <div class="btn-group">
+        <button id="palace-btn" class="sys-btn" onclick="nextPalaceStep()">解析工艺：柱础与木骨</button>
+    </div>
+</div>
+
+<!-- 青铜器拆解核心玩法 -->
+<div id="bronze-modal" class="modal" style="min-width: 600px;">
+    <h2 style="color:#00ffcc;">⚒️ 国宝级青铜器透视 —— 范铸法</h2>
+    <div style="position:relative; width:350px; height:350px; margin: 0 auto; background:#111; border:2px solid #ceae75; border-radius:8px;">
+        <img id="bronze-img" src="province/henan/Architecture/location/bronze1.png" style="width:100%;height:100%; object-fit:contain; transition: 0.3s; filter: drop-shadow(0 0 10px rgba(255,215,0,0.3));">
+    </div>
+    <p id="bronze-desc" style="font-size:24px; color:#ceae75; margin-top:20px;">步骤一：泥范模型构建</p>
+    <div class="btn-group">
+        <button id="bz-btn" class="sys-btn" onclick="nextBronzeStep()">下一步：浇铸铜液</button>
+    </div>
+</div>
+
+<!-- AI自由对话玩法：与君王论道 -->
+<div id="aichat-modal" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="width: 80vw; max-width: 1000px; height: 80vh; display: flex; flex-direction: column; background: rgba(20, 20, 20, 0.95); border: 3px solid #ceae75; border-radius: 15px; padding: 40px; box-shadow: 0 15px 30px rgba(0,0,0,0.8);">
+        <h2 id="ai-chat-title" style="color: #ffd700; font-size: 36px; margin-top: 0; border-bottom: 1px solid #ceae75; padding-bottom: 15px; text-align: center; font-family: 'KaiTi';">📜 跨越千年的对话</h2>
+        
+        <div style="display: flex; width: 100%; height: calc(100% - 70px); gap: 30px; margin-top: 10px;">
+            
+            <div style="flex: 1; border: 2px solid #ceae75; border-radius: 10px; background: #111; position: relative; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+                <div id="npc-container" style="position: absolute; top: -2%; left: -4%; width: 108%; height: 108%; transform-origin: bottom center; animation: breathing 4s ease-in-out infinite;">
+                    <video id="npc-talking" src="" loop muted playsinline style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; pointer-events: none; opacity: 0;"></video>
+                    <img id="npc-static" src="" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; background: #111; z-index: 2; transition: opacity 0.3s ease-in-out;" onerror="this.src='player.png'">
+                </div>
+                
+                <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); border: 1px solid #ceae75; padding: 5px 25px; border-radius: 20px; z-index: 10;">
+                    <span id="dialogue-npc-name" style="color: #ffd700; font-size: 26px; font-weight: bold; text-shadow: 2px 2px 5px #000; letter-spacing: 2px;"></span>
+                </div>
+            </div>
+
+            <div style="flex: 2; display: flex; flex-direction: column; justify-content: space-between; gap: 20px; min-height: 0;">
+                
+                <div style="flex: 1; min-height: 0; background: linear-gradient(to bottom, rgba(30,30,30,0.9), rgba(10,10,10,0.95)); border: 2px solid #ceae75; border-radius: 12px; padding: 40px 30px 30px 30px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; margin-top: 20px; overflow: hidden;">
+                    
+                    <div id="dialogue-speaker" style="position: absolute; top: -25px; left: 30px; background: linear-gradient(135deg, #ceae75, #8b6508); color: #000; padding: 8px 35px; border-radius: 8px; font-size: 28px; font-weight: bold; border: 2px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.6); letter-spacing: 2px; transition: 0.3s;"></div>
+                    
+                    <div id="ai-chat-box" style="flex: 1; min-height: 0; color: #f5f5f5; font-size: 26px; line-height: 1.7; font-family: 'KaiTi'; text-shadow: 1px 1px 3px #000; overflow-y: auto; overflow-x: hidden; word-break: break-word; overflow-wrap: anywhere; white-space: normal; padding-right: 8px; box-sizing: border-box;">
+                        <div style="color: #ceae75; font-style: italic;">【系统】大门已开启，您可以自由回应君王。只要答案能让君王满意并说出“赏”字相关肯定，即可获得奖励。</div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.6); padding: 15px 25px; border-radius: 10px; border: 1px solid rgba(206,174,117,0.5);">
+                        <span style="color: #ceae75; font-size: 24px; font-weight: bold;">学者进言：</span>
+                        <input type="text" id="ai-chat-input" placeholder="输入您的见解与回答..." style="flex: 1; background: transparent; border: none; border-bottom: 2px solid rgba(206,174,117,0.5); color: #fff; font-size: 26px; font-family: 'KaiTi'; outline: none; padding: 5px 10px; transition: 0.3s;">
+                        <button class="sys-btn" style="width: 150px; padding: 10px; font-size: 26px; background: rgba(139, 69, 19, 0.9);" onclick="sendAiChat()" id="btn-send-chat">诉说</button>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; justify-content: center; margin-top: 5px;">
+                        <button class="sys-btn" style="padding: 12px 30px; font-size: 24px; background: #333;" onclick="closeAiChat()">退下</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI文生图玩法：创意铸造青铜器 -->
+<div id="forge-ai-modal" class="modal" style="min-width: 700px; padding: 30px;">
+    <h2 style="color:#00ffcc;">⚒️ 虚空造物 —— 铸铜司</h2>
+    <div style="display: flex; gap: 20px;">
+        <div style="flex: 1; display:flex; flex-direction:column; gap:15px; text-align:left;">
+            <p style="font-size: 18px; color: #aaa; margin: 0;">上古遗技，口耳相传。学者，请描述您想打造的青铜神炉，或刻以饕餮，或铸以龙纹：</p>
+            <textarea id="forge-desc-input" placeholder="例如：打造一尊三足圆鼎，表面分布着威严的饕餮纹，周身有绿色铜锈痕迹..." style="width: 100%; height: 150px; background: #fff; border: 2px solid #ceae75; border-radius: 8px; padding: 10px; font-size: 20px; font-family: 'KaiTi'; resize: none; outline: none;"></textarea>
+            <button class="sys-btn" onclick="generateAiBronze()" style="width:100%;" id="btn-forge-gen">灵火开铸</button>
+            <button class="close-btn" onclick="closeAiForge()" style="width:100%; margin-top:5px;">离开司工坊</button>
+        </div>
+        <div style="flex: 1; border: 2px dashed #ceae75; border-radius: 8px; background: #111; display: flex; align-items: center; justify-content: center; position: relative; min-height: 250px;">
+            <span id="forge-wait-text" style="color: #666; font-size: 20px;">暂无成品</span>
+            <img id="forge-result-img" src="" style="width: 100%; height: 100%; object-fit: contain; position: absolute; top:0; left:0; display: none; border-radius:8px;">
+        </div>
+    </div>
+</div>
+
+<!-- 极致奖励：CG短片展映 -->
+<div id="cg-cinema-modal" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 500; justify-content: center; align-items: center; flex-direction: column;">
+    <video id="cg-video" style="width: 85vw; max-height: 80vh; border: 4px solid #ceae75; border-radius: 10px; box-shadow: 0 0 50px rgba(206,174,117, 0.4);" controls>
+        <source src="video/fuhao_idle.mp4" type="video/mp4">
+    </video>
+    <button class="sys-btn" style="margin-top: 30px; font-size: 24px;" onclick="closeCGCinema()">跳过 / 观影结束</button>
+</div>
+
+<!-- 新增景地实景选择Modal -->
+<div id="panorama-choice-modal" class="modal" style="min-width: 500px; z-index: 1000; text-align: center;">
+    <h2 id="pano-choice-title" style="color:#00ffcc;">参观实景</h2>
+    <p id="pano-choice-desc" style="font-size: 22px; color: #fff; margin: 20px 0;">是否立即前往该地点的实景展示区沉浸游览？</p>
+    <div class="btn-group">
+        <button class="sys-btn" style="background:#00ffcc; color:#000; font-weight:bold; font-size: 22px;" id="btn-go-pano">前往实景</button>
+        <button class="sys-btn" style="font-size: 22px;" onclick="document.getElementById('panorama-choice-modal').style.display='none'; window.justFinishedPalace=false; isPaused=false;">继续探索</button>
+    </div>
+</div>
+
+<div id="backpack-modal" class="modal">
+    <h2>考古行囊记录</h2>
+    <div id="bp-list" style="font-size: 24px; line-height: 2; margin-bottom: 20px;"></div>
+    <button class="close-btn" onclick="toggleBackpack()" style="margin-top: 10px;">关闭</button>
+</div>
+
+<!-- 藏品馆Modal，多维奖励存储 -->
+<div id="collection-modal" class="modal" style="min-width: 800px; max-height: 600px; overflow-y: auto;">
+    <h2 style="color:#00ffcc;">🏛️ 诸夏藏品馆</h2>
+    <div id="collection-list" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-top: 20px;"></div>
+    <div class="btn-group"><button class="close-btn" onclick="toggleCollection()">关闭展馆</button></div>
+</div>
+
+<div id="view-item-modal" class="modal" style="min-width: 600px; z-index: 600;">
+    <h2 id="vi-title" style="color:#ffd700; font-size:30px;"></h2>
+    <div id="vi-content" style="margin:20px auto; max-width:80%;"></div>
+    <p id="vi-desc" style="font-size:22px; color:#ddd; text-align:left; line-height:1.8; text-indent:2em; font-family:'KaiTi';"></p>
+    <button class="close-btn" style="margin-top:20px;" onclick="document.getElementById('view-item-modal').style.display='none'">返回藏品馆</button>
+</div>
+
+<div id="pause-modal" class="modal">
+    <h2>已暂停考察</h2>
+    <p style="font-size: 20px; color: #aaa;">沉思历史，触摸千年脉络。</p>
+    <div class="btn-group">
+        <button class="close-btn" onclick="togglePause()">继续考察</button>
+        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+    </div>
+</div>
+
+<div id="completion-modal" class="modal">
+    <h2 style="color: #00ff00; font-size: 40px;">🎉 殷商盛世 🎉</h2>
+    <p style="font-size: 24px; line-height: 1.8;">
+        跨时空考古学者，您已成功发掘安阳殷墟的全部遗址！<br>
+        青铜巍峨，甲骨惊天。<br>
+        感谢您重现这片三千年前的浩瀚史诗。
+    </p>
+    <div class="btn-group">
+        <button class="close-btn" onclick="restartJourney()">再次考察</button>
+        <button class="close-btn" onclick="returnToMap()">返回图志</button>
+    </div>
+</div>
+
+<!-- 实景图集游览Modal -->
+<div id="gallery-modal" class="modal" style="min-width: 800px; max-height: 80vh; overflow-y: auto;">
+    <h2 id="gallery-title" style="color:#00ffcc;">🏛️ 实景游览</h2>
+    <div id="gallery-list" style="display: flex; flex-direction: column; gap: 20px; align-items: center; margin-top: 20px;"></div>
+    <div class="btn-group"><button class="close-btn" onclick="closeGallery()">结束参观</button></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let inventory = []; 
+let unlockedCollections = []; // 奖励藏品数据中心
+const totalItems = 4; 
+let isPaused = false; 
+
+const config = {
+    type: Phaser.AUTO, width: window.innerWidth, height: window.innerHeight, parent: 'game-container',
+    physics: { default: 'arcade', arcade: { debug: false } },
+    scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scene: { preload: preload, create: create, update: update }
+};
+
+const game = new Phaser.Game(config);
+let player, cursors, wasd, spaceKey;
+let npcs = []; let activeNPC = null; let dialogState = 'hidden'; 
+
+const uiLayer = document.getElementById('ui-layer');
+const dialogText = document.getElementById('dialog-text');
+const optionsBox = document.getElementById('options-box');
+const optBtns = [document.getElementById('opt-0'), document.getElementById('opt-1'), document.getElementById('opt-2')];
+
+function preload() {
+    this.load.image('bg', 'province/henan/Architecture/location/bg_yinxu.png'); 
+    this.load.image('fuhao', 'province/henan/Architecture/location/fuhao.png');
+    this.load.image('pangeng', 'province/henan/Architecture/location/pangeng.png');
+    this.load.image('fuyue', 'province/henan/Architecture/location/fuyue.png');
+    this.load.image('crafter', 'province/henan/Architecture/location/crafter.png');
+    this.load.image('stone', 'province/henan/Architecture/location/stone.png');
+    this.load.image('hole', 'province/henan/Architecture/location/hole.png');
+
+    let playerSkin = localStorage.getItem('playerSkin') || 'player.png';
+    if (playerSkin.startsWith('data:image')) {
+        let arr = playerSkin.split(','); let mime = arr[0].match(/:(.*?);/)[1];
+        let bstr = atob(arr[1]); let n = bstr.length; let u8arr = new Uint8Array(n);
+        while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+        let blob = new Blob([u8arr], { type: mime });
+        this.load.image('player', URL.createObjectURL(blob));
+    } else {
+        this.load.image('player', playerSkin);
+    }
+}
+
+function create() {
+    let bg = this.add.image(0, 0, 'bg').setOrigin(0, 0);
+    let scaleX = this.cameras.main.width / bg.width;
+    let scaleY = this.cameras.main.height / bg.height;
+    let baseScale = Math.max(scaleX, scaleY) * 1.5; 
+    bg.setScale(baseScale);
+
+    let worldWidth = bg.width * baseScale; let worldHeight = bg.height * baseScale;
+    this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+    this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+
+    player = this.physics.add.sprite(worldWidth * 0.5, worldHeight * 0.5, 'player');
+    let dynamicScale = 150 / player.height;
+    player.setScale(dynamicScale); player.setCollideWorldBounds(true); player.body.setSize(player.width * 0.6, player.height * 0.6);
+
+    const npcConfigs = [
+        { id: 'fuhao', name: '妇好', x: 0.5, y: 0.55, scale: 0.5, isMain: true, item: '妇好青铜钺', hasGivenItem: false, intro: '<span class="highlight">【商王后/大将 妇好】</span><br><action:talk>跨时空而来的学者，可知我大商先祖以何物指引这煌煌国运？<br><br>▶ 按【空格键】进行甲骨占卜', type: 'oracle' },
+        { id: 'pangeng', name: '盘庚', x: 0.3, y: 0.6, scale: 0.5, isMain: false, item: '《盘庚》竹简', hasGivenItem: false, intro: '<span class="highlight">【商王 盘庚】</span><br><action:talk>昔日九世之乱，吾力排众议迁都于此，方有殷商后世繁华。此处正是乙二十仿殷大殿（宫室遗址），宏大的夯土台上，曾缭绕着祭祀列祖列宗的浓烟...<br><br>▶ 按【空格键】进行古建分层解析', type: 'palace' },
+        { id: 'fuyue', name: '傅说', x: 0.7, y: 0.6, scale: 0.6, isMain: false, item: '版筑夯具', hasGivenItem: false, intro: '<span class=”highlight”>【殷商贤相 傅说】</span><br><action:praise>吾本傅岩一版筑奴隶，幸得武丁天子梦中得贤，不拘一格举以为相。辅佐天子改革朝政、发展农耕、整顿军队，三年而天下大治，开创武丁中兴盛世。<br><br>▶ 按【空格键】与贤相论道', type: 'ai-chat',
+            aiPrompt: '你现在是商朝宰相傅说，从奴隶逆袭为相，是中国历史上第一位被记载的”圣人”。你原本在傅岩做版筑（夯土筑墙），武丁天子梦到上天赐予贤才，按梦中画像找到了你，不顾贵族反对封你为宰相。你辅佐武丁改革朝政、发展农耕、整顿军队，三年让商王朝吏治清明、国力强盛，开创武丁中兴盛世。你说话谦逊而智慧，带有文言文色彩，自称”臣”。玩家是一个现代穿越者。你要主动考问玩家对治国之道、举贤任能的理解，以及武丁中兴的历史。如果玩家回答得有理有据，展现了对治国举贤的深刻理解，你必须在回复结尾加上”[SUCCESS]”作为标记，这是天道法则。如果不满意，就温和而严厉地指点他。'
+        },
+        { id: 'crafter', name: '铸铜匠', x: 0.2, y: 0.5, scale: 0.5, isMain: false, item: '后母戊鼎', hasGivenItem: false, intro: '<span class="highlight">【殷商司工匠师】</span><br><action:idle>地下掩埋着历代青铜重器，学者！这里临近当年的各种大墓与作坊，您是否愿意亲自设计一件足以流传千古的青铜神器？<br><br>▶ 按【空格键】进入造物工坊', type: 'ai-forge' }
+    ];
+
+    // ========== 传送阵地标 ==========
+    window.landmarks = [
+        { id: 'royalPortal', name: '⛩️ 传送阵 (北：王陵遗址区)', x: 0.5, y: 0.05, action: 'royal_jump', item: '', desc: '往北横跨洹河，前往地势开阔、肃穆神秘的王陵区。', hint: '▶ 按【空格键】北上前往王陵' }
+    ];
+    window.landmarkZones = [];
+    window.landmarks.forEach(lm => {
+        let zone = this.add.zone(worldWidth * lm.x, worldHeight * lm.y).setSize(150, 150);
+        this.physics.world.enable(zone); zone.body.setAllowGravity(false); zone.body.moves = false;
+        
+        let panelBG = this.add.rectangle(worldWidth * lm.x, worldHeight * lm.y - 120, 320, 45, 0x000000, 0.8).setStrokeStyle(2, 0xceae75);
+        let textTitle = this.add.text(worldWidth * lm.x, worldHeight * lm.y - 120, lm.name, { font: '22px KaiTi', fill: (lm.action.includes('jump') ? '#ffae00' : '#00ffcc'), fontStyle: 'bold' }).setOrigin(0.5);
+        
+        this.tweens.add({ targets: [panelBG, textTitle], y: '-=15', duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        
+        this.add.particles('stone').createEmitter({
+            x: worldWidth * lm.x, y: worldHeight * lm.y, speed: { min: -10, max: 10 }, scale: { start: 0.1, end: 0 },
+            alpha: { start: 0.3, end: 0 }, blendMode: 'ADD', tint: (lm.action.includes('jump') ? 0xffae00 : 0xceae75), lifespan: 1500, frequency: 150
+        });
+
+        zone.lmData = lm;
+        landmarkZones.push(zone);
+    });
+    // ======================================================
+
+    npcConfigs.forEach(config => {
+        let npcSprite = this.physics.add.sprite(worldWidth * config.x, worldHeight * config.y, config.id);
+        npcSprite.setScale(config.scale); npcSprite.setImmovable(true); 
+        npcSprite.body.setSize(npcSprite.width * 0.6, npcSprite.height * 0.6); npcSprite.npcData = config; 
+        if(config.tint) npcSprite.setTint(config.tint);
+        npcs.push(npcSprite); this.physics.add.collider(player, npcSprite);
+    });
+
+    cursors = this.input.keyboard.createCursorKeys();
+    wasd = this.input.keyboard.addKeys({ W: 87, A: 65, S: 83, D: 68 });
+    spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    this.cameras.main.startFollow(player, true, 0.08, 0.08); 
+    this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
+        if(isPaused) return; 
+        let newZoom = this.cameras.main.zoom - (deltaY * 0.001); 
+        this.cameras.main.zoom = Phaser.Math.Clamp(newZoom, 1, 3); 
+    });
+}
+
+function update() {
+    if (isPaused || window.justFinishedPalace) { player.setVelocity(0); return; }
+    const speed = 250; 
+    if (cursors.left.isDown || wasd.A.isDown) { player.setVelocityX(-speed); player.setFlipX(false); } 
+    else if (cursors.right.isDown || wasd.D.isDown) { player.setVelocityX(speed); player.setFlipX(true); } 
+    else { player.setVelocityX(0); }
+    if (cursors.up.isDown || wasd.W.isDown) { player.setVelocityY(-speed); } 
+    else if (cursors.down.isDown || wasd.S.isDown) { player.setVelocityY(speed); } 
+    else { player.setVelocityY(0); }
+
+    let closestNPC = null; let minDistance = 150; 
+    npcs.forEach(npc => {
+        let distance = Phaser.Math.Distance.Between(player.x, player.y, npc.x, npc.y);
+        if (distance < minDistance) { minDistance = distance; closestNPC = npc; }
+    });
+    
+    let closestLandmark = null; let minLMDistance = 180;
+    landmarkZones.forEach(zone => {
+        let lDist = Phaser.Math.Distance.Between(player.x, player.y, zone.x, zone.y);
+        if (lDist < minLMDistance) { minLMDistance = lDist; closestLandmark = zone; }
+    });
+
+    let currentInteractable = closestNPC || closestLandmark;
+
+    if (currentInteractable) {
+        if (activeNPC !== currentInteractable) {
+            activeNPC = currentInteractable; 
+            dialogState = 'intro';
+            uiLayer.style.display = 'flex'; optionsBox.style.display = 'none';
+            
+            if (activeNPC.npcData) {
+                if (activeNPC.npcData.hasGivenItem) {
+                    let panoName = "实景游览";
+                    let is3D = false;
+                    if (activeNPC.npcData.id === 'fuhao') panoName = "甲骨窖穴";
+                    else if (activeNPC.npcData.id === 'pangeng') panoName = "车马厅遗址";
+                    else if (activeNPC.npcData.id === 'fuyue') panoName = "亚好墓遗存";
+                    else if (activeNPC.npcData.id === 'crafter') { panoName = "三维文物模型"; is3D = true; }
+                    dialogText.innerHTML = `<span class="highlight">【${activeNPC.npcData.name}】</span><br>您已完成此处的历史考证。<br><br>▶ 按【空格键】前往参观【${panoName}】${is3D ? "交互展示" : "实景"}`;
+                } else {
+                    let pureIntroText = parseActionDialog(activeNPC.npcData.intro);
+                    dialogText.innerHTML = pureIntroText;
+                }
+                
+                if(activeNPC.npcData.id === 'fuhao') {
+                    document.getElementById('npc-video-container').style.display = 'block';
+                    setTimeout(() => { if(dialogState!=='hidden') parseActionDialog('<action:idle>'); }, 2500); 
+                } else {
+                    document.getElementById('npc-video-container').style.display = 'none';
+                }
+            } else if (activeNPC.lmData) {
+                // UI表现为导览牌
+                document.getElementById('npc-video-container').style.display = 'none';
+                dialogText.innerHTML = `<span class="highlight" style="color:#00ffcc">【景标】当前区域：${activeNPC.lmData.name}</span><br><br>${activeNPC.lmData.desc}<br><br><span style="color:#ffd700">${activeNPC.lmData.hint}</span>`;
+            }
+        }
+
+        if (!isPaused && Phaser.Input.Keyboard.JustDown(spaceKey) && dialogState === 'intro') {
+            if (activeNPC.npcData) {
+                if (activeNPC.npcData.hasGivenItem) {
+                    if (activeNPC.npcData.id === 'fuhao') window.offerPanorama("甲骨窖穴", "panorama/panorama_oracle.html");
+                    else if (activeNPC.npcData.id === 'pangeng') window.offerPanorama("车马厅遗址", "panorama/glb_111.html");
+                    else if (activeNPC.npcData.id === 'fuyue') window.offerPanorama("亚好墓遗存", "panorama/panorama_yahaomu.html");
+                    else if (activeNPC.npcData.id === 'crafter') window.offerPanorama("司母戊鼎展示", "panorama/glb_111.html");
+                    return;
+                }
+                // 原NPC逻辑
+                if (activeNPC.npcData.type === 'oracle') openOracleModal();
+                else if (activeNPC.npcData.type === 'ai-forge') openAiForgeModal();
+                else if (activeNPC.npcData.type === 'ai-chat') openAiChatModal();
+                else if (activeNPC.npcData.type === 'palace') openPalaceModal();
+                else if (activeNPC.npcData.type === 'multi-question') {
+                    dialogState = 'question'; 
+                    let curQ = activeNPC.npcData.questions[activeNPC.npcData.qIndex];
+                    dialogText.innerHTML = `<span class="highlight">历史/建筑考问：</span><br>${curQ.q}`;
+                    optionsBox.style.display = 'flex'; 
+                    for(let i=0; i<3; i++) { optBtns[i].innerText = curQ.opts[i]; }
+                }
+            } else if (activeNPC.lmData) {
+                // 新增地标逻辑
+                let act = activeNPC.lmData.action;
+                if (act === 'palace') openPalaceModal();
+                else if (act === 'yizu') { showToast("【宗庙重地】大片黄土夯土台基，尽显恢弘格局。"); }
+                else if (act === 'tomb') { showToast("探索地下阴阳边界..."); setTimeout(() => window.location.href = 'yinxu_tomb.html', 800); }
+                else if (act === 'royal_jump') { showToast("经传送阵往北横跨洹河，前往王陵区..."); setTimeout(() => window.location.href = 'yinxu_royal.html', 800); }
+                else if (act === 'museum_jump') { showToast("移步殷墟博物馆新馆，阅览文明瑰宝..."); setTimeout(() => window.location.href = 'yinxu_museum.html', 800); }
+                else if (act === 'huanbei_jump') { showToast("经传送阵往东行，探寻洹北商城..."); setTimeout(() => window.location.href = 'yinxu_huanbei.html', 800); }
+                else if (act === 'map_jump') { showToast("离开殷墟，返回大地图..."); setTimeout(() => window.location.href = 'index.html?region=henan', 800); }
+                else if (act === 'oracle') { showToast("进入甲骨卜辞的史诗..."); setTimeout(() => openOracleModal(), 800); }
+                else if (act === 'stele') { showToast("漫步甲骨碑廊，古文字如星河铺展..."); }
+                else if (act === 'chariot') { showToast("【车马坑】中国最早的车马实物遗存，战车马骨清晰可见。"); }
+                else if (act === 'huanRiver') { showToast("驻足洹河边，历史与自然相融，微风拂过满是商代气息。"); }
+            }
+        }
+    } else {
+        activeNPC = null; dialogState = 'hidden'; uiLayer.style.display = 'none'; optionsBox.style.display = 'none';
+    }
+}
+
+// ========== 实景画廊展示 ==========
+window.offerPanorama = function(title, url) {
+    uiLayer.style.display = 'none';
+    let pModal = document.getElementById('panorama-choice-modal');
+    document.getElementById('pano-choice-title').innerText = title;
+    document.getElementById('btn-go-pano').onclick = function() {
+        window.open(url, '_blank');
+        pModal.style.display = 'none';
+        window.justFinishedPalace = false;
+        isPaused = false;
+    };
+    pModal.style.display = 'block';
+    isPaused = true;
+}
+
+window.openGallery = function(title, images) {
+    uiLayer.style.display = 'none';
+    let gModal = document.getElementById('gallery-modal');
+    document.getElementById('gallery-title').innerText = title;
+    
+    let listHtml = images.map(img => `<img src="${img}" style="width:100%; border:3px solid #ceae75; border-radius:10px; margin-bottom:15px; box-shadow:0 0 15px rgba(206,174,117,0.5);">`).join('');
+    document.getElementById('gallery-list').innerHTML = listHtml;
+    
+    gModal.style.display = 'block';
+    isPaused = true;
+}
+window.closeGallery = function() {
+    document.getElementById('gallery-modal').style.display = 'none';
+    isPaused = false;
+}
+
+// 连续答题与奖励中心存入机制
+window.answerQuestion = function(selectedIndex) {
+    if (!activeNPC || dialogState !== 'question') return;
+    optionsBox.style.display = 'none'; dialogState = 'result'; 
+    let curData = activeNPC.npcData;
+    let curQ = curData.questions[curData.qIndex];
+
+    if (selectedIndex === curQ.correct) {
+        let rewardHTML = "<br>";
+        // 存储多维奖励到藏品馆系统
+        let hasUnlockedAlready = unlockedCollections.find(e => e.title === curQ.reward.title);
+        if(!hasUnlockedAlready) {
+            unlockedCollections.push(curQ.reward);
+            showToast(`🎁 已获得新藏品：【${curQ.reward.title}】！请前往[藏品馆]查看详情`);
+        }
+
+        if(curData.qIndex < curData.questions.length - 1) {
+            rewardHTML = "<br><br><span style='color:#aaa'>（按空格进入下一题，挑战高阶奖励！）</span>";
+            curData.qIndex++;
+            setTimeout(()=> { dialogState = 'intro'; }, 500); 
+        } else {
+            if (!activeNPC.npcData.hasGivenItem) {
+                grantItem(activeNPC); rewardHTML = `<br><br><span style="color:#ffd700">🎁 核心掉落：【${activeNPC.npcData.item}】</span>`;
+            } else { rewardHTML = `<br><br><span style="color:#aaa">（主线记录已完成，本NPC题库已封顶）</span>`; }
+        }
+        
+        dialogText.innerHTML = `<span style="color:#aaffaa;">【正确！】</span><br>通关此知识节点。${rewardHTML}`;
+    } else {
+        dialogText.innerHTML = `<span style="color:#ffaaaa;">【考证错误】</span><br>学术容不得马虎，去[藏品馆]复习下知识，或稍后退后重试。<br><br><span style="color:#ccc; font-size: 18px;">（稍微退后再次触发）</span>`;
+    }
+}
+
+// 视频无缝切换引擎
+window.setNPCVideo = function(state) {
+    document.querySelectorAll('.npc-vid').forEach(v => v.style.opacity = 0);
+    let target = document.getElementById('vid-' + state);
+    if(target) target.style.opacity = 1;
+}
+
+function parseActionDialog(text) {
+    let actionMatcher = /<action:([a-z]+)>/gi;
+    let match = actionMatcher.exec(text);
+    if(match) {
+        setNPCVideo(match[1]); // 触发动作：idle, talk, praise 等
+        return text.replace(actionMatcher, ''); 
+    }
+    return text;
+}
+
+// ========== 甲骨占卜核心引擎 ==========
+window.openOracleModal = function() {
+    uiLayer.style.display = 'none';
+    document.getElementById('oracle-modal').style.display = 'block';
+    document.getElementById('bone-fx-box').style.filter = 'none';
+    document.getElementById('oracle-crack').style.opacity = 0;
+    isPaused = true;
+    setNPCVideo('talk');
+}
+window.burnOracle = function(isCorrect) {
+    let crackSfx = document.getElementById('sound-crack');
+    if(crackSfx) crackSfx.play().catch(e=>console.log("Audio play blocked by browser"));
+    
+    let fxBox = document.getElementById('bone-fx-box');
+    fxBox.classList.add('fire-effect'); // 激起火光特效
+    
+    setTimeout(() => {
+        fxBox.classList.remove('fire-effect');
+        document.getElementById('oracle-crack').style.opacity = 1; // 显现裂纹
+        
+        setTimeout(() => {
+            document.getElementById('oracle-modal').style.display = 'none';
+            if(isCorrect) {
+                setNPCVideo('praise');
+                showToast("🔥 大吉！兆纹顺应天意，日耀殷商！");
+                
+                let hasUnlockedAlready = unlockedCollections.find(e => e.title === '【占卜甲骨】武丁祈祷王师凯旋兆纹');
+                if(!hasUnlockedAlready) {
+                    unlockedCollections.push({ type: 'image', title: '【占卜甲骨】武丁祈祷王师凯旋兆纹', desc: '在甲骨上通过钻凿、火灼形成的裂纹（兆纹），商人以此占卜吉凶，是研究殷商历史的重要凭证。', url: 'province/henan/Architecture/location/bone_crack.png' });
+                }
+
+                // 占卜大吉后触发极致视听奖励短片
+                setTimeout(() => triggerCGCinema(activeNPC), 2000);
+            } else {
+                setNPCVideo('idle');
+                showToast("阴雨连绵，兵狱大凶...占卜失败，请重新推演。");
+                isPaused = false;
+            }
+        }, 2000);
+    }, 1200);
+}
+
+// ========== 青铜器范铸法拆解引擎 ==========
+let bronzeStepConfig = 1;
+window.openBronzeModal = function() {
+    uiLayer.style.display = 'none';
+    document.getElementById('bronze-modal').style.display = 'block';
+    bronzeStepConfig = 1;
+    document.getElementById('bronze-img').src = 'province/henan/Architecture/location/bronze1.png';
+    document.getElementById('bronze-desc').innerText = '步骤一：泥范模型构建';
+    document.getElementById('bz-btn').innerText = '进行浇铸铜液';
+    isPaused = true;
+}
+window.nextBronzeStep = function() {
+    let forgeSfx = document.getElementById('sound-forge');
+    if(forgeSfx) { forgeSfx.currentTime = 0; forgeSfx.play().catch(e=>console.log(e)); }
+    
+    bronzeStepConfig++;
+    let img = document.getElementById('bronze-img');
+    let desc = document.getElementById('bronze-desc');
+    let btn = document.getElementById('bz-btn');
+
+    if(bronzeStepConfig === 2) {
+        img.src = 'province/henan/Architecture/location/bronze2.png';
+        desc.innerText = '步骤二：烈火浇铸铜液';
+        btn.innerText = '冷却打碎外范';
+    } else if(bronzeStepConfig === 3) {
+        img.src = 'province/henan/Architecture/location/bronze3.png';
+        desc.innerText = '步骤三：剥落泥范与修整';
+        btn.innerText = '打磨抛光成型';
+    } else if(bronzeStepConfig === 4) {
+        img.src = 'province/henan/Architecture/location/bronze4.png';
+        desc.innerText = '步骤四：国宝【后母戊鼎】重现人间！';
+        btn.innerText = '收录文物信息';
+        btn.style.color = '#00ffcc';
+    } else {
+        document.getElementById('bronze-modal').style.display = 'none';
+        grantItem(activeNPC); // 给物品并发提示
+        // 立刻自动跳转到独立提取出来的 3D 页面
+        isPaused = false; 
+        setTimeout(() => {
+            window.open("panorama/glb_111.html", "_blank");
+        }, 1200);
+    }
+}
+
+// ========== AI自由对话系统 (大模型交互) ==========
+window.openAiChatModal = function() {
+    uiLayer.style.display = 'none';
+    const box = document.getElementById('ai-chat-box');
+    box.innerHTML = `<div style="color: #ceae75; font-style: italic;">【系统】大门已开启，您可以自由回应君王。只要答案能让其满意并说出“赏”字相关肯定，即可获得奖励。</div>
+        <div style="margin-top:15px; color:#00ffcc;">${activeNPC.npcData.name}：孤开疆拓土，中兴大商！汝这跨越时空而来的后生，可知孤是如何治国平天下的？且说出你的见解。</div>`;
+    document.getElementById('aichat-modal').style.display = 'flex';
+    
+    let npcName = activeNPC.npcData.name;
+    document.getElementById('dialogue-npc-name').innerText = npcName;
+    document.getElementById('dialogue-speaker').innerText = npcName;
+    document.getElementById('npc-static').src = 'province/henan/Architecture/location/' + activeNPC.npcData.id + '.png';
+
+    isPaused = true;
+    setNPCVideo('talk');
+}
+
+function typeWriterEffectYinxu(element, text, speed = 40, callback) {
+    let i = 0;
+    const staticImg = document.getElementById('npc-static');
+    const talkingVid = document.getElementById('npc-talking');
+    const videoContainer = document.getElementById('npc-container');
+
+    // 触发闪烁特效
+    videoContainer.classList.add('flash-effect');
+
+    setTimeout(() => {
+        if (staticImg && talkingVid && false) { // 预留给真实视频
+            talkingVid.play().catch(e => console.warn(e));
+            staticImg.style.opacity = '0';
+        }
+
+        function typing() {
+            if (i < text.length) {
+                element.innerHTML += text.charAt(i);
+                i++;
+                let chatBox = document.getElementById('ai-chat-box');
+                chatBox.scrollTop = chatBox.scrollHeight;
+                setTimeout(typing, speed);
+            } else {
+                if (staticImg && talkingVid) {
+                    staticImg.style.opacity = '1';
+                    setTimeout(() => { talkingVid.pause(); }, 300);
+                }
+                if (callback) callback();
+            }
+        }
+        typing();
+    }, 300);
+
+    setTimeout(() => {
+        videoContainer.classList.remove('flash-effect');
+    }, 600);
+}
+
+window.sendAiChat = async function() {
+    let inputEl = document.getElementById('ai-chat-input');
+    let text = inputEl.value.trim();
+    if(!text) return;
+    
+    let chatBox = document.getElementById('ai-chat-box');
+    chatBox.innerHTML += `<div style="margin-top:10px; color:#fff; white-space:normal; word-break:break-word; overflow-wrap:anywhere;">学者：${text}</div>`;
+    inputEl.value = '';
+    
+    const btn = document.getElementById('btn-send-chat');
+    btn.innerText = "倾听中..."; 
+    btn.disabled = true; 
+    inputEl.disabled = true;
+    
+    chatBox.innerHTML += `<div id="chat-loading" style="margin-top:10px; color:#ffae00; font-style:italic;">${activeNPC.npcData.name}正在审视您的回答...（天机运转中）</div>`;
+    chatBox.scrollTop = chatBox.scrollHeight;
+    
+    const unlockInput = () => {
+        btn.innerText = "诉说"; 
+        btn.disabled = false; 
+        inputEl.disabled = false; 
+        inputEl.focus();
+    };
+
+    try {
+        let res = await fetch("http://127.0.0.1:5000/api/chat", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: text, system_prompt: activeNPC.npcData.aiPrompt })
+        });
+        let data = await res.json();
+        
+        let loadingEl = document.getElementById('chat-loading');
+        if(loadingEl) loadingEl.remove();
+        
+        let aiReply = data.reply;
+        let replyContainerId = "ai-reply-" + Date.now();
+        chatBox.innerHTML += `<div style="margin-top:10px; color:#00ffcc; white-space:normal; word-break:break-word; overflow-wrap:anywhere;">${activeNPC.npcData.name}：<span id="${replyContainerId}" style="white-space:normal; word-break:break-word; overflow-wrap:anywhere;"></span></div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+        
+        let replyElement = document.getElementById(replyContainerId);
+        
+        typeWriterEffectYinxu(replyElement, aiReply, 40, () => {
+            unlockInput();
+            if (data.success) {
+                setNPCVideo('praise');
+                showToast("🎁 君王大悦！获得时代认同。");
+                document.getElementById('ai-chat-input').disabled = true;
+                btn.disabled = true;
+                setTimeout(() => {
+                    grantItem(activeNPC);
+                    closeAiChat();
+                    window.offerPanorama("亚好墓遗存", "panorama/panorama_yahaomu.html");
+                }, 3000);
+            }
+        });
+        
+    } catch(err) {
+        let loadingEl = document.getElementById('chat-loading');
+        if(loadingEl) loadingEl.remove();
+        chatBox.innerHTML += `<div style="margin-top:10px; color:#ff5555;">[天书断裂] 无法连接到时间长河，请检查后端引擎。</div>`;
+        unlockInput();
+    }
+}
+
+window.closeAiChat = function() {
+    document.getElementById('aichat-modal').style.display = 'none';
+    const btn = document.getElementById('btn-send-chat');
+    const inputEl = document.getElementById('ai-chat-input');
+    if (btn) { btn.innerText = "诉说"; btn.disabled = false; }
+    if (inputEl) inputEl.disabled = false;
+    isPaused = false;
+    setNPCVideo('idle');
+}
+
+// ========== 王家宫殿：商业级古建剖析引擎 ==========
+let palaceStepConfig = 1;
+window.openPalaceModal = function() {
+    uiLayer.style.display = 'none';
+    document.getElementById('palace-modal').style.display = 'block';
+    palaceStepConfig = 1;
+    document.getElementById('palace-layer-2').style.opacity = 0; document.getElementById('palace-layer-2').style.transform = 'translateY(-20px)';
+    document.getElementById('palace-layer-3').style.opacity = 0; document.getElementById('palace-layer-3').style.transform = 'translateY(-40px)';
+    document.getElementById('palace-desc').innerText = '阶段 1：版筑夯土台基';
+    document.getElementById('palace-detail').innerText = '商代建筑讲究“高台榭，美宫室”。多采用黄土逐层夯打，形成高出地面的巨大基座。不仅防水防潮，更彰显商王至高无上的威严（如同殷墟54号宫殿遗址）。';
+    document.getElementById('palace-btn').innerText = '解析工艺：柱础与木骨';
+    document.getElementById('palace-btn').style.color = '#ceae75';
+    isPaused = true;
+}
+
+window.nextPalaceStep = function() {
+    let sfx = document.getElementById('sound-stone');
+    if(sfx) { sfx.currentTime = 0; sfx.play().catch(e=>console.log(e)); }
+    
+    palaceStepConfig++;
+    let desc = document.getElementById('palace-desc');
+    let detail = document.getElementById('palace-detail');
+    let btn = document.getElementById('palace-btn');
+
+    if(palaceStepConfig === 2) {
+        document.getElementById('palace-layer-2').style.opacity = 1;
+        document.getElementById('palace-layer-2').style.transform = 'translateY(0)';
+        desc.innerText = '阶段 2：永定柱与铜/石础片';
+        detail.innerText = '在坚实的夯土台上放置础石（卵石或青铜垫），上方直接植立木柱，并结合早期的半下沉式卯榫结构。这是中国几千年木梁架建筑最原始、最硬核的骨骼。';
+        btn.innerText = '解析工艺：四阿重屋瓦顶';
+    } else if(palaceStepConfig === 3) {
+        document.getElementById('palace-layer-3').style.opacity = 1;
+        document.getElementById('palace-layer-3').style.transform = 'translateY(0)';
+        desc.innerText = '阶段 3：茅茨土阶与四阿大厦';
+        detail.innerText = '屋顶多采用“四阿顶”（即后世最高等级的庑殿顶雏形）。铺设层层茅草芦苇，出檐深远。搭配阶梯状的夯土长坡，史称“茅茨土阶”，体现商朝极简而古朴的恢宏气象。';
+        btn.innerText = '完成建筑测绘考据';
+        btn.style.color = '#00ffcc';
+    } else {
+        document.getElementById('palace-modal').style.display = 'none';
+        
+        let hasUnlockedAlready = unlockedCollections.find(e => e.title === '【古建蓝图】商王54号大型宫室');
+        if(!hasUnlockedAlready) {
+            unlockedCollections.push({ type: 'text', title: '【古建蓝图】商王54号大型宫室', desc: '殷墟宗庙宫殿区核心遗址。标志着版筑夯土、永定柱、四阿重屋的殷商宫室营造法则，奠定后世几千年中国木构高台建筑之初形。' });
+            showToast("🎉 收录全新古建筑大观资料！已存入右上角的藏品馆！");
+        }
+        
+        if (activeNPC && activeNPC.npcData) {
+            grantItem(activeNPC);
+        } else if (activeNPC && activeNPC.lmData) {
+            let lmName = activeNPC.lmData.item;
+            if (lmName && !inventory.includes(lmName)) {
+                inventory.push(lmName);
+                let _u = localStorage.getItem('ancient_username');
+                if(_u) { try { let _p=JSON.stringify({username:_u, item_name:lmName, item_desc:'殷墟探寻获得的信物'}); if(navigator.sendBeacon) navigator.sendBeacon('http://127.0.0.1:5000/api/add-item', new Blob([_p],{type:'application/json'})); else fetch('http://127.0.0.1:5000/api/add-item',{method:'POST',headers:{'Content-Type':'application/json'},body:_p,keepalive:true}).catch(e=>console.error(e)); } catch(e){console.error(e);} }
+                showToast(`🎉 考古收录：【${lmName}】 🎉`);
+            }
+        }
+
+        if (activeNPC && activeNPC.npcData && activeNPC.npcData.id === 'pangeng') {
+            window.justFinishedPalace = true;
+            setTimeout(() => {
+                window.offerPanorama("车马厅遗址", "panorama/glb_111.html");
+            }, 500);
+        } else {
+            requestAnimationFrame(() => { isPaused = false; });
+        }
+    }
+}
+
+// ========== AI铸模系统 (文生图) ==========
+window.openAiForgeModal = function() {
+    uiLayer.style.display = 'none';
+    document.getElementById('forge-ai-modal').style.display = 'block';
+    
+    let btn = document.getElementById('btn-forge-gen');
+    if(btn) { btn.disabled = false; btn.innerText = '灵火开铸'; }
+    document.getElementById('forge-result-img').style.display = 'none';
+    document.getElementById('forge-wait-text').style.display = 'block';
+    document.getElementById('forge-wait-text').innerText = '未成器';
+    document.getElementById('forge-desc-input').value = '';
+    isPaused = true;
+}
+
+window.generateAiBronze = async function() {
+    let inputEl = document.getElementById('forge-desc-input');
+    let text = inputEl.value.trim();
+    if(!text) { showToast("请输入您脑海中的青铜器形制！"); return; }
+    
+    let btn = document.getElementById('btn-forge-gen');
+    btn.disabled = true;
+    btn.innerText = '烈火焚模，天地铸灵中...';
+    
+    document.getElementById('forge-wait-text').style.display = 'block';
+    document.getElementById('forge-wait-text').innerText = '烈火熊熊，匠魂附体...';
+    let forgeSfx = document.getElementById('sound-forge');
+    if(forgeSfx) { forgeSfx.currentTime = 0; forgeSfx.play().catch(e=>console.log(e)); }
+    
+    let prompt = `生成一张高度写实的历史文物图片，主体为商代青铜器。玩家描述要求如下：${text}。要求：真实的商代青铜纹理材质，表面可能有威严的饕餮纹或云雷纹，可能带有历史的斑驳青绿铜锈。必须是一尊端庄的器物，正视图，高清细节设计，纯白色背景，无杂物。`;
+    
+    try {
+        let res = await fetch("http://127.0.0.1:5000/api/generate-warrior", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: text, image_prompt: prompt })
+        });
+        
+        let data = await res.json();
+        let imgEl = document.getElementById('forge-result-img');
+        
+        if (data.data && data.data[0] && data.data[0].b64_json) {
+            imgEl.src = "data:image/png;base64," + data.data[0].b64_json;
+            imgEl.style.display = 'block';
+            document.getElementById('forge-wait-text').style.display = 'none';
+            
+            showToast("✨ 千古名器脱模而出！您创造了举世无双的青铜器！");
+            
+            // 存入藏品系统并完成NPC记录
+            let customItem = { type: 'image', title: `【自定义馆藏】青铜神尊`, desc: `跨越千年学者亲自督造的礼器：${text}`, url: imgEl.src };
+            unlockedCollections.push(customItem);
+            
+            setTimeout(() => {
+                grantItem(activeNPC);
+                document.getElementById('forge-ai-modal').style.display = 'none';
+                isPaused = false;
+                window.open("panorama/glb_111.html", "_blank");
+            }, 3000);
+            
+        } else {
+            document.getElementById('forge-wait-text').innerText = '铸造失败';
+            showToast("铜液不纯，铸造失败，请更换词令重试。");
+            btn.disabled = false;
+            btn.innerText = '重新开鼎';
+        }
+        
+    } catch(err) {
+        document.getElementById('forge-wait-text').innerText = '时空断裂';
+        showToast("无法呼唤神工，请检查后端(app.py)运行状态！");
+        btn.disabled = false;
+        btn.innerText = '再次召唤';
+    }
+}
+
+window.closeAiForge = function() {
+    document.getElementById('forge-ai-modal').style.display = 'none';
+    isPaused = false;
+}
+
+// ========== CG 展映奖励 ==========
+window.triggerCGCinema = function(npc) {
+    window.currentCgNpc = npc;
+    const cinema = document.getElementById('cg-cinema-modal');
+    const vid = document.getElementById('cg-video');
+    cinema.style.display = 'flex';
+    vid.currentTime = 0;
+    vid.play().catch(e=>console.log("Autoplay context blocked"));
+
+    vid.onended = () => { closeCGCinema(); };
+}
+window.closeCGCinema = function() {
+    let currentNpc = window.currentCgNpc;
+    const vid = document.getElementById('cg-video');
+    vid.pause();
+    document.getElementById('cg-cinema-modal').style.display = 'none';
+    
+    if(currentNpc) grantItem(currentNpc);
+    isPaused = false;
+    
+    if (currentNpc && currentNpc.npcData.id === 'fuhao') {
+        let stoneSfx = document.getElementById('sound-stone');
+        if(stoneSfx) { stoneSfx.currentTime = 0; stoneSfx.play().catch(e=>console.log("Audio block")); }
+        
+        setTimeout(() => {
+            showToast("✨ 观影结束！<br><br>【时空异动】：地面碎石坍塌出现坑洞，进入妇好墓的入口已然显现！走上去即可深入探索！");
+        }, 2000);
+        
+        if (!window.tombHole) {
+            let worldWidth = game.scene.scenes[0].physics.world.bounds.width;
+            let worldHeight = game.scene.scenes[0].physics.world.bounds.height;
+            let hole = game.scene.scenes[0].physics.add.sprite(worldWidth * 0.25, worldHeight * 0.85, 'hole');
+            hole.setScale(0.8);
+            
+            game.scene.scenes[0].physics.add.overlap(player, hole, () => {
+                if (!window.isTransitioningToTomb) {
+                    window.isTransitioningToTomb = true;
+                    showToast("探索地下阴阳边界...");
+                    player.setVelocity(0);
+                    isPaused = true;
+                    setTimeout(() => window.location.href = 'yinxu_tomb.html', 800);
+                }
+            });
+            window.tombHole = hole;
+        }
+        
+        setTimeout(() => {
+            window.offerPanorama("甲骨窖穴", "panorama/panorama_oracle.html");
+        }, 5000);
+    } else {
+        setTimeout(() => {
+            showToast("时光交叠，你亲眼见证了这片土地在三千年前的浩瀚辉煌！");
+        }, 2000);
+    }
+    window.currentCgNpc = null;
+}
+
+function grantItem(npc) {
+    if (!npc.npcData.hasGivenItem) {
+        inventory.push(npc.npcData.item); npc.npcData.hasGivenItem = true;
+        
+        let currentUser = localStorage.getItem('ancient_username');
+        if(currentUser) {
+            fetch('http://127.0.0.1:5000/api/add-item', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    username: currentUser,
+                    item_name: npc.npcData.item,
+                    item_desc: '遗迹探寻获得：' + npc.npcData.name + '的信物'
+                })
+            }).catch(e => console.error(e));
+        }
+
+        showToast('🎉 考古收录印记：【' + npc.npcData.item + '】(' + inventory.length + '/' + totalItems + ') 🎉');
+        if (inventory.length === totalItems) {
+            setTimeout(() => {
+                showToast("🎉 恭喜你，已集齐全部信物！");
+            }, 3500);
+        }
+    }
+}
+
+function showToast(msg) {
+    const toast = document.getElementById('toast'); toast.innerHTML = msg; toast.style.display = 'block'; toast.style.opacity = 1;
+    setTimeout(() => { toast.style.opacity = 0; setTimeout(() => toast.style.display = 'none', 500); }, 3500);
+}
+window.togglePause = function() {
+    if(document.getElementById('backpack-modal').style.display === 'block' || document.getElementById('completion-modal').style.display === 'block') return;
+    isPaused = !isPaused; document.getElementById('pause-modal').style.display = isPaused ? 'block' : 'none';
+}
+window.toggleBackpack = function() {
+    if(document.getElementById('pause-modal').style.display === 'block' || document.getElementById('completion-modal').style.display === 'block') return;
+    let bp = document.getElementById('backpack-modal');
+    if (bp.style.display === 'block') { bp.style.display = 'none'; isPaused = false; } 
+    else {
+        isPaused = true;  
+        let listHtml = inventory.length > 0 ? inventory.map(item => `<div style="color:#ffd700; margin:10px 0;">📜 ${item}</div>`).join('') : '<div style="color:#aaa; margin: 20px 0;">行囊空空如也，去发掘历史地层吧！</div>';
+        document.getElementById('bp-list').innerHTML = `${listHtml}<div style="color:#aaa; font-size:18px; margin-top:30px; border-top: 1px solid #555; padding-top: 10px;">考察进度：${inventory.length} / ${totalItems}</div>`;
+        bp.style.display = 'block';
+    }
+}
+
+window.toggleCollection = function() {
+    if(document.getElementById('pause-modal').style.display === 'block' || document.getElementById('backpack-modal').style.display === 'block') return;
+    let cl = document.getElementById('collection-modal');
+    if (cl.style.display === 'block') { cl.style.display = 'none'; isPaused = false; } 
+    else {
+        isPaused = true;
+        renderCollection();
+        cl.style.display = 'block';
+    }
+}
+
+function renderCollection() {
+    let html = unlockedCollections.length > 0 ? unlockedCollections.map((item, idx) => {
+        let content = '';
+        if(item.type === 'image') content = `<img src="${item.url}" style="width:100%; height:140px; object-fit:cover; border-radius:5px;">`;
+        else if(item.type === 'video') content = `<div style="width:100%; height:140px; background:#222; display:flex; align-items:center; justify-content:center; border-radius:5px;"><span style="font-size:36px; color:#fff">▶</span></div>`;
+        else content = `<div style="width:100%; height:140px; background:#422; border-radius:5px; padding:15px; box-sizing:border-box; font-size:16px;">${item.desc.substring(0,35)}...</div>`;
+        
+        return `<div style="flex: 0 0 250px; background:rgba(0,0,0,0.8); border:2px solid #ceae75; border-radius:10px; padding:15px; cursor:pointer;" onclick="openCollectionItem(${idx})">
+            ${content}
+            <div style="color:#ffd700; margin-top:15px; font-size:18px; font-weight:bold;">${item.title}</div>
+            <div style="color:#00ffcc; margin-top:5px; font-size:14px; text-align:right;">[查看详情]</div>
+        </div>`;
+    }).join('') : '<div style="color:#aaa; font-size:24px; text-align:center; width:100%; padding:50px;">藏经阁空空如也...<br>请在游览途中答题探索获取多维奖励！</div>';
+    
+    document.getElementById('collection-list').innerHTML = html;
+}
+
+window.openCollectionItem = function(idx) {
+    let item = unlockedCollections[idx];
+    let modal = document.getElementById('view-item-modal');
+    document.getElementById('vi-title').innerText = item.title;
+    document.getElementById('vi-desc').innerText = item.desc;
+    
+    let contentBox = document.getElementById('vi-content');
+    if(item.type === 'image') {
+        contentBox.innerHTML = `<img src="${item.url}" style="max-width:100%; max-height:400px; border:2px solid #fff; border-radius:10px;">`;
+    } else if(item.type === 'video') {
+        contentBox.innerHTML = `<video controls autoplay style="width:100%; max-height:400px; border:2px solid #ffd700; border-radius:10px;"><source src="video/fuhao_idle.mp4" type="video/mp4"></video>`;
+    } else {
+        contentBox.innerHTML = `<div style="padding:40px; background:rgba(100,50,0,0.5); font-size:30px; font-family:'KaiTi'; color:#ffd700; text-align:center;">📖 历史典籍解析加载完毕</div>`;
+    }
+    
+    modal.style.display = 'block';
+}
+
+window.restartJourney = function() {
+    inventory = []; npcs.forEach(npc => { npc.npcData.hasGivenItem = false; });
+    document.getElementById('completion-modal').style.display = 'none'; isPaused = false; showToast("时光回溯，重返殷商废墟...");
+}
+window.returnToMap = function() {
+    window.location.href = 'index.html?region=henan';
+}
+</script>
+    <script src="digital_human.js"></script>
+</body>
+</html>
+

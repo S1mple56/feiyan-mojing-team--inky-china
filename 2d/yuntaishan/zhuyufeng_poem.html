@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>茱萸峰 · 诗词飞花令</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{overflow:hidden;background:#1a1a0a;font-family:"KaiTi","楷体",serif}
+        canvas{display:block}
+
+        #start-screen{
+            position:fixed;inset:0;z-index:100;
+            background:linear-gradient(180deg,#1a1a0a 0%,#0a2a1a 50%,#0a1a0a 100%);
+            display:flex;flex-direction:column;align-items:center;justify-content:center;
+            transition:opacity 1s
+        }
+        #start-screen.hide{opacity:0;pointer-events:none}
+        #start-screen h1{font-size:52px;color:#ffd700;letter-spacing:10px;text-shadow:2px 2px 8px rgba(0,0,0,0.8);margin-bottom:8px}
+        #start-screen .sub{font-size:20px;color:#ceae75;letter-spacing:4px;margin-bottom:30px}
+        #start-screen .poem{font-size:18px;color:#8a7a5a;line-height:2.4;letter-spacing:3px;text-align:center;margin-bottom:40px}
+        #start-screen .start-btn{
+            background:linear-gradient(135deg,#ffd700,#b8860b);color:#1a1a1a;
+            border:none;padding:16px 50px;font-size:26px;font-family:"KaiTi";
+            border-radius:10px;cursor:pointer;font-weight:bold;letter-spacing:4px;
+            transition:0.3s;box-shadow:0 4px 15px rgba(255,215,0,0.4)
+        }
+        #start-screen .start-btn:hover{transform:scale(1.08);box-shadow:0 6px 25px rgba(255,215,0,0.6)}
+
+        #game-ui{
+            position:fixed;inset:0;z-index:50;display:none;flex-direction:column;
+            align-items:center;justify-content:center;
+            background:linear-gradient(180deg,rgba(20,20,10,0.95) 0%,rgba(10,30,20,0.95) 100%);
+        }
+        #game-ui.show{display:flex}
+
+        #poem-card{
+            background:rgba(0,0,0,0.6);border:2px solid #ceae75;border-radius:16px;
+            padding:40px 50px;max-width:700px;width:90%;text-align:center;
+            box-shadow:0 10px 30px rgba(0,0,0,0.5);
+        }
+        #npc-name{font-size:28px;color:#ffd700;letter-spacing:4px;margin-bottom:20px}
+        #npc-avatar{font-size:80px;margin-bottom:20px}
+        #poem-question{font-size:24px;color:#f5f0e6;line-height:2;margin-bottom:30px}
+        #poem-options{display:flex;flex-direction:column;gap:15px}
+        .poem-option{
+            background:rgba(0,0,0,0.5);border:2px solid #555;border-radius:10px;
+            padding:15px 25px;font-size:22px;color:#ceae75;cursor:pointer;
+            transition:0.3s;font-family:"KaiTi";text-align:left;
+        }
+        .poem-option:hover{border-color:#ffd700;background:rgba(255,215,0,0.1);transform:translateX(5px)}
+        .poem-option.correct{border-color:#00ff00;background:rgba(0,255,0,0.1);color:#00ff00}
+        .poem-option.wrong{border-color:#ff4444;background:rgba(255,0,0,0.1);color:#ff4444}
+
+        #score-bar{
+            position:fixed;top:20px;left:20px;z-index:60;
+            background:rgba(0,0,0,0.7);border:1px solid #ceae75;border-radius:10px;
+            padding:15px 20px;display:none;
+        }
+        #score-bar.show{display:block}
+        #score-bar .row{display:flex;align-items:center;gap:10px;padding:3px 0}
+        #score-bar .icon{font-size:18px}
+        #score-bar .label{font-size:14px;color:#8a6a4a}
+        #score-bar .val{font-size:18px;color:#ffd700;font-weight:bold}
+
+        #top-left-ui{
+            position:fixed;top:20px;left:20px;z-index:60;display:none;
+        }
+        #top-left-ui.show{display:block}
+        #top-left-ui button{
+            background:rgba(0,0,0,0.7);border:2px solid #ceae75;color:#ceae75;
+            padding:10px 20px;font-size:20px;font-family:"KaiTi";border-radius:8px;
+            cursor:pointer;transition:0.3s;
+        }
+        #top-left-ui button:hover{background:#ceae75;color:#000}
+
+        #result-screen{
+            position:fixed;inset:0;z-index:70;display:none;flex-direction:column;
+            align-items:center;justify-content:center;
+            background:rgba(0,0,0,0.9);
+        }
+        #result-screen.show{display:flex}
+        #result-screen h2{font-size:48px;color:#ffd700;letter-spacing:6px;margin-bottom:20px}
+        #result-screen .score{font-size:28px;color:#ceae75;margin-bottom:10px}
+        #result-screen .grade{font-size:36px;margin-bottom:30px}
+        #result-screen .btns{display:flex;gap:20px}
+        #result-screen button{
+            background:rgba(0,0,0,0.7);border:2px solid #ceae75;color:#ceae75;
+            padding:12px 30px;font-size:22px;font-family:"KaiTi";border-radius:8px;
+            cursor:pointer;transition:0.3s;
+        }
+        #result-screen button:hover{background:#ceae75;color:#000}
+
+        #feedback{
+            position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+            z-index:65;display:none;font-size:36px;font-weight:bold;
+            text-shadow:2px 2px 8px rgba(0,0,0,0.8);pointer-events:none;
+            transition:opacity 0.5s;
+        }
+        #feedback.show{display:block}
+    </style>
+</head>
+<body>
+
+<div id="start-screen">
+    <h1>诗词飞花令</h1>
+    <div class="sub">茱萸峰 · 与王维对诗</div>
+    <div class="poem">
+        独在异乡为异客<br>
+        每逢佳节倍思亲<br>
+        遥知兄弟登高处<br>
+        遍插茱萸少一人
+    </div>
+    <button class="start-btn" onclick="startGame()">开始对诗</button>
+    <br><br>
+    <button class="start-btn" style="background:rgba(0,0,0,0.7);color:#ceae75;font-size:20px;box-shadow:none;" onclick="window.location.href='zhuyufeng.html'">返回茱萸峰</button>
+</div>
+
+<div id="game-ui">
+    <div id="poem-card">
+        <div id="npc-avatar">👨‍🎨</div>
+        <div id="npc-name">王维</div>
+        <div id="poem-question"></div>
+        <div id="poem-options"></div>
+    </div>
+</div>
+
+<div id="score-bar">
+    <div class="row"><span class="icon">📝</span><span class="label">题号</span><span class="val" id="round-num">1/10</span></div>
+    <div class="row"><span class="icon">✅</span><span class="label">正确</span><span class="val" id="correct-num">0</span></div>
+    <div class="row"><span class="icon">🏆</span><span class="label">得分</span><span class="val" id="score-num">0</span></div>
+</div>
+
+<div id="top-left-ui">
+    <button onclick="window.location.href='zhuyufeng.html'">← 退出对诗</button>
+</div>
+
+<div id="feedback"></div>
+
+<div id="result-screen">
+    <h2>对诗结束</h2>
+    <div class="score" id="final-score"></div>
+    <div class="grade" id="final-grade"></div>
+    <div class="btns">
+        <button onclick="startGame()">再次对诗</button>
+        <button onclick="window.location.href='zhuyufeng.html'">返回茱萸峰</button>
+    </div>
+</div>
+
+<script>
+const POEMS = [
+    {
+        question: '请补全王维《九月九日忆山东兄弟》的下一句：\n独在异乡为异客',
+        options: ['每逢佳节倍思亲', '每逢佳节倍思乡', '每逢重阳倍思亲', '每逢佳节独思亲'],
+        correct: 0
+    },
+    {
+        question: '请补全王维《九月九日忆山东兄弟》的下一句：\n每逢佳节倍思亲',
+        options: ['遥知兄弟登高处', '遥望兄弟登高处', '遥知亲友登高处', '遥想兄弟登高时'],
+        correct: 0
+    },
+    {
+        question: '请补全王维《九月九日忆山东兄弟》的下一句：\n遥知兄弟登高处',
+        options: ['遍插茱萸少一人', '遍插茱萸少一人', '遍插茱萸少一人', '遍插茱萸少一人'],
+        correct: 0
+    },
+    {
+        question: '王维的《山居秋暝》中，"空山新雨后"的下一句是？',
+        options: ['天气晚来秋', '明月松间照', '清泉石上流', '竹喧归浣女'],
+        correct: 0
+    },
+    {
+        question: '王维的《山居秋暝》中，"明月松间照"的下一句是？',
+        options: ['清泉石上流', '天气晚来秋', '竹喧归浣女', '莲动下渔舟'],
+        correct: 0
+    },
+    {
+        question: '王维被称为"诗佛"，他的字是什么？',
+        options: ['摩诘', '子美', '太白', '乐天'],
+        correct: 0
+    },
+    {
+        question: '王维的《使至塞上》中，"大漠孤烟直"的下一句是？',
+        options: ['长河落日圆', '黄河入海流', '白云千载空悠悠', '孤帆远影碧空尽'],
+        correct: 0
+    },
+    {
+        question: '王维的《相思》中，"红豆生南国"的下一句是？',
+        options: ['春来发几枝', '此物最相思', '愿君多采撷', '秋来发几枝'],
+        correct: 0
+    },
+    {
+        question: '王维的《送元二使安西》中，"渭城朝雨浥轻尘"的下一句是？',
+        options: ['客舍青青柳色新', '劝君更尽一杯酒', '西出阳关无故人', '春风不度玉门关'],
+        correct: 0
+    },
+    {
+        question: '王维的《鹿柴》中，"空山不见人"的下一句是？',
+        options: ['但闻人语响', '返景入深林', '复照青苔上', '人闲桂花落'],
+        correct: 0
+    }
+];
+
+let currentRound = 0;
+let correctCount = 0;
+let score = 0;
+let isAnswered = false;
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function startGame() {
+    document.getElementById('start-screen').classList.add('hide');
+    document.getElementById('result-screen').classList.remove('show');
+    document.getElementById('game-ui').classList.add('show');
+    document.getElementById('score-bar').classList.add('show');
+    document.getElementById('top-left-ui').classList.add('show');
+
+    currentRound = 0;
+    correctCount = 0;
+    score = 0;
+
+    shuffleArray(POEMS);
+    showQuestion();
+}
+
+function showQuestion() {
+    if (currentRound >= 10) {
+        showResult();
+        return;
+    }
+
+    isAnswered = false;
+    const poem = POEMS[currentRound];
+    document.getElementById('round-num').textContent = (currentRound + 1) + '/10';
+    document.getElementById('correct-num').textContent = correctCount;
+    document.getElementById('score-num').textContent = score;
+
+    document.getElementById('poem-question').innerHTML = poem.question.replace(/\n/g, '<br>');
+
+    const optionsDiv = document.getElementById('poem-options');
+    optionsDiv.innerHTML = '';
+
+    const shuffledOptions = poem.options.map((opt, idx) => ({text: opt, idx: idx}));
+    shuffleArray(shuffledOptions);
+
+    shuffledOptions.forEach((opt, i) => {
+        const btn = document.createElement('div');
+        btn.className = 'poem-option';
+        btn.textContent = String.fromCharCode(65 + i) + '. ' + opt.text;
+        btn.onclick = function() { selectAnswer(opt.idx, btn); };
+        optionsDiv.appendChild(btn);
+    });
+}
+
+function selectAnswer(selectedIdx, btn) {
+    if (isAnswered) return;
+    isAnswered = true;
+
+    const poem = POEMS[currentRound];
+    const options = document.querySelectorAll('.poem-option');
+
+    options.forEach(opt => {
+        opt.style.pointerEvents = 'none';
+    });
+
+    if (selectedIdx === poem.correct) {
+        btn.classList.add('correct');
+        correctCount++;
+        score += 10;
+        showFeedback('✅ 正确！', '#00ff00');
+    } else {
+        btn.classList.add('wrong');
+        options.forEach(opt => {
+            if (opt.textContent.includes(poem.options[poem.correct])) {
+                opt.classList.add('correct');
+            }
+        });
+        showFeedback('❌ 错误', '#ff4444');
+    }
+
+    document.getElementById('correct-num').textContent = correctCount;
+    document.getElementById('score-num').textContent = score;
+
+    currentRound++;
+    setTimeout(() => {
+        showQuestion();
+    }, 1500);
+}
+
+function showFeedback(text, color) {
+    const fb = document.getElementById('feedback');
+    fb.textContent = text;
+    fb.style.color = color;
+    fb.classList.add('show');
+    fb.style.opacity = '1';
+
+    setTimeout(() => {
+        fb.style.opacity = '0';
+        setTimeout(() => {
+            fb.classList.remove('show');
+        }, 500);
+    }, 1000);
+}
+
+function showResult() {
+    document.getElementById('game-ui').classList.remove('show');
+    document.getElementById('score-bar').classList.remove('show');
+    document.getElementById('result-screen').classList.add('show');
+
+    document.getElementById('final-score').textContent = '答对 ' + correctCount + ' 题，得分 ' + score + ' 分';
+
+    let grade = '';
+    if (correctCount >= 9) grade = '🏆 诗仙再世';
+    else if (correctCount >= 7) grade = '🥇 才华横溢';
+    else if (correctCount >= 5) grade = '🥈 博学多才';
+    else if (correctCount >= 3) grade = '🥉 初窥门径';
+    else grade = '📚 继续努力';
+
+    document.getElementById('final-grade').textContent = grade;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>三维文物/建筑展示 - 佛光寺</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <style>
+        body { 
+            margin: 0; overflow: hidden; background: radial-gradient(circle, #2a2a2a 0%, #000000 100%); 
+            font-family: "STKaiti", "华文楷体", "KaiTi", "楷体", serif; letter-spacing: 1px;
+        }
+        #webgl-container { width: 100vw; height: 100vh; position: absolute; top:0; left:0; }
+        #loading-text {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #ffd700; font-size: 28px; letter-spacing: 4px; z-index: 5; text-shadow: 0 0 10px rgba(206,174,117,0.8);
+        }
+        .top-bar {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            pointer-events: none; z-index: 10; box-sizing: border-box;
+        }
+        .back-btn {
+            background: linear-gradient(135deg, rgba(20,20,20,0.8), rgba(0,0,0,0.9)); 
+            border: 1px solid #ceae75; border-top: 2px solid #ffd700; border-bottom: 2px solid #8b6914;
+            color: #e8d099; padding: 10px 25px; font-size: 22px; border-radius: 4px; cursor: pointer;
+            pointer-events: auto; text-decoration: none; transition: 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.7); text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
+            font-family: "STKaiti", "KaiTi", serif; display: inline-block;
+        }
+        .back-btn:hover { 
+            background: linear-gradient(135deg, rgba(40,30,20,0.9), rgba(20,15,10,0.9)); 
+            color: #fff; box-shadow: 0 0 15px rgba(206, 174, 117, 0.5); transform: translateY(-2px); 
+        }
+        .info-card {
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiMxMTEiLz48cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMjIyIi8+PC9zdmc+'), rgba(15, 10, 5, 0.85); 
+            border: 2px solid #8b6b33; border-image: linear-gradient(to bottom right, #ffd700, #8b6b33, #3a2a18) 1;
+            padding: 25px; color: #e8d099; max-width: 320px; text-shadow: 1px 1px 2px #000; pointer-events: auto;
+            transition: all 0.25s ease; overflow: hidden; position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9), inset 0 0 15px rgba(0,0,0,0.8);
+        }
+        .info-card::before {
+            content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px;
+            border: 1px dashed rgba(206,174,117,0.3); pointer-events: none;
+        }
+        .info-card-header { margin-bottom: 15px; text-align: center; }
+        .info-card h1 { 
+            margin: 0; color: #ffd700; font-size: 32px; border-bottom: 1px solid rgba(206,174,117,0.3); 
+            padding-bottom: 12px; letter-spacing: 2px; font-weight: normal; 
+        }
+        .info-card p { margin: 0; font-size: 18px; color: #ccc; line-height: 1.6; }
+        .info-card-body {
+            display: block;
+        }
+        .info-card-toggle {
+            display: block;
+            margin-bottom: 12px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid #ceae75;
+            color: #ceae75;
+            padding: 6px 10px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-align: center;
+        }
+        .info-card-toggle:hover {
+            background: #ceae75;
+            color: #000;
+        }
+        .speed-control {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(206, 174, 117, 0.35);
+        }
+        .speed-control label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 16px;
+            color: #ffd700;
+        }
+        .speed-control input[type="range"] {
+            width: 100%;
+            accent-color: #ceae75;
+        }
+        .speed-value {
+            margin-top: 6px;
+            font-size: 15px;
+            color: #f0e0bd;
+            text-align: right;
+        }
+        .ui-hint {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #d8c7a2;
+            line-height: 1.5;
+        }
+        .resume-btn {
+            margin-top: 10px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid #ceae75;
+            color: #ceae75;
+            padding: 8px 12px;
+            font-size: 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .resume-btn:hover {
+            background: #ceae75;
+            color: #000;
+        }
+        .info-card.collapsed {
+            width: 160px;
+            min-height: auto;
+            padding: 12px;
+        }
+        .info-card.collapsed .info-card-body {
+            display: none;
+        }
+        .info-card.collapsed .info-card-header {
+            margin-bottom: 0;
+        }
+        .info-card.collapsed h1 {
+            font-size: 20px;
+        }
+        
+        #poi-popup {
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.95); border: 2px solid #ceae75; border-radius: 12px;
+            width: 800px; height: 500px; z-index: 100;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8); pointer-events: auto;
+            flex-direction: row; overflow: hidden;
+        }
+        .poi-content {
+            display: flex; width: 100%; height: 100%;
+        }
+        .poi-left {
+            width: 50%; border-right: 1px solid #ceae75; position: relative; background: #111;
+        }
+        .poi-right {
+            width: 50%; display: flex; flex-direction: column; background: #222;
+        }
+        .poi-header {
+            padding: 15px; border-bottom: 1px solid #ceae75; position: relative;
+        }
+        .poi-header h2 { margin: 0; color: #ffd700; font-size: 22px; }
+        .poi-desc-area {
+            padding: 15px; border-bottom: 1px solid rgba(206, 174, 117, 0.3); font-size: 15px; line-height: 1.5; color: #eee;
+        }
+        .poi-chat-area {
+            flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+        }
+        .chat-msg { max-width: 85%; padding: 8px 12px; border-radius: 8px; font-size: 14px; line-height: 1.4; }
+        .chat-user { align-self: flex-end; background: #ceae75; color: #000; }
+        .chat-ai { align-self: flex-start; background: #333; color: #fff; border: 1px solid #ceae75; }
+        .poi-input-area { padding: 10px; border-top: 1px solid #ceae75; display: flex; gap: 10px; background: #1a1a1a; }
+        .poi-input-area input { flex: 1; padding: 8px; border: 1px solid #666; border-radius: 4px; background: #333; color: #fff; font-family: inherit; }
+        .poi-input-area button { padding: 8px 15px; background: #ceae75; border: none; border-radius: 4px; cursor: pointer; color: #000; font-weight: bold; }
+        .poi-close-btn { position: absolute; top: 10px; right: 10px; background: transparent; border: none; color: #ceae75; font-size: 24px; cursor: pointer; }
+        .poi-close-btn:hover { color: #fff; }
+
+        #blocker {
+            position: absolute; width: 100%; height: 100%;background-color: rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; color: white;
+        }
+        #instructions {
+            text-align: center; cursor: pointer; padding: 40px; border: 2px dashed #ceae75; background: rgba(0,0,0,0.8); border-radius: 10px;
+        }
+        #instructions:hover { background: rgba(30,30,30,0.9); }
+        .click-to-play { font-size: 36px; color: #ffd700; font-weight: bold; margin-bottom: 20px; }
+        .controls-hint { font-size: 20px; color: #ccc; line-height: 1.8; }
+
+        #crosshair {
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 24px; height: 24px; z-index: 15; pointer-events: none;
+        }
+        #crosshair::before, #crosshair::after {
+            content: ''; position: absolute; background: rgba(255, 215, 0, 0.5); border-radius: 1px;
+        }
+        #crosshair::before { width: 2px; height: 24px; left: 11px; top: 0; }
+        #crosshair::after { width: 24px; height: 2px; left: 0; top: 11px; }
+    </style>
+</head>
+<body>
+    <div id="blocker">
+        <div id="instructions">
+            <div class="click-to-play">点击屏幕，进入沉浸式探秘</div>
+            <div class="controls-hint">
+                [W] [S] 前后移动 / [A] [D] 左右平移<br/>
+                [Q] 下降 / [E] 上升飞空<br/>
+                鼠标控制视角方向
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-text">天地凝形... (模型加载中)</div>
+    <div id="webgl-container"></div>
+    <div id="crosshair"></div>
+    
+    <div class="top-bar">
+        <a href="../foguangsi.html" class="back-btn" onclick="window.location.href='../foguangsi.html'; return false;">⬅ 返回佛光寺</a>
+        <div id="infoCard" class="info-card">
+            <div class="info-card-header">
+                <h1>沉浸考察模式</h1>
+            </div>
+            <button id="overviewBtn" class="resume-btn" type="button" style="background: rgba(206, 174, 117, 0.2); color: #ffd700; margin-bottom: 12px; font-weight: bold; border-width: 2px;">🏛 结构总览</button>
+            <div class="info-card-body">
+                <p><b>操作指令：</b><br>WASD：前后移动 / 左右平移<br>鼠标：控制视角方向</p>
+                <div class="speed-control">
+                    <label for="speedSlider">移动速度 / 上升速度</label>
+                    <input id="speedSlider" type="range" min="0.5" max="15" step="0.1" value="8.0">
+                    <div id="speedValue" class="speed-value">当前速度：8.0</div>
+                    <div class="ui-hint">按 Esc 退出鼠标锁定后可拖动速度条，调完点下面按钮回到探秘模式。</div>
+                </div>
+            </div>
+            <button id="infoToggle" class="info-card-toggle" type="button" style="margin-top: 15px;">收起选项栏</button>
+            <button id="resumeBtn" class="resume-btn" type="button">进入探秘</button>
+        </div>
+    </div>
+
+    <div id="poi-popup">
+        <div class="poi-content">
+            <div class="poi-left" id="poi-model-container">
+                <!-- 3D model viewer will go here -->
+            </div>
+            <div class="poi-right">
+                <div class="poi-header">
+                    <h2 id="poi-title">建筑结构</h2>
+                    <button class="poi-close-btn" onclick="closePoiPopup()">×</button>
+                </div>
+                <div class="poi-desc-area" id="poi-desc">这里是对此建筑结构的详细介绍。</div>
+                <div class="poi-chat-area" id="poi-chat">
+                    <div class="chat-msg chat-ai">你好！关于这个结构件，你有什么想了解的吗？</div>
+                </div>
+                <div class="poi-input-area">
+                    <input type="text" id="poi-input" placeholder="输入你想问的问题...">
+                    <button onclick="sendPoiMessage()">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('webgl-container');
+        const loadingText = document.getElementById('loading-text');
+        const crosshair = document.getElementById('crosshair');
+
+        // ================ 统一可调参数（后续只改这里） ================
+        const GAME_TUNING = {
+            // 降低默认真实高度避免对任意模型做过度放大
+            modelRealHeightM: 20.0,
+            modelOffsetX: 0.0,
+            modelOffsetY: 0.0,
+            modelOffsetZ: -10.0,
+            playerEyeHeightM: 1.7,
+            spawnDistanceMultiplier: 0.2,
+            // 可调整的出生距离偏移（减少默认过远的问题）
+            spawnDistanceOffset: 50.0,
+            // 限制最大出生距离，防止被放得过远
+            maxSpawnDistance: 1200.0,
+            minSpawnDistance: 0.0,
+            desiredWalkSpeed: 8.0,
+            // 将初始化相机高度偏移设为 0，避免在小尺度模型时出生点过高
+            initialHeightOffset: 0.0,
+            // 将阻尼系数调小，搭配更直观的移动速度计算，避免极端加速度/抖动
+            dampingFactor: 20.0,
+            groundPlane: {
+                enabled: false,
+                width: 8000,
+                height: 8000,
+                baseColor: '#6b5b4b',
+                gridColorMajor: '#8b7b6b',
+                gridColorMinor: '#7b6b5b',
+                gridSpacingMajor: 10,
+                gridSpacingMinor: 5,
+                textureResolution: 2048,
+                opacity: 1.0
+            },
+            fog: { enabled: false, color: 0x8faab8, nearMultiplier: 0.3, farMultiplier: 3.5 },
+            structureDisplay: {},
+            structureParts: [
+                {
+                    file: '../../test/01(1).glb',
+                    title: '柱头斗拱',
+                    desc: '位于立柱顶端的斗拱，是整组斗拱的起始点。大斗（栌斗）直接坐于柱头之上，承受上方层层拱件的荷载，将屋顶重量逐级传递至柱身。柱头斗拱是建筑中承重最大的斗拱类型，出跳层数往往最多，体量也最为宏大。',
+                    poiLeftRight: 1000, poiUpDown: 7000, poiFrontBack: 1000, poiSize: 180
+                },
+                {
+                    file: '../../test/02(1).glb',
+                    title: '补间斗拱',
+                    desc: '位于两柱之间的额枋之上，填补柱头斗拱之间空档的斗拱。补间斗拱不直接承重于柱，而是将屋顶荷载传递至额枋再分散至两侧柱头。其出跳层数通常少于柱头斗拱，但数量更多，使檐下斗拱排列更加紧密，增强了建筑的整体刚度与韵律感。',
+                    poiLeftRight: -1500, poiUpDown: 5000, poiFrontBack: 500, poiSize: 180
+                }
+            ]
+        };
+        // ===========================================================
+
+        const scene = new THREE.Scene();
+
+        // 基础兜底背景色（下半球及雾效颜色）
+        const SCENE_BG_COLOR = GAME_TUNING.fog && GAME_TUNING.fog.enabled
+            ? GAME_TUNING.fog.color
+            : 0x8faab8;
+        scene.background = new THREE.Color(SCENE_BG_COLOR);
+
+
+        if (GAME_TUNING.fog && GAME_TUNING.fog.enabled) {
+            scene.fog = new THREE.Fog(SCENE_BG_COLOR, 100, 30000);
+        }
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100000);
+        camera.rotation.order = 'YXZ';
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        // 限制像素比以改善低端设备性能
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        // 关闭阴影以减少绘制开销（如果需要再打开并调低分辨率）
+        renderer.shadowMap.enabled = false;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
+        directionalLight.position.set(200, 500, 300);
+        // 关闭灯光投影以降低渲染开销
+        directionalLight.castShadow = false;
+        scene.add(directionalLight);
+
+        const fillLight = new THREE.DirectionalLight(0xaaccff, 0.5);
+        fillLight.position.set(-200, 100, -200);
+        scene.add(fillLight);
+
+        // PointerLockControls - FPS风格鼠标视角控制
+        const controls = new THREE.PointerLockControls(camera, document.body);
+        const blocker = document.getElementById('blocker');
+        const instructions = document.getElementById('instructions');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const infoCard = document.getElementById('infoCard');
+        const infoToggle = document.getElementById('infoToggle');
+
+        const overviewBtn = document.getElementById('overviewBtn');
+        let overviewActive = false;
+
+        overviewBtn.addEventListener('click', function () {
+            // 打开单独的结构总览页面（在新页面中排列并可点击预览）
+            window.location.href = 'structure_overview.html';
+        });
+
+        instructions.addEventListener('click', function () {
+            controls.lock();
+        });
+        controls.addEventListener('lock', function () {
+            blocker.style.display = 'none';
+            crosshair.style.display = 'block';
+            resumeBtn.innerText = '退出探秘';
+        });
+        controls.addEventListener('unlock', function () {
+            crosshair.style.display = 'none';
+            blocker.style.display = 'none';
+            resumeBtn.innerText = '进入探秘';
+        });
+
+        resumeBtn.addEventListener('click', function () {
+            if (controls.isLocked) {
+                controls.unlock();
+            } else {
+                controls.lock();
+            }
+        });
+
+        infoToggle.addEventListener('click', function () {
+            const isCollapsed = infoCard.classList.toggle('collapsed');
+            infoToggle.innerText = isCollapsed ? '展开选项栏' : '收起选项栏';
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.code === 'KeyI' && !event.repeat) {
+                const isTyping = event.target && (
+                    event.target.tagName === 'INPUT' ||
+                    event.target.tagName === 'TEXTAREA' ||
+                    event.target.isContentEditable
+                );
+                if (isTyping) return;
+                const isCollapsed = infoCard.classList.toggle('collapsed');
+                infoToggle.innerText = isCollapsed ? '展开选项栏' : '收起选项栏';
+            }
+        });
+
+        let moveForward = false;
+        let moveBackward = false;
+        let moveLeft = false;
+        let moveRight = false;
+        let moveUp = false;
+        let moveDown = false;
+
+        let prevTime = performance.now();
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+
+        let EYE_HEIGHT = GAME_TUNING.playerEyeHeightM;
+        let MOVE_ACCEL = GAME_TUNING.desiredWalkSpeed * GAME_TUNING.dampingFactor;
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+
+        function updateSpeedFromSlider(value) {
+            const speed = parseFloat(value);
+            MOVE_ACCEL = speed * GAME_TUNING.dampingFactor;
+            speedValue.innerText = '当前速度：' + speed.toFixed(1);
+        }
+
+        speedSlider.addEventListener('input', function (event) {
+            updateSpeedFromSlider(event.target.value);
+        });
+        updateSpeedFromSlider(speedSlider.value);
+
+        const onKeyDown = function (event) {
+            switch (event.code) {
+                case 'ArrowUp':
+                case 'KeyW': moveForward = true; break;
+                case 'ArrowLeft':
+                case 'KeyA': moveLeft = true; break;
+                case 'ArrowDown':
+                case 'KeyS': moveBackward = true; break;
+                case 'ArrowRight':
+                case 'KeyD': moveRight = true; break;
+                case 'KeyE': moveUp = true; break;
+                case 'KeyQ': moveDown = true; break;
+            }
+        };
+
+        const onKeyUp = function (event) {
+            switch (event.code) {
+                case 'ArrowUp':
+                case 'KeyW': moveForward = false; break;
+                case 'ArrowLeft':
+                case 'KeyA': moveLeft = false; break;
+                case 'ArrowDown':
+                case 'KeyS': moveBackward = false; break;
+                case 'ArrowRight':
+                case 'KeyD': moveRight = false; break;
+                case 'KeyE': moveUp = false; break;
+                case 'KeyQ': moveDown = false; break;
+            }
+        };
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('keyup', onKeyUp);
+
+        const loader = new THREE.GLTFLoader();
+        const collidableObjects = [];
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const poiObjects = [];
+
+        // ========== 结构件系统 ==========
+        const structureParts = [];
+        let activeHighlight = null;
+        const HIGHLIGHT_SCALE = 1.25;
+        const HIGHLIGHT_EMISSIVE = new THREE.Color(0xffd700);
+        const HIGHLIGHT_EMISSIVE_INTENSITY = 0.4;
+        
+        const overviewGroup = new THREE.Group();
+        overviewGroup.visible = false;
+        scene.add(overviewGroup);
+
+        function resetHighlight() {
+            if (!activeHighlight) return;
+            const part = activeHighlight;
+            part.mesh.scale.set(part.baseScale.x, part.baseScale.y, part.baseScale.z);
+            part.mesh.traverse(function (child) {
+                if (child.isMesh && child.material && child.material._origEmissive !== undefined) {
+                    child.material.emissive.copy(child.material._origEmissive);
+                    child.material.emissiveIntensity = child.material._origEmissiveIntensity;
+                }
+            });
+            activeHighlight = null;
+        }
+
+        function setHighlight(part) {
+            resetHighlight();
+            activeHighlight = part;
+            part.mesh.scale.set(
+                part.baseScale.x * HIGHLIGHT_SCALE,
+                part.baseScale.y * HIGHLIGHT_SCALE,
+                part.baseScale.z * HIGHLIGHT_SCALE
+            );
+            part.mesh.traverse(function (child) {
+                if (child.isMesh && child.material) {
+                    if (child.material._origEmissive === undefined) {
+                        child.material._origEmissive = child.material.emissive.clone();
+                        child.material._origEmissiveIntensity = child.material.emissiveIntensity;
+                    }
+                    child.material.emissive.copy(HIGHLIGHT_EMISSIVE);
+                    child.material.emissiveIntensity = HIGHLIGHT_EMISSIVE_INTENSITY;
+                }
+            });
+        }
+
+        function loadStructureParts() {
+            const parts = GAME_TUNING.structureParts;
+            if (!parts || parts.length === 0) return;
+
+            // 固定间距排开
+            const spacing = 100;
+            const startX = -((parts.length - 1) * spacing) / 2;
+
+            parts.forEach(function (partConfig, index) {
+                loader.load(partConfig.file, function (gltf) {
+                    const partModel = gltf.scene;
+
+                    // 1. 归一化大小
+                    const partBox = new THREE.Box3().setFromObject(partModel);
+                    const partSize = partBox.getSize(new THREE.Vector3());
+                    const partMaxDim = Math.max(partSize.x, partSize.y, partSize.z);
+                    const exhibitScale = partMaxDim === 0 ? 1 : 50 / partMaxDim; // 调整弹出件基础大小
+                    partModel.scale.set(exhibitScale, exhibitScale, exhibitScale);
+
+                    // 2. 居中
+                    const center = new THREE.Box3().setFromObject(partModel).getCenter(new THREE.Vector3());
+                    const offsetX = -center.x;
+                    const offsetY = -center.y;
+                    const offsetZ = -center.z;
+
+                    // 将模型放入一个小包装组中便于自转
+                    const wrapper = new THREE.Group();
+                    partModel.position.set(offsetX, offsetY, offsetZ);
+                    wrapper.add(partModel);
+
+                    wrapper.position.set(startX + index * spacing, 0, 0);
+
+                    // 便于点击检测，直接将数据挂载在最外层网格
+                    partModel.traverse(function (child) {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+
+                    overviewGroup.add(wrapper);
+
+                    structureParts.push({
+                        mesh: wrapper,
+                        baseScale: wrapper.scale.clone(),
+                        title: partConfig.title,
+                        desc: partConfig.desc,
+                        config: partConfig
+                    });
+
+                }, undefined, function (error) {
+                    console.warn('结构件加载失败: ' + partConfig.file, error);
+                });
+            });
+        }
+
+        function createPOI(x, y, z, title, desc, glbFile, radius = 80) {
+            const geometry = new THREE.SphereGeometry(radius, 32, 32);
+            const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const sphere = new THREE.Mesh(geometry, material);
+            
+            const haloGeo = new THREE.SphereGeometry(radius * 1.2, 32, 32);
+            const haloMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 });
+            const halo = new THREE.Mesh(haloGeo, haloMat);
+            sphere.add(halo);
+
+            sphere.position.set(x, y, z);
+            sphere.userData = { title: title, desc: desc, isSelectable: true, glbFile: glbFile };
+            scene.add(sphere);
+            poiObjects.push(sphere);
+        }
+
+        let popupRenderer, popupScene, popupCamera;
+        let popupModel = null;
+        let isPopupDragging = false;
+        let popupPreviousMousePosition = { x: 0, y: 0 };
+        function initPopup3D() {
+            const container = document.getElementById('poi-model-container');
+            popupScene = new THREE.Scene();
+            popupScene.background = new THREE.Color(0x111111);
+            popupCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            popupCamera.position.set(0, 0, 300);
+            popupRenderer = new THREE.WebGLRenderer({ antialias: true });
+            popupRenderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(popupRenderer.domElement);
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(1, 1, 1);
+            popupScene.add(light);
+            popupScene.add(new THREE.AmbientLight(0x404040));
+
+            container.addEventListener('mousedown', (e) => { isPopupDragging = true; });
+            container.addEventListener('mouseup', () => { isPopupDragging = false; });
+            container.addEventListener('mouseleave', () => { isPopupDragging = false; });
+            container.addEventListener('mousemove', (e) => {
+                if (isPopupDragging && popupModel) {
+                    const deltaMove = { x: e.offsetX - popupPreviousMousePosition.x, y: e.offsetY - popupPreviousMousePosition.y };
+                    popupModel.rotation.y += deltaMove.x * 0.01;
+                    popupModel.rotation.x += deltaMove.y * 0.01;
+                }
+                popupPreviousMousePosition = { x: e.offsetX, y: e.offsetY };
+            });
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                popupCamera.position.z += e.deltaY * 0.5;
+            });
+            function r() {
+                requestAnimationFrame(r);
+                if (popupRenderer && popupScene && popupCamera) popupRenderer.render(popupScene,popupCamera);
+            }
+            r();
+        }
+
+        function loadPopupModel(glbFile) {
+            if (!popupRenderer) initPopup3D();
+            if (popupModel) popupScene.remove(popupModel);
+            if (!glbFile) return;
+            const l = new THREE.GLTFLoader();
+            l.load(glbFile, (gltf) => {
+                popupModel = gltf.scene;
+                const box = new THREE.Box3().setFromObject(popupModel);
+                const size = box.getSize(new THREE.Vector3());
+                const center = box.getCenter(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 150 / maxDim;
+                popupModel.scale.set(scale, scale, scale);
+                popupModel.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+                popupScene.add(popupModel);
+            });
+        }
+
+        async function sendPoiMessage() {
+            const input = document.getElementById('poi-input');
+            const txt = input.value.trim();
+            if (!txt) return;
+            const chatObj = document.getElementById('poi-chat');
+            const item = document.createElement('div');
+            item.className = 'chat-msg chat-user';
+            item.innerText = txt;
+            chatObj.appendChild(item);
+            input.value = '';
+            chatObj.scrollTop = chatObj.scrollHeight;
+
+            const aiItem = document.createElement('div');
+            aiItem.className = 'chat-msg chat-ai';
+            aiItem.innerText = '正在思考...';
+            chatObj.appendChild(aiItem);
+            chatObj.scrollTop = chatObj.scrollHeight;
+
+            try {
+                const res = await fetch('http://127.0.0.1:5000/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        message: '关于建筑结构“' + document.getElementById('poi-title').innerText + '”，' + txt,
+                        system_prompt: '你现在是一位资深的中国古代建筑专家，熟知各种木结构（如斗拱、飞檐等）。请用专业、通俗、耐心的语气解答玩家关于该结构件的问题。不要使用任何其他角色的口癖或设定。'
+                    })
+                });
+                const data = await res.json();
+                aiItem.innerText = data.reply || '无响应';
+            } catch(e) {
+                aiItem.innerText = '请求出错';
+            }
+            chatObj.scrollTop = chatObj.scrollHeight;
+        }
+
+        function closePoiPopup() {
+            document.getElementById('poi-popup').style.display = 'none';
+            resetHighlight();
+            if (popupModel && popupScene) {
+                popupScene.remove(popupModel);
+                popupModel = null;
+            }
+            controls.lock();
+        }
+
+        // ========== 独立创建参照地面（自适应模型尺寸） ==========
+        let groundMesh = null;
+
+        function createGround(worldSize) {
+            const gp = GAME_TUNING.groundPlane;
+            if (!gp || !gp.enabled) return;
+
+            if (groundMesh) {
+                scene.remove(groundMesh);
+                groundMesh.geometry.dispose();
+                if (groundMesh.material.map) groundMesh.material.map.dispose();
+                groundMesh.material.dispose();
+            }
+
+            const size = worldSize || Math.max(gp.width, gp.height);
+            const texRes = gp.textureResolution;
+            const canvas = document.createElement('canvas');
+            canvas.width = texRes;
+            canvas.height = texRes;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = gp.baseColor;
+            ctx.fillRect(0, 0, texRes, texRes);
+
+            const pxPerMeter = texRes / size;
+
+            // 自适应网格间距：确保网格线在纹理上至少2像素宽
+            let minorSpacing = gp.gridSpacingMinor;
+            let majorSpacing = gp.gridSpacingMajor;
+            while (minorSpacing * pxPerMeter < 2 && minorSpacing < size / 4) minorSpacing *= 2;
+            while (majorSpacing * pxPerMeter < 4 && majorSpacing < size / 2) majorSpacing *= 2;
+
+            const minorPx = minorSpacing * pxPerMeter;
+            if (minorPx >= 2) {
+                ctx.strokeStyle = gp.gridColorMinor;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (let i = 0; i <= texRes; i += minorPx) {
+                    ctx.moveTo(i, 0); ctx.lineTo(i, texRes);
+                    ctx.moveTo(0, i); ctx.lineTo(texRes, i);
+                }
+                ctx.stroke();
+            }
+
+            const majorPx = majorSpacing * pxPerMeter;
+            if (majorPx >= 4) {
+                ctx.strokeStyle = gp.gridColorMajor;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let i = 0; i <= texRes; i += majorPx) {
+                    ctx.moveTo(i, 0); ctx.lineTo(i, texRes);
+                    ctx.moveTo(0, i); ctx.lineTo(texRes, i);
+                }
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(texRes / 2, 0); ctx.lineTo(texRes / 2, texRes);
+            ctx.moveTo(0, texRes / 2); ctx.lineTo(texRes, texRes / 2);
+            ctx.stroke();
+
+            const groundTexture = new THREE.CanvasTexture(canvas);
+            groundTexture.wrapS = THREE.RepeatWrapping;
+            groundTexture.wrapT = THREE.RepeatWrapping;
+            groundTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+            const groundGeo = new THREE.PlaneGeometry(size, size);
+            const groundMat = new THREE.MeshStandardMaterial({
+                map: groundTexture,
+                transparent: gp.opacity < 1.0,
+                opacity: gp.opacity,
+                roughness: 0.85,
+                metalness: 0.0,
+                side: THREE.DoubleSide
+            });
+            groundMesh = new THREE.Mesh(groundGeo, groundMat);
+            groundMesh.rotation.x = -Math.PI / 2;
+            groundMesh.position.y = GAME_TUNING.modelOffsetY;
+            groundMesh.receiveShadow = true;
+            scene.add(groundMesh);
+        }
+
+        // 初始创建默认地面（模型加载前可见）
+        createGround(8000);
+
+        camera.position.set(0, EYE_HEIGHT + (GAME_TUNING.initialHeightOffset || 0), 20);
+        camera.lookAt(new THREE.Vector3(0, EYE_HEIGHT + (GAME_TUNING.initialHeightOffset || 0), 0));
+
+        loader.load('../../test/foguangsi.glb', function (gltf) {
+            const model = gltf.scene;
+            
+            const box = new THREE.Box3().setFromObject(model);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            
+            const targetSize = 200;
+            const scale = maxDim === 0 ? 1 : targetSize / maxDim;
+            model.scale.set(scale, scale, scale);
+
+            const scaledBox = new THREE.Box3().setFromObject(model);
+            const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+            model.position.x = -scaledCenter.x;
+            model.position.y = -scaledBox.min.y;
+            model.position.z = -scaledCenter.z;
+
+            model.traverse(function (child) {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    collidableObjects.push(child);
+                }
+            });
+            scene.add(model);
+
+            // 移动速度与人眼高度由统一配置控制
+            EYE_HEIGHT = GAME_TUNING.playerEyeHeightM;
+            MOVE_ACCEL = GAME_TUNING.desiredWalkSpeed * GAME_TUNING.dampingFactor;
+
+            // 初始出生点：根据模型包围盒自适应相机位置，使建筑在视野中合理放大
+            const finalBox = new THREE.Box3().setFromObject(model);
+            let finalSize = finalBox.getSize(new THREE.Vector3());
+            let finalMax = Math.max(finalSize.x, finalSize.y, finalSize.z);
+
+            const REAL_MODEL_HEIGHT = GAME_TUNING.modelRealHeightM;
+            const REAL_PLAYER_EYE = GAME_TUNING.playerEyeHeightM;
+
+            // 如果模型当前高度不为 0，则额外缩放使其在世界单位中等于真实高度（1 world unit ≈ 1 米）
+            if (finalSize.y > 0.0001) {
+                const extraScale = REAL_MODEL_HEIGHT / finalSize.y;
+                model.scale.multiplyScalar(extraScale);
+
+                // 重新计算包围盒与尺寸
+                const newBox = new THREE.Box3().setFromObject(model);
+                finalSize = newBox.getSize(new THREE.Vector3());
+                finalMax = Math.max(finalSize.x, finalSize.y, finalSize.z);
+                // 让模型底面贴地（y=0）
+                const newCenter = newBox.getCenter(new THREE.Vector3());
+                model.position.x = -newCenter.x + GAME_TUNING.modelOffsetX;
+                model.position.y = -newBox.min.y + GAME_TUNING.modelOffsetY;
+                model.position.z = -newCenter.z + GAME_TUNING.modelOffsetZ;
+            }
+
+            // 将玩家视角固定为真实身高（1.7m），并和模型保持同一水平线
+            EYE_HEIGHT = REAL_PLAYER_EYE;
+
+            // 加载结构件（与主模型同缩放流程，贴合建筑）
+            const computedExtraScale = finalSize.y > 0.0001 ? REAL_MODEL_HEIGHT / finalSize.y : 1;
+            // 根据模型最终尺寸重建地面（确保地面覆盖模型范围+相机视野）
+            const groundSize = Math.max(finalSize.x, finalSize.z) * 6;
+            createGround(Math.max(groundSize, 8000));
+
+            // 出生距离与移动速度完全由统一配置控制
+            // 计算初始相机距离：基于模型尺寸但限制在合理的世界单位范围内，避免被放得过远
+            const minDistanceWorld = 7.5;    // 最小世界单位距离
+            const suggested = finalMax * GAME_TUNING.spawnDistanceMultiplier;
+            // 在倍率基础上加入可配置偏移，并限制最大最小值，避免出生过远
+            const cameraDistance = Math.min(
+                Math.max(suggested + (GAME_TUNING.spawnDistanceOffset || 0), GAME_TUNING.minSpawnDistance, minDistanceWorld),
+                GAME_TUNING.maxSpawnDistance || Infinity
+            );
+            MOVE_ACCEL = GAME_TUNING.desiredWalkSpeed * GAME_TUNING.dampingFactor;
+
+            // 根据模型尺度动态调整雾效：使雾主要影响远景，避免近处出现浓重的淡蓝雾
+            if (GAME_TUNING.fog && GAME_TUNING.fog.enabled && scene.fog) {
+                const nearMul = (GAME_TUNING.fog.nearMultiplier !== undefined) ? GAME_TUNING.fog.nearMultiplier : 0.3;
+                const farMul = (GAME_TUNING.fog.farMultiplier !== undefined) ? GAME_TUNING.fog.farMultiplier : 3.5;
+                const near = Math.max(cameraDistance * nearMul, 10);
+                const far = Math.max(cameraDistance * farMul, near + 1000);
+                scene.fog.near = near;
+                scene.fog.far = far;
+            }
+
+            // 应用偏移后重新取包围盒，确保出生点以最终模型位置为基准
+            const positionedBox = new THREE.Box3().setFromObject(model);
+
+            // 加载结构件预备
+            loadStructureParts();
+
+            // 相机位于建筑正前方，初始高度按“模型高度比例”抬升，避免落在巨型模型的底部区域
+            // 仅靠固定的 65 单位对 10000 单位高的模型来说仍然太低，因此这里取更高的一项
+            const desiredY = positionedBox.min.y + GAME_TUNING.playerEyeHeightM;
+            const minY = positionedBox.min.y + 0.5; // 最小高度，防止卡地面
+            const ratioY = positionedBox.min.y + finalSize.y * 0.16; // 约位于模型高度的 16%
+            const offsetY = desiredY + (GAME_TUNING.initialHeightOffset || 0);
+            const cameraY = Math.max(ratioY, offsetY, minY);
+            const centerZ = (positionedBox.max.z + positionedBox.min.z) / 2;
+
+            // 优先将相机放在建筑“正门”一侧（Z 轴正方向），若检测到仍在包围盒内则切换到另一侧
+            const frontZ = positionedBox.max.z + cameraDistance;
+            const backZ = positionedBox.min.z - cameraDistance;
+            const candidatePos = new THREE.Vector3(0, cameraY, frontZ);
+            const modelBox = positionedBox;
+            if (modelBox.containsPoint(candidatePos)) {
+                candidatePos.set(0, cameraY, backZ);
+            }
+            camera.position.copy(candidatePos);
+            camera.lookAt(new THREE.Vector3(0, cameraY, centerZ));
+
+            loadingText.style.display = 'none';
+
+        }, function (xhr) {
+            if (xhr.lengthComputable) {
+                const percent = (xhr.loaded / xhr.total * 100).toFixed(0);
+                loadingText.innerText = '天地凝形... ' + percent + '%';
+            }
+        }, function (error) {
+            console.error(error);
+            loadingText.innerText = '模型坐标损坏或加载跨域，请确认路径完整';
+            loadingText.style.color = '#ff5555';
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now();
+
+            if (controls.isLocked) {
+                // 限制最大 delta 时间，防止掉帧时步幅异常（“一顿”的底层原因之一）
+                const delta = Math.min((time - prevTime) / 1000, 0.05);
+
+                // 采用更小的阻尼项以获得更平滑的速度衰减
+                velocity.x -= velocity.x * 6.0 * delta;
+                velocity.z -= velocity.z * 6.0 * delta;
+                velocity.y -= velocity.y * 6.0 * delta;
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+
+                if (moveForward || moveBackward) velocity.z -= direction.z * MOVE_ACCEL * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * MOVE_ACCEL * delta;
+                if (moveUp || moveDown) velocity.y += (Number(moveUp) - Number(moveDown)) * MOVE_ACCEL * delta;
+
+                // 保存旧位置用于碰撞检测
+                const oldPosition = camera.position.clone();
+
+                // 水平移动：W/S前后，A/D左右平移
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+
+                // 水平碰撞检测
+                const moveVec = new THREE.Vector3(
+                    camera.position.x - oldPosition.x,
+                    0,
+                    camera.position.z - oldPosition.z
+                );
+                const moveDist = moveVec.length();
+                const playerRadius = 1.0;
+
+                if (moveDist > 0.001) {
+                    const rayDir = moveVec.normalize();
+                    raycaster.set(new THREE.Vector3(oldPosition.x, oldPosition.y, oldPosition.z), rayDir);
+                    const intersects = raycaster.intersectObjects(collidableObjects, false);
+                    if (intersects.length > 0 && intersects[0].distance < moveDist + playerRadius) {
+                        camera.position.x = oldPosition.x;
+                        camera.position.z = oldPosition.z;
+                        velocity.x = 0;
+                        velocity.z = 0;
+                    }
+                }
+
+                // 垂直移动：Q/E升降
+                const oldY = camera.position.y;
+                camera.position.y += velocity.y * delta;
+                const stepY = camera.position.y - oldY;
+
+                if (stepY < 0) {
+                    raycaster.set(
+                        new THREE.Vector3(camera.position.x, oldY, camera.position.z),
+                        new THREE.Vector3(0, -1, 0)
+                    );
+                    const intersects = raycaster.intersectObjects(collidableObjects, false);
+                    if (intersects.length > 0 && intersects[0].distance < Math.abs(stepY) + playerRadius) {
+                        camera.position.y = oldY;
+                        velocity.y = 0;
+                    }
+                }
+
+                // 高度限制
+                if (camera.position.y < EYE_HEIGHT * 0.3) {
+                    camera.position.y = EYE_HEIGHT * 0.3;
+                    velocity.y = 0;
+                }
+
+                // 移除此处原本存在的 FOV 视角微动。
+                // 原因：每帧调用 camera.updateProjectionMatrix() 严重消耗性能，是造成画面“一顿一顿”的元凶。
+            }
+
+            if (overviewGroup.visible) {
+                // 缓慢自转
+                structureParts.forEach(part => {
+                    part.mesh.rotation.y += 0.005;
+                });
+            }
+
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }, false);
+
+        // 鼠标点击：优先检测结构件，其次检测POI圆点
+        window.addEventListener('click', (event) => {
+            if (!controls.isLocked) return;
+
+            // 漫游模式下隐藏了鼠标指针，使用屏幕正中心的黄色十字准星为瞄准点
+            // 玩家将十字准星对准白点后点击鼠标左键即可
+            mouse.x = 0;
+            mouse.y = 0;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // 检测结构件
+            let partHit = false;
+            for (let i = 0; i < structureParts.length; i++) {
+                const part = structureParts[i];
+                const intersects = raycaster.intersectObjects(part.mesh.children, true);
+                if (intersects.length > 0) {
+                    setHighlight(part);
+                    document.getElementById('poi-title').innerText = part.title;
+                    document.getElementById('poi-desc').innerText = part.desc;
+                    document.getElementById('poi-chat').innerHTML = '<div class="chat-msg chat-ai">你好！关于这个结构件，你有什么想了解的吗？</div>';
+                    document.getElementById('poi-popup').style.display = 'flex';
+                    controls.unlock();
+                    partHit = true;
+                    break;
+                }
+            }
+            if (partHit) {
+                // 加载该构件的 3D 预览到左侧容器中
+                // 首先找到被点击的 part
+                for (let i = 0; i < structureParts.length; i++) {
+                    const part = structureParts[i];
+                    if (activeHighlight === part && part.config.file) {
+                        loadPopupModel(part.config.file);
+                        break;
+                    }
+                }
+            }
+        });
+        document.getElementById('poi-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendPoiMessage();
+        });
+    </script>
+</body>
+</html>

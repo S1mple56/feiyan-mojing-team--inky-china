@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>古建游览 - 佛光寺</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
+        #game-container { width: 100%; height: 100%; }
+        #top-right-ui { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; z-index: 100; }
+        .sys-btn { background-color: rgba(0, 0, 0, 0.7); border: 2px solid #ceae75; color: #ceae75; padding: 10px 20px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px; cursor: pointer; transition: 0.3s; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); text-decoration: none; display: inline-block; }
+        .sys-btn:hover { background-color: #ceae75; color: #000; }
+        #ui-layer { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 800px; display: none; flex-direction: column; gap: 10px; pointer-events: none; z-index: 90; }
+        .dialog-box { background-color: rgba(139, 69, 19, 0.95); border: 3px solid #ceae75; color: #fff; padding: 25px; font-size: 24px; border-radius: 8px; text-align: center; line-height: 1.6; text-shadow: 1px 1px 2px #000; }
+        .options-container { display: none; flex-direction: column; gap: 10px; pointer-events: auto; }
+        .option-btn { background-color: rgba(0, 0, 0, 0.8); border: 2px solid #ceae75; color: #ceae75; padding: 15px; font-size: 22px; border-radius: 5px; cursor: pointer; transition: 0.3s; text-align: left; font-family: "KaiTi"; }
+        .option-btn:hover { background-color: #ceae75; color: #000; }
+        .highlight { color: #ffd700; font-weight: bold; }
+        .modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(15, 15, 15, 0.95); border: 4px solid #ceae75; color: #fff; padding: 40px; border-radius: 12px; display: none; z-index: 200; text-align: center; min-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #ffd700; font-size: 32px; border-bottom: 1px solid #ceae75; padding-bottom: 10px; }
+        .close-btn { background-color: #ceae75; color: #000; border: none; padding: 10px 30px; font-size: 22px; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: "KaiTi"; }
+        .close-btn:hover { background-color: #fff; }
+        .btn-group { margin-top: 30px; display: flex; justify-content: center; gap: 30px; }
+        #toast { position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(139, 69, 19, 0.9); border: 2px solid #ffd700; color: #fff; padding: 15px 30px; font-size: 24px; border-radius: 8px; display: none; z-index: 300; opacity: 0; transition: opacity 0.5s; text-align: center; }
+
+        /* 题记探索小游戏样式 */
+        #search-modal .search-area { position: relative; width: 700px; height: 350px; background: rgba(60, 40, 20, 0.9); border: 2px solid #ceae75; border-radius: 8px; margin: 20px auto; overflow: hidden; cursor: crosshair; }
+        #search-modal .search-area .beam-text { position: absolute; color: rgba(80, 50, 20, 0.3); font-size: 28px; font-family: "KaiTi"; user-select: none; transition: color 0.5s; }
+        #search-modal .search-area .beam-text.found { color: #ffd700; text-shadow: 0 0 10px #ffd700; font-weight: bold; }
+        #search-modal .flashlight { position: absolute; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,200,0.4) 0%, transparent 70%); pointer-events: none; display: none; }
+        #search-hint { font-size: 18px; color: #aaa; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="game-container"></div>
+
+<div id="top-right-ui">
+    <a class="sys-btn" href="panorama/foguangsi.html">🌍 三维实景</a>
+    <button class="sys-btn" onclick="toggleBackpack()">🎒 背包</button>
+    <button class="sys-btn" onclick="togglePause()">⏸ 暂停</button>
+</div>
+
+<div id="ui-layer">
+    <div id="dialog-text" class="dialog-box"></div>
+    <div id="options-box" class="options-container">
+        <button class="option-btn" onclick="answerQuestion(0)" id="opt-0"></button>
+        <button class="option-btn" onclick="answerQuestion(1)" id="opt-1"></button>
+        <button class="option-btn" onclick="answerQuestion(2)" id="opt-2"></button>
+    </div>
+</div>
+
+<!-- 题记探索小游戏弹窗 -->
+<div id="search-modal" class="modal" style="min-width: 760px;">
+    <h2>🔍 寻找唐代题记</h2>
+    <p style="font-size: 18px; color: #ccc;">大殿梁下光线昏暗，字迹模糊。移动鼠标照亮梁柱，寻找唐代墨书题记中的关键名字。</p>
+    <div class="search-area" id="search-area">
+        <div class="flashlight" id="flashlight"></div>
+        <!-- 散落的梁下文字 -->
+        <div class="beam-text" style="left:50px; top:40px;">大唐大中十一年</div>
+        <div class="beam-text" style="left:300px; top:80px;">功德主</div>
+        <div class="beam-text" style="left:150px; top:160px;">女弟子宁公遇</div>
+        <div class="beam-text" style="left:450px; top:200px;">愿诚和尚</div>
+        <div class="beam-text" style="left:100px; top:250px;">佛殿主</div>
+        <div class="beam-text" style="left:500px; top:60px;">五台山佛光寺</div>
+        <div class="beam-text" style="left:350px; top:280px;">东大殿</div>
+    </div>
+    <div id="search-hint">已发现 <span id="found-count">0</span> / 6 处题记</div>
+    <button class="close-btn" onclick="closeSearch()" style="margin-top: 15px;">离开大殿</button>
+</div>
+
+<div id="backpack-modal" class="modal">
+    <h2>行囊记录</h2>
+    <div id="bp-list" style="font-size: 24px; line-height: 2; margin-bottom: 20px;"></div>
+    <button class="close-btn" onclick="toggleBackpack()">关闭</button>
+</div>
+
+<div id="pause-modal" class="modal">
+    <h2>游览已暂停</h2>
+    <p style="font-size: 20px; color: #aaa;">休息一下，感受千年古刹的宁静</p>
+    <div class="btn-group">
+        <button class="close-btn" onclick="togglePause()">继续游览</button>
+        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+    </div>
+</div>
+
+<div id="completion-modal" class="modal">
+    <h2 style="color: #00ff00; font-size: 40px;">🎉 国宝探秘 🎉</h2>
+    <p style="font-size: 24px; line-height: 1.8;">
+        您已成功收集佛光寺的所有历史信物！<br>
+        唐代建筑、塑像、壁画、题记，四绝合一。<br>
+        <span style="color:#ffd700;">🎁 隐藏奖励：已解锁【建筑之父·梁思成】角色皮肤！</span><br>
+        可在首页角色设置中更换。
+    </p>
+    <div class="btn-group">
+        <button class="close-btn" onclick="restartJourney()">重新游历</button>
+        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let inventory = [];
+const totalItems = 4;
+let isPaused = false;
+let searchFoundCount = 0;
+
+const config = {
+    type: Phaser.AUTO,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    parent: 'game-container',
+    physics: { default: 'arcade', arcade: { debug: false } },
+    scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scene: { preload: preload, create: create, update: update }
+};
+
+const game = new Phaser.Game(config);
+let player, cursors, wasd, spaceKey;
+let npcs = [];
+let activeNPC = null;
+let dialogState = 'hidden';
+
+const uiLayer = document.getElementById('ui-layer');
+const dialogText = document.getElementById('dialog-text');
+const optionsBox = document.getElementById('options-box');
+const optBtns = [document.getElementById('opt-0'), document.getElementById('opt-1'), document.getElementById('opt-2')];
+
+function preload() {
+    this.load.image('bg', 'province/shanxi/Architecture/location/bg_foguangsi.png');
+    this.load.image('liangsicheng', 'province/shanxi/Architecture/location/liangsicheng.png');
+    this.load.image('linhuiyin', 'province/shanxi/Architecture/location/linhuiyin.png');
+    this.load.image('ninggongyu', 'province/shanxi/Architecture/location/ninggongyu.png');
+    this.load.image('yuanchengheshang', 'province/shanxi/Architecture/location/yuanchengheshang.png');
+
+    let playerSkin = localStorage.getItem('playerSkin') || 'player.png';
+    if (playerSkin.startsWith('data:image')) {
+        let arr = playerSkin.split(',');
+        let mime = arr[0].match(/:(.*?);/)[1];
+        let bstr = atob(arr[1]);
+        let n = bstr.length;
+        let u8arr = new Uint8Array(n);
+        while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+        let blob = new Blob([u8arr], { type: mime });
+        this.load.image('player', URL.createObjectURL(blob));
+    } else {
+        this.load.image('player', playerSkin);
+    }
+}
+
+function create() {
+    let bg = this.add.image(0, 0, 'bg').setOrigin(0, 0);
+
+    if (bg.width < 100) {
+        alert("🚨 警告：背景图加载失败！请检查 province/shanxi/Architecture/location/bg_foguangsi.png 是否存在。");
+    }
+
+    let scaleX = this.cameras.main.width / bg.width;
+    let scaleY = this.cameras.main.height / bg.height;
+    let baseScale = Math.max(scaleX, scaleY) * 1.5;
+    bg.setScale(baseScale);
+
+    let worldWidth = bg.width * baseScale;
+    let worldHeight = bg.height * baseScale;
+
+    this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+    this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+
+    player = this.physics.add.sprite(worldWidth * 0.5, worldHeight * 0.5, 'player');
+    let dynamicScale = 150 / player.height;
+    player.setScale(dynamicScale);
+    player.setCollideWorldBounds(true);
+    player.body.setSize(player.width * 0.6, player.height * 0.6);
+
+    // ==================== NPC 配置 ====================
+    const npcConfigs = [
+        {
+            id: 'liangsicheng', name: '梁思成', x: 0.5, y: 0.4, scale: 0.25, tint: 0xffffff, isMain: true,
+            item: '「中国第一国宝」题词',
+            hasGivenItem: false,
+            intro: '<span class="highlight">【建筑学家 梁思成】</span><br>1937年，我与徽因根据敦煌壁画中的线索，终于找到了这座唐代大殿。<br>佛光寺东大殿集唐构、唐塑、唐画、唐记于一身，我称它为——<span style="color:#ffd700;">"中国第一国宝"</span>！<br><br>▶ 按【空格键】聆听发现故事'
+        },
+        {
+            id: 'linhuiyin', name: '林徽因', x: 0.3, y: 0.55, scale: 0.25, tint: 0xffcccc,
+            item: '唐代墨书题记拓片',
+            hasGivenItem: false,
+            intro: '<span class="highlight">【建筑师 林徽因】</span><br>大殿梁下位置很高，光线昏暗，字迹难以辨认。<br>幸好我有远视眼，看清了梁下的关键名字……<br><br>▶ 按【空格键】接受历史提问',
+            question: '林徽因在佛光寺东大殿梁下发现的唐代墨书题记中，关键的女性名字是什么？',
+            options: ['A. 女弟子武则天', 'B. 女弟子宁公遇', 'C. 女弟子文成公主'],
+            correct: 1,
+            success: '正是！"女弟子宁公遇"这个名字后来又在殿前唐代经幢上得到印证，帮助确认了东大殿建于唐代。',
+            fail: '不对哦，是"女弟子宁公遇"。这个发现帮助确认了东大殿的建造年代。'
+        },
+        {
+            id: 'ninggongyu', name: '宁公遇', x: 0.7, y: 0.6, scale: 0.25, tint: 0xffaa88,
+            item: '「佛殿主」施主牌',
+            hasGivenItem: false,
+            intro: '<span class="highlight">【唐代女施主 宁公遇】</span><br>我虽是女子，却倾尽家财修建这座大殿。<br>题记中称我为"佛殿主"，我便是这东大殿的出资修建之人。<br><br>▶ 按【空格键】接受历史提问',
+            question: '佛光寺东大殿题记中，宁公遇被称为什么？',
+            options: ['A. 佛殿主', 'B. 大功德主', 'C. 护法居士'],
+            correct: 0,
+            success: '不错！"佛殿主"说明她是修建大殿的重要出资和组织人物，一位了不起的唐代女性。',
+            fail: '是"佛殿主"。这个称号说明她是东大殿修建的核心人物。'
+        },
+        {
+            id: 'yuanchengheshang', name: '愿诚和尚', x: 0.2, y: 0.7, scale: 0.25, tint: 0xaaaaff,
+            item: '愿诚和尚塑像拓影',
+            hasGivenItem: false,
+            intro: '<span class="highlight">【唐代僧人 愿诚和尚】</span><br>阿弥陀佛。贫僧愿诚，与宁公遇施主一同主持修建了这座东大殿。<br>殿内那尊等身写实的沙门像，便是贫僧的塑像。<br><br>▶ 按【空格键】接受历史提问',
+            question: '梁思成认为佛光寺东大殿中哪类唐代遗存最为珍贵，将其称为"四绝合一"？',
+            options: ['A. 唐代木构、唐代经书、唐代佛像、唐代钟铭', 'B. 唐代建筑、唐代塑像、唐代壁画、唐代题记', 'C. 唐代石窟、唐代彩塑、唐代飞天、唐代藻井'],
+            correct: 1,
+            success: '善哉！四类唐代遗存集中于同一座大殿中，极为罕见，这正是"中国第一国宝"的由来。',
+            fail: '是唐代建筑、唐代塑像、唐代壁画和唐代题记四绝合一。'
+        }
+    ];
+
+    npcConfigs.forEach(cfg => {
+        let npcSprite = this.physics.add.sprite(worldWidth * cfg.x, worldHeight * cfg.y, cfg.id);
+        npcSprite.setScale(cfg.scale);
+        npcSprite.setImmovable(true);
+        npcSprite.body.setSize(npcSprite.width * 0.6, npcSprite.height * 0.6);
+        npcSprite.npcData = cfg;
+        npcs.push(npcSprite);
+        this.physics.add.collider(player, npcSprite);
+    });
+
+    cursors = this.input.keyboard.createCursorKeys();
+    wasd = this.input.keyboard.addKeys({ W: 87, A: 65, S: 83, D: 68 });
+    spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    this.cameras.main.startFollow(player, true, 0.08, 0.08);
+    this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
+        let newZoom = this.cameras.main.zoom - (deltaY * 0.001);
+        this.cameras.main.zoom = Phaser.Math.Clamp(newZoom, 1, 3);
+    });
+
+    // 初始化题记探索小游戏
+    setupSearchGame();
+}
+
+function update() {
+    if (isPaused) { player.setVelocity(0); return; }
+
+    const speed = 250;
+    if (cursors.left.isDown || wasd.A.isDown) { player.setVelocityX(-speed); player.setFlipX(false); }
+    else if (cursors.right.isDown || wasd.D.isDown) { player.setVelocityX(speed); player.setFlipX(true); }
+    else { player.setVelocityX(0); }
+    if (cursors.up.isDown || wasd.W.isDown) { player.setVelocityY(-speed); }
+    else if (cursors.down.isDown || wasd.S.isDown) { player.setVelocityY(speed); }
+    else { player.setVelocityY(0); }
+
+    let closestNPC = null;
+    let minDistance = 150;
+    npcs.forEach(npc => {
+        let distance = Phaser.Math.Distance.Between(player.x, player.y, npc.x, npc.y);
+        if (distance < minDistance) { minDistance = distance; closestNPC = npc; }
+    });
+
+    if (closestNPC) {
+        if (activeNPC !== closestNPC) {
+            activeNPC = closestNPC;
+            dialogState = 'intro';
+            uiLayer.style.display = 'flex';
+            optionsBox.style.display = 'none';
+            dialogText.innerHTML = activeNPC.npcData.intro;
+        }
+
+        if (Phaser.Input.Keyboard.JustDown(spaceKey) && dialogState === 'intro') {
+            if (activeNPC.npcData.isMain) {
+                // 梁思成 → 播放发现故事，打开题记探索小游戏
+                grantItem(activeNPC);
+                openSearchGame();
+            } else {
+                dialogState = 'question';
+                dialogText.innerHTML = `<span class="highlight">提问：</span><br>${activeNPC.npcData.question}`;
+                optionsBox.style.display = 'flex';
+                for (let i = 0; i < 3; i++) { optBtns[i].innerText = activeNPC.npcData.options[i]; }
+            }
+        }
+    } else {
+        activeNPC = null;
+        dialogState = 'hidden';
+        uiLayer.style.display = 'none';
+        optionsBox.style.display = 'none';
+    }
+}
+
+// ==================== 答题系统 ====================
+window.answerQuestion = function(selectedIndex) {
+    if (!activeNPC || dialogState !== 'question') return;
+    optionsBox.style.display = 'none';
+    dialogState = 'result';
+
+    if (selectedIndex === activeNPC.npcData.correct) {
+        let rewardHTML = "";
+        if (!activeNPC.npcData.hasGivenItem) {
+            grantItem(activeNPC);
+            rewardHTML = `<br><br><span style="color:#ffd700">🎁 获得信物：【${activeNPC.npcData.item}】</span>`;
+        } else {
+            rewardHTML = `<br><br><span style="color:#aaa">（您已获得过该人物赠予的信物）</span>`;
+        }
+        dialogText.innerHTML = `<span style="color:#aaffaa;">【正确】</span><br>${activeNPC.npcData.success}${rewardHTML}`;
+    } else {
+        dialogText.innerHTML = `<span style="color:#ffaaaa;">【错误】</span><br>${activeNPC.npcData.fail}<br><br><span style="color:#ccc; font-size: 18px;">（走到远处再回来即可重新挑战）</span>`;
+    }
+}
+
+// ==================== 信物发放 ====================
+function grantItem(npc) {
+    if (!npc.npcData.hasGivenItem) {
+        inventory.push(npc.npcData.item);
+        npc.npcData.hasGivenItem = true;
+        let _u = localStorage.getItem('ancient_username');
+        if (_u) {
+            try {
+                let _p = JSON.stringify({ username: _u, item_name: npc.npcData.item, item_desc: '佛光寺探寻获得的信物' });
+                if (navigator.sendBeacon) navigator.sendBeacon('http://127.0.0.1:5000/api/add-item', new Blob([_p], { type: 'application/json' }));
+                else fetch('http://127.0.0.1:5000/api/add-item', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: _p, keepalive: true }).catch(e => console.error(e));
+            } catch (e) { console.error(e); }
+        }
+        showToast(`🎉 获得文物：【${npc.npcData.item}】 🎉`);
+
+        if (inventory.length === totalItems) {
+            localStorage.setItem('unlocked_liangsicheng', 'true');
+            setTimeout(() => {
+                document.getElementById('completion-modal').style.display = 'block';
+                isPaused = true;
+            }, 2000);
+        }
+    }
+}
+
+// ==================== 题记探索小游戏 ====================
+function setupSearchGame() {
+    const area = document.getElementById('search-area');
+    const flashlight = document.getElementById('flashlight');
+    const beamTexts = area.querySelectorAll('.beam-text');
+
+    area.addEventListener('mouseenter', () => { flashlight.style.display = 'block'; });
+    area.addEventListener('mouseleave', () => { flashlight.style.display = 'none'; });
+
+    area.addEventListener('mousemove', (e) => {
+        const rect = area.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        flashlight.style.left = (x - 60) + 'px';
+        flashlight.style.top = (y - 60) + 'px';
+
+        // 检测鼠标是否靠近文字
+        beamTexts.forEach(text => {
+            if (text.classList.contains('found')) return;
+            const tx = text.offsetLeft + text.offsetWidth / 2;
+            const ty = text.offsetTop + text.offsetHeight / 2;
+            const dist = Math.hypot(x - tx, y - ty);
+            if (dist < 80) {
+                text.classList.add('found');
+                searchFoundCount++;
+                document.getElementById('found-count').innerText = searchFoundCount;
+                if (searchFoundCount >= beamTexts.length) {
+                    showToast('🎉 你已发现所有唐代题记！确认东大殿建于唐大中十一年（857年）');
+                }
+            }
+        });
+    });
+}
+
+function openSearchGame() {
+    isPaused = true;
+    searchFoundCount = 0;
+    document.getElementById('found-count').innerText = '0';
+    document.querySelectorAll('.beam-text').forEach(t => t.classList.remove('found'));
+    document.getElementById('search-modal').style.display = 'block';
+}
+
+window.closeSearch = function() {
+    document.getElementById('search-modal').style.display = 'none';
+    isPaused = false;
+}
+
+// ==================== 系统菜单 ====================
+function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.innerHTML = msg;
+    toast.style.display = 'block';
+    toast.style.opacity = 1;
+    setTimeout(() => {
+        toast.style.opacity = 0;
+        setTimeout(() => toast.style.display = 'none', 500);
+    }, 2500);
+}
+
+window.togglePause = function() {
+    if (document.getElementById('backpack-modal').style.display === 'block' || document.getElementById('completion-modal').style.display === 'block') return;
+    isPaused = !isPaused;
+    document.getElementById('pause-modal').style.display = isPaused ? 'block' : 'none';
+}
+
+window.toggleBackpack = function() {
+    if (document.getElementById('pause-modal').style.display === 'block' || document.getElementById('completion-modal').style.display === 'block') return;
+    let bp = document.getElementById('backpack-modal');
+    if (bp.style.display === 'block') {
+        bp.style.display = 'none';
+        isPaused = false;
+    } else {
+        isPaused = true;
+        let listHtml = inventory.length > 0
+            ? inventory.map(item => `<div style="color:#ffd700; margin:10px 0;">📜 ${item}</div>`).join('')
+            : '<div style="color:#aaa; margin: 20px 0;">行囊空空如也，去与先贤对话吧！</div>';
+        document.getElementById('bp-list').innerHTML = `
+            ${listHtml}
+            <div style="color:#aaa; font-size:18px; margin-top:30px; border-top: 1px solid #555; padding-top: 10px;">
+                收集进度：${inventory.length} / ${totalItems}
+            </div>
+        `;
+        bp.style.display = 'block';
+    }
+}
+
+window.restartJourney = function() {
+    inventory = [];
+    npcs.forEach(npc => { npc.npcData.hasGivenItem = false; });
+    searchFoundCount = 0;
+    document.getElementById('completion-modal').style.display = 'none';
+    isPaused = false;
+    showToast("时光回溯，新的游历开始了...");
+}
+
+window.returnToMap = function() {
+    window.location.href = 'index.html?region=shanxi';
+}
+</script>
+    <script src="digital_human.js"></script>
+</body>
+</html>
+

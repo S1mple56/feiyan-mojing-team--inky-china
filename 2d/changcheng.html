@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>古建游览 - 少林寺武宗禅影</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
+        #game-container { width: 100%; height: 100%; }
+        #top-right-ui { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; z-index: 100; }
+        .sys-btn { background-color: rgba(0, 0, 0, 0.7); border: 2px solid #ceae75; color: #ceae75; padding: 10px 20px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px; cursor: pointer; transition: 0.3s; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+        .sys-btn:hover { background-color: #ceae75; color: #000; }
+        #ui-layer { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 800px; display: none; flex-direction: column; gap: 10px; pointer-events: none; z-index: 90; }
+        .dialog-box { background-color: rgba(139, 69, 19, 0.95); border: 3px solid #ceae75; color: #fff; padding: 25px; font-size: 24px; border-radius: 8px; text-align: center; line-height: 1.6; text-shadow: 1px 1px 2px #000; }
+        .options-container { display: none; flex-direction: column; gap: 10px; pointer-events: auto; }
+        .option-btn { background-color: rgba(0, 0, 0, 0.8); border: 2px solid #ceae75; color: #ceae75; padding: 15px; font-size: 22px; border-radius: 5px; cursor: pointer; transition: 0.3s; text-align: left; font-family: "KaiTi"; }
+        .option-btn:hover { background-color: #ceae75; color: #000; }
+        .highlight { color: #ffd700; font-weight: bold; }
+        .modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(15, 15, 15, 0.95); border: 4px solid #ceae75; color: #fff; padding: 40px; border-radius: 12px; display: none; z-index: 200; text-align: center; min-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #ffd700; font-size: 32px; border-bottom: 1px solid #ceae75; padding-bottom: 10px; }
+        .close-btn { background-color: #ceae75; color: #000; border: none; padding: 10px 30px; font-size: 22px; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: "KaiTi"; }
+        .close-btn:hover { background-color: #fff; }
+        .btn-group { margin-top: 30px; display: flex; justify-content: center; gap: 30px; }
+        #toast { position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(139, 69, 19, 0.9); border: 2px solid #ffd700; color: #fff; padding: 15px 30px; font-size: 24px; border-radius: 8px; display: none; z-index: 300; opacity: 0; transition: opacity 0.5s; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="game-container"></div>
+
+<div id="top-right-ui">
+    <button class="sys-btn" onclick="toggleBackpack()">🎒 背包</button>
+    <button class="sys-btn" onclick="togglePause()">⏸ 暂停</button>
+</div>
+
+<div id="ui-layer">
+    <div id="dialog-text" class="dialog-box"></div>
+    <div id="options-box" class="options-container">
+        <button class="option-btn" onclick="answerQuestion(0)" id="opt-0"></button>
+        <button class="option-btn" onclick="answerQuestion(1)" id="opt-1"></button>
+        <button class="option-btn" onclick="answerQuestion(2)" id="opt-2"></button>
+    </div>
+</div>
+
+<div id="backpack-modal" class="modal">
+    <h2>行囊记录</h2>
+    <div id="bp-list" style="font-size: 24px; line-height: 2; margin-bottom: 20px;"></div>
+    <button class="close-btn" onclick="toggleBackpack()" style="margin-top: 10px;">关闭</button>
+</div>
+
+<div id="pause-modal" class="modal">
+    <h2>游览已暂停</h2>
+    <p style="font-size: 20px; color: #aaa;">少林清幽，宜静心打坐。</p>
+    <div class="btn-group">
+        <button class="close-btn" onclick="togglePause()">继续游览</button>
+        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+    </div>
+</div>
+
+<div id="completion-modal" class="modal">
+    <h2 style="color: #00ff00; font-size: 40px;">🎉 禅武合一 🎉</h2>
+    <p style="font-size: 24px; line-height: 1.8;">
+        您已成功收集少林寺的所有历史信物！<br>
+        天下武功出少林。<br>
+        感谢您见证这片中原佛国圣地。
+    </p>
+    <div class="btn-group">
+        <button class="close-btn" onclick="restartJourney()">重新游历</button>
+        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+    </div>
+</div>
+
+<div id="video-modal" class="modal" style="min-width: 800px; padding: 20px;">
+    <h2 style="margin-bottom: 15px;">禅宗祖庭·少林武学</h2>
+    <video id="story-video" width="100%" controls style="border: 2px solid #ceae75; border-radius: 8px; background: #000;">
+        <source src="video/shaolinsi/1.mp4" type="video/mp4">
+        您的浏览器不支持 HTML5 视频播放。
+    </video>
+    <br>
+    <button class="close-btn" onclick="closeVideo()" style="margin-top: 20px;">结束观看</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let inventory = []; 
+const totalItems = 5; 
+let isPaused = false; 
+
+const config = {
+    type: Phaser.AUTO, width: window.innerWidth, height: window.innerHeight, parent: 'game-container',
+    physics: { default: 'arcade', arcade: { debug: false } },
+    scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scene: { preload: preload, create: create, update: update }
+};
+
+const game = new Phaser.Game(config);
+let player, cursors, wasd, spaceKey;
+let npcs = []; let activeNPC = null; let dialogState = 'hidden'; 
+
+const uiLayer = document.getElementById('ui-layer');
+const dialogText = document.getElementById('dialog-text');
+const optionsBox = document.getElementById('options-box');
+const optBtns = [document.getElementById('opt-0'), document.getElementById('opt-1'), document.getElementById('opt-2')];
+
+function preload() {
+    // 资源路径指向北京长城
+    this.load.image('bg', 'province/beijing/Architecture/location/bg_changcheng.png'); 
+    this.load.image('mengtian', 'province/beijing/Architecture/location/mengtian.png'); 
+    
+    this.load.image('wangchangling', 'province/beijing/Architecture/location/wangchangling.png'); 
+    this.load.image('qijiguang', 'province/beijing/Architecture/location/qijiguang.png'); 
+    this.load.image('wangzhaojun', 'province/beijing/Architecture/location/wangzhaojun.png'); 
+    this.load.image('liqianhu', 'province/beijing/Architecture/location/liqianhu.png');
+
+    let playerSkin = localStorage.getItem('playerSkin') || 'player.png';
+    if (playerSkin.startsWith('data:image')) {
+        let arr = playerSkin.split(','); let mime = arr[0].match(/:(.*?);/)[1];
+        let bstr = atob(arr[1]); let n = bstr.length; let u8arr = new Uint8Array(n);
+        while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+        let blob = new Blob([u8arr], { type: mime });
+        this.load.image('player', URL.createObjectURL(blob));
+    } else {
+        this.load.image('player', playerSkin);
+    }
+}
+
+function create() {
+    let bg = this.add.image(0, 0, 'bg').setOrigin(0, 0);
+    let scaleX = this.cameras.main.width / bg.width;
+    let scaleY = this.cameras.main.height / bg.height;
+    let baseScale = Math.max(scaleX, scaleY) * 1.5; 
+    bg.setScale(baseScale);
+
+    let worldWidth = bg.width * baseScale; let worldHeight = bg.height * baseScale;
+    this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+    this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+
+    player = this.physics.add.sprite(worldWidth * 0.5, worldHeight * 0.5, 'player');
+    let dynamicScale = 150 / player.height;
+    player.setScale(dynamicScale); player.setCollideWorldBounds(true); player.body.setSize(player.width * 0.6, player.height * 0.6);
+
+    // ================= 少林寺专属 NPC 数据 =================
+    const npcConfigs = [
+    // 1. 蒙恬（核心主NPC，秦代修长城名将）
+    { 
+        id: 'mengtian', 
+        name: '蒙恬', 
+        x: 0.5, 
+        y: 0.45, 
+        scale: 0.1, 
+        tint: 0xffffff, 
+        isMain: true, 
+        item: '秦代虎符', 
+        hasGivenItem: false, 
+        intro: '<span class="highlight">【秦代名将 蒙恬】</span><br>乃使蒙恬北筑长城而守藩篱，却匈奴七百余里！<br><br>▶ 按【空格键】观看蒙恬修长城剧情视频' 
+    },
+    
+    
+    
+    // 3. 王昌龄（边塞诗人，写长城经典诗句）
+    { 
+        id: 'wangchangling', 
+        name: '王昌龄', 
+        x: 0.7, 
+        y: 0.4, 
+        scale: 0.1, 
+        tint: 0xaaffaa, 
+        isMain: false, 
+        item: '《出塞》诗卷', 
+        hasGivenItem: false, 
+        intro: '<span class="highlight">【边塞诗人 王昌龄】</span><br>秦时明月汉时关，万里长征人未还！<br><br>▶ 按【空格键】接受历史提问', 
+        question: '我的《出塞》中，“但使龙城飞将在”的“飞将”指谁？', 
+        options: ['A. 蒙恬', 'B. 李广', 'C. 卫青'], 
+        correct: 1, 
+        success: '正是飞将军李广！若他还在，胡马怎敢度阴山！', 
+        fail: '非也！是“飞将军”李广，卫青是大将军，蒙恬是秦代名将。' 
+    },
+    
+    // 4. 戚继光（明代加固长城抗倭）
+    { 
+        id: 'qijiguang', 
+        name: '戚继光', 
+        x: 0.2, 
+        y: 0.65, 
+        scale: 0.1, 
+        tint: 0xaaaaff, 
+        isMain: false, 
+        item: '戚家军军旗', 
+        hasGivenItem: false, 
+        intro: '<span class="highlight">【明代名将 戚继光】</span><br>我不仅抗倭，还加固了北方长城，敌台林立，固若金汤！<br><br>▶ 按【空格键】接受历史提问', 
+        question: '我在长城上修建的“空心敌台”主要作用是什么？', 
+        options: ['A. 观赏风景', 'B. 驻兵、储粮、瞭望', 'C. 祭祀天地'], 
+        correct: 1, 
+        success: '答对了！空心敌台可驻兵、储粮，还能瞭望敌情，是我大明长城的创举！', 
+        fail: '错了！是驻兵、储粮、瞭望之用，可不是观景台。' 
+    },
+    
+    // 5. 王昭君（出塞和亲，途经长城）
+    { 
+        id: 'wangzhaojun', 
+        name: '王昭君', 
+        x: 0.8, 
+        y: 0.6, 
+        scale: 0.1, 
+        tint: 0xffffaa, 
+        isMain: false, 
+        item: '琵琶', 
+        hasGivenItem: false, 
+        intro: '<span class="highlight">【和亲公主 王昭君】</span><br>一去紫台连朔漠，独留青冢向黄昏。<br><br>▶ 按【空格键】接受历史提问', 
+        question: '我出塞和亲，是嫁给了哪个民族的首领？', 
+        options: ['A. 匈奴呼韩邪单于', 'B. 突厥颉利可汗', 'C. 吐蕃松赞干布'], 
+        correct: 0, 
+        success: '正是呼韩邪单于！我这一去，换得汉匈五十年和平！', 
+        fail: '非也！是匈奴呼韩邪单于，松赞干布娶的是文成公主。' 
+    },
+    
+    // 6. 李千户（合理虚构：明代戍守长城的千户）
+    { 
+        id: 'liqianhu', 
+        name: '李千户', 
+        x: 0.3, 
+        y: 0.79, 
+        scale: 0.1, 
+        tint: 0xffaaff, 
+        isMain: false, 
+        item: '戍边腰牌', 
+        hasGivenItem: false, 
+        intro: '<span class="highlight">【明代戍边 李千户】</span><br>我李家三代守长城，春去秋来，就盼着边境安宁！<br><br>▶ 按【空格键】听我讲戍边故事' 
+    }
+];
+    // =======================================================
+
+    npcConfigs.forEach(config => {
+        let npcSprite = this.physics.add.sprite(worldWidth * config.x, worldHeight * config.y, config.id);
+        npcSprite.setScale(config.scale); npcSprite.setImmovable(true); 
+        npcSprite.body.setSize(npcSprite.width * 0.6, npcSprite.height * 0.6); npcSprite.npcData = config; 
+        npcs.push(npcSprite); this.physics.add.collider(player, npcSprite);
+    });
+
+    cursors = this.input.keyboard.createCursorKeys();
+    wasd = this.input.keyboard.addKeys({ W: 87, A: 65, S: 83, D: 68 });
+    spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    this.cameras.main.startFollow(player, true, 0.08, 0.08); 
+    this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
+        if(isPaused) return; 
+        let newZoom = this.cameras.main.zoom - (deltaY * 0.001); 
+        this.cameras.main.zoom = Phaser.Math.Clamp(newZoom, 1, 3); 
+    });
+}
+
+function update() {
+    if (isPaused) { player.setVelocity(0); return; }
+    const speed = 250; 
+    if (cursors.left.isDown || wasd.A.isDown) { player.setVelocityX(-speed); player.setFlipX(false); } 
+    else if (cursors.right.isDown || wasd.D.isDown) { player.setVelocityX(speed); player.setFlipX(true); } 
+    else { player.setVelocityX(0); }
+    if (cursors.up.isDown || wasd.W.isDown) { player.setVelocityY(-speed); } 
+    else if (cursors.down.isDown || wasd.S.isDown) { player.setVelocityY(speed); } 
+    else { player.setVelocityY(0); }
+
+    let closestNPC = null; let minDistance = 150; 
+    npcs.forEach(npc => {
+        let distance = Phaser.Math.Distance.Between(player.x, player.y, npc.x, npc.y);
+        if (distance < minDistance) { minDistance = distance; closestNPC = npc; }
+    });
+
+    if (closestNPC) {
+        if (activeNPC !== closestNPC) {
+            activeNPC = closestNPC; dialogState = 'intro';
+            uiLayer.style.display = 'flex'; optionsBox.style.display = 'none';
+            dialogText.innerHTML = activeNPC.npcData.intro;
+        }
+        if (Phaser.Input.Keyboard.JustDown(spaceKey) && dialogState === 'intro') {
+            if (activeNPC.npcData.isMain) { grantItem(activeNPC); playStoryVideo(); } 
+            else {
+                dialogState = 'question'; dialogText.innerHTML = `<span class="highlight">提问：</span><br>${activeNPC.npcData.question}`;
+                optionsBox.style.display = 'flex'; 
+                for(let i=0; i<3; i++) { optBtns[i].innerText = activeNPC.npcData.options[i]; }
+            }
+        }
+    } else {
+        activeNPC = null; dialogState = 'hidden'; uiLayer.style.display = 'none'; optionsBox.style.display = 'none';
+    }
+}
+
+window.answerQuestion = function(selectedIndex) {
+    if (!activeNPC || dialogState !== 'question') return;
+    optionsBox.style.display = 'none'; dialogState = 'result'; 
+    if (selectedIndex === activeNPC.npcData.correct) {
+        let rewardHTML = "";
+        if (!activeNPC.npcData.hasGivenItem) {
+            grantItem(activeNPC); rewardHTML = `<br><br><span style="color:#ffd700">🎁 获得信物：【${activeNPC.npcData.item}】</span>`;
+        } else { rewardHTML = `<br><br><span style="color:#aaa">（您已获得过该人物赠予的信物）</span>`; }
+        dialogText.innerHTML = `<span style="color:#aaffaa;">【正确】</span><br>${activeNPC.npcData.success}${rewardHTML}`;
+    } else {
+        dialogText.innerHTML = `<span style="color:#ffaaaa;">【错误】</span><br>${activeNPC.npcData.fail}<br><br><span style="color:#ccc; font-size: 18px;">（走到远处再回来即可重新挑战）</span>`;
+    }
+}
+
+function grantItem(npc) {
+    if (!npc.npcData.hasGivenItem) {
+        inventory.push(npc.npcData.item); npc.npcData.hasGivenItem = true;
+        let _u = localStorage.getItem('ancient_username');
+        if(_u) { try { let _p=JSON.stringify({username:_u, item_name:npc.npcData.item, item_desc:'长城探寻获得的信物'}); if(navigator.sendBeacon) navigator.sendBeacon('http://127.0.0.1:5000/api/add-item', new Blob([_p],{type:'application/json'})); else fetch('http://127.0.0.1:5000/api/add-item',{method:'POST',headers:{'Content-Type':'application/json'},body:_p,keepalive:true}).catch(e=>console.error(e)); } catch(e){console.error(e);} }
+        showToast(`🎉 获得文物：【${npc.npcData.item}】 🎉`);
+        if (inventory.length === totalItems) {
+            // 1. 存入专属的解锁标记
+            localStorage.setItem('unlocked_qinshihuang', 'true');
+
+            // 2. 弹窗提示玩家
+            setTimeout(() => {
+                document.getElementById('completion-modal').innerHTML = `
+                    <h2 style="color: #00ff00; font-size: 40px;">🎉 游历圆满 🎉</h2>
+                    <p style="font-size: 24px;">
+                        <span style="color:#ffd700;">🎁 隐藏奖励：已解锁【千古一帝·秦始皇】皮肤！</span><br>
+                        可在首页角色设置中更换。
+                    </p>
+                    <div class="btn-group">
+                        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+                    </div>
+                `;
+                document.getElementById('completion-modal').style.display = 'block';
+                isPaused = true;
+            }, 2000);
+        }
+    }
+}
+
+function playStoryVideo() {
+    const videoModal = document.getElementById('video-modal'); const video = document.getElementById('story-video');
+    videoModal.style.display = 'block'; video.currentTime = 0;
+    let p = video.play(); if (p !== undefined) p.catch(e => console.warn('视频播放失败:', e));
+    isPaused = true;
+}
+window.closeVideo = function() {
+    const videoModal = document.getElementById('video-modal'); const video = document.getElementById('story-video');
+    try { video.pause(); } catch(e) {}
+    videoModal.style.display = 'none'; isPaused = false;
+}
+function showToast(msg) {
+    const toast = document.getElementById('toast'); toast.innerHTML = msg; toast.style.display = 'block'; toast.style.opacity = 1;
+    setTimeout(() => { toast.style.opacity = 0; setTimeout(() => toast.style.display = 'none', 500); }, 2500);
+}
+window.togglePause = function() {
+    if(document.getElementById('backpack-modal').style.display === 'block' || document.getElementById('completion-modal').style.display === 'block') return;
+    isPaused = !isPaused; document.getElementById('pause-modal').style.display = isPaused ? 'block' : 'none';
+}
+window.toggleBackpack = function() {
+    if(document.getElementById('pause-modal').style.display === 'block' || document.getElementById('completion-modal').style.display === 'block') return;
+    let bp = document.getElementById('backpack-modal');
+    if (bp.style.display === 'block') { bp.style.display = 'none'; isPaused = false; } 
+    else {
+        isPaused = true;  
+        let listHtml = inventory.length > 0 ? inventory.map(item => `<div style="color:#ffd700; margin:10px 0;">📜 ${item}</div>`).join('') : '<div style="color:#aaa; margin: 20px 0;">行囊空空如也，去与名士结交吧！</div>';
+        document.getElementById('bp-list').innerHTML = `${listHtml}<div style="color:#aaa; font-size:18px; margin-top:30px; border-top: 1px solid #555; padding-top: 10px;">收集进度：${inventory.length} / ${totalItems}</div>`;
+        bp.style.display = 'block';
+    }
+}
+window.restartJourney = function() {
+    inventory = []; npcs.forEach(npc => { npc.npcData.hasGivenItem = false; });
+    document.getElementById('completion-modal').style.display = 'none'; isPaused = false; showToast("时光回溯，新的游历开始了...");
+}
+window.returnToMap = function() {
+    // 【核心返回路径】完成游览后返回河南
+    window.location.href = 'index.html?region=beijing';
+}
+</script>
+    <script src="digital_human.js"></script>
+</body>
+</html>

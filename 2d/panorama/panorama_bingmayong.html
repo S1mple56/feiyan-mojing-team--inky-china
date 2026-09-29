@@ -1,0 +1,180 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>真实场景 - 兵马俑一号坑</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: "KaiTi", "楷体", serif; background-color: #000; }
+        /* 全景图容器 */
+        #panorama { width: 100%; height: 100%; }
+        
+        /* 统一的古风 UI 样式 */
+        .btn-back {
+            position: absolute; top: 30px; left: 30px; padding: 12px 25px; font-size: 22px; font-family: "KaiTi"; font-weight: bold;
+            background: rgba(0,0,0,0.7); color: #ffd700; border: 2px solid #ceae75; border-radius: 8px; cursor: pointer; transition: 0.3s; z-index: 100; box-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+        }
+        .btn-back:hover { background: #ceae75; color: #000; transform: scale(1.05); }
+        .title { position: absolute; top: 30px; right: 30px; font-size: 36px; color: #fff; text-shadow: 2px 2px 8px #000; pointer-events: none; z-index: 100; letter-spacing: 4px; font-weight: bold; }
+        .subtitle { position: absolute; top: 80px; right: 30px; font-size: 20px; color: #ceae75; text-shadow: 1px 1px 4px #000; pointer-events: none; z-index: 100; }
+
+        /* ==================== 建筑解剖（爆炸图）样式 ==================== */
+        #anatomy-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 15, 20, 0.9); z-index: 200; align-items: center; justify-content: center; flex-direction: column;
+            opacity: 0; transition: opacity 0.5s ease-in-out;
+        }
+        #anatomy-overlay.show { display: flex; opacity: 1; }
+
+        .explosion-box { position: relative; width: 450px; height: 500px; transform-style: preserve-3d; top: -80px;}
+
+        /* 各个解剖零件的基础样式 */
+        .part {
+            position: absolute; left: 50%; transform: translateX(-50%);
+            background: transparent; border: none; color: transparent;
+            display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold;
+            cursor: pointer; transition: all 1s cubic-bezier(0.25, 1, 0.5, 1);
+            box-shadow: none; backdrop-filter: none;
+        }
+        .part:hover { transform: translateX(-50%) scale(1.05); filter: drop-shadow(0 0 15px rgba(0, 255, 200, 0.8)); }
+
+        /* 组装状态（未爆炸） */
+        #p-head { top: 10%; width: 120px; height: 150px; border-radius: 40px 40px 10px 10px; }
+        #p-body { top: 29%; width: 220px; height: 280px; border-radius: 20px; z-index: 2; }
+        #p-arm-l { top: 32%; left: 15%; width: 80px; height: 220px; border-radius: 25px; }
+        #p-arm-r { top: 32%; left: 85%; width: 80px; height: 220px; border-radius: 25px; }
+        #p-leg { top: 66%; width: 180px; height: 220px; border-radius: 10px 10px 0 0; z-index: 1;}
+
+        /* 爆炸状态 (添加 exploded 类后) */
+        .exploded #p-head { transform: translate(-50%, -30px) scale(1.15); filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6)); }
+        .exploded #p-body { transform: translate(-50%, 0) scale(1.05); filter: drop-shadow(0 0 20px rgba(0, 255, 200, 0.6)); }
+        .exploded #p-arm-l { transform: translate(-60px, -5px) rotate(-10deg); filter: drop-shadow(0 0 20px rgba(0, 255, 200, 0.6)); }
+        .exploded #p-arm-r { transform: translate(60px, -5px) rotate(10deg); filter: drop-shadow(0 0 20px rgba(0, 255, 200, 0.6)); }
+        .exploded #p-leg { transform: translate(-50%, 40px); filter: drop-shadow(0 0 20px rgba(255, 153, 0, 0.6)); }
+
+        /* 介绍信息面板 */
+        #anatomy-info {
+            position: absolute; bottom: 80px; width: 60%; 
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(20, 30, 20, 0.8));
+            border: 2px solid #00ffd5; padding: 25px 40px; color: #fff; font-size: 24px; text-align: left;
+            border-radius: 15px; min-height: 120px; text-shadow: 1px 1px 4px #000; box-shadow: 0 10px 30px rgba(0, 255, 200, 0.3);
+        }
+        .glow-title { color: #00ffd5; text-shadow: 0 0 8px #00ffd5; margin: 0 0 15px 0; font-size: 32px; border-bottom: 1px solid rgba(0,255,200,0.4); padding-bottom: 10px;}
+    </style>
+</head>
+<body>
+
+    <button class="btn-back" onclick="window.close()">🔙 返回游戏场景</button>
+    <button class="btn-back" style="left: auto; right: 400px; background: rgba(0, 50, 0, 0.7); color: #00ffd5; border-color: #00ffd5;" onclick="toggleAnatomy()">🏛️ 兵马俑解剖模式</button>
+    
+    <div class="title">秦始皇陵兵马俑一号坑</div>
+    <div class="subtitle">鼠标拖拽环视 / 滚轮缩放</div>
+
+    <div id="panorama"></div>
+
+    <!-- 兵马俑爆炸解剖图 UI -->
+    <div id="anatomy-overlay">
+        <button class="btn-back" style="left: auto; right: 30px; background: #ceae75; color: #000;" onclick="closeAnatomy()">退出解剖模式</button>
+        
+        <h2 style="color: #ffd700; font-size: 40px; margin-bottom: 50px; text-shadow: 2px 2px 10px #000;">大秦工匠手札：将军俑全息解构</h2>
+        
+        <div class="explosion-box" id="explosion-box">
+            <div class="part" id="p-head" onclick="showAnatomyInfo('俑头：千人千面', '【工序】单独制模烧制后插接，面容各不相同。<br>【典故】体现了大秦工匠对真实细节的极致追求，是“物勒工名”责任制的直接体现。')"><img src="../province/shaanxi/Architecture/location/head.png" style="width:100%;height:100%;object-fit:contain;" alt="俑头"></div>
+            <div class="part" id="p-arm-l" onclick="showAnatomyInfo('左臂：执兵之御', '【工序】泥条盘筑法，内部为空心。<br>【典故】还原秦军持戈、握弩的战斗姿态，手臂转轴处精巧自然。')"><img src="../province/shaanxi/Architecture/location/left_arm.png" style="width:100%;height:100%;object-fit:contain;" alt="左臂"></div>
+            <div class="part" id="p-body" onclick="showAnatomyInfo('战甲：敷泥彩绘', '【工序】躯干粗胎完成后，表面敷细泥，雕刻精细甲片与甲钉，最后施以生漆彩绘。<br>【典故】将军俑战甲最高级，防具覆盖面更大。')"><img src="../province/shaanxi/Architecture/location/body.png" style="width:100%;height:100%;object-fit:contain;" alt="战甲躯干"></div>
+            <div class="part" id="p-arm-r" onclick="showAnatomyInfo('右臂：重武之师', '【工序】同样为空心烧制，减轻重力。<br>【典故】昔日手握青铜剑、青铜矛，护卫始皇帝。')"><img src="../province/shaanxi/Architecture/location/right_arm.png" style="width:100%;height:100%;object-fit:contain;" alt="右臂"></div>
+            <div class="part" id="p-leg" onclick="grantSecretItem()"><img src="../province/shaanxi/Architecture/location/leg.png" style="width:100%;height:100%;object-fit:contain;" alt="基座足部"></div>
+        </div>
+
+        <div id="anatomy-info">
+            <h3 class="glow-title" style="margin:0 0 10px 0;">开启结构解剖</h3>
+            <p style="margin:0; line-height: 1.8;">全息装甲已展开。请点击正中央<span style="color:#ffd700">【发光悬浮部件】</span>，查阅不同工序部位的青铜/陶土工艺与典故！</p>
+        </div>
+    </div>
+    <audio id="bgm-pano" loop>
+        <source src="../audio/bingmayong_real.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // 初始化全景图播放器
+        pannellum.viewer('panorama', {
+            "type": "equirectangular",
+            // ⚠️ 重要：在这里填入你用大模型生成的 8K 兵马俑全景图的相对路径
+            "panorama": "../province/shaanxi/Architecture/location/bingmayong_pano_8k.png", 
+            "autoLoad": true,          // 自动加载
+            "autoRotate": -2,          // 自动缓慢向右旋转，增加沉浸感 (-2代表速度)
+            "compass": false,          // 隐藏指南针
+            "showControls": true,      // 显示下方控制条（全屏、缩放）
+            "pitch": -5,               // 初始视角的上下仰角
+            "yaw": 0,                  // 初始视角的左右偏移
+            "hfov": 100                // 初始视野广度 (Field of View)
+        });
+
+        // ======= 新增：音乐自动播放与防浏览器拦截逻辑 =======
+        let bgm = document.getElementById('bgm-pano');
+        bgm.volume = 0.4; // 设置适中音量（0.0 到 1.0 之间）
+        
+        // 尝试直接自动播放
+        let playPromise = bgm.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(function(error) {
+                // 如果被浏览器安全策略拦截，则监听用户的第一次点击/拖拽操作
+                console.log("自动播放被浏览器拦截，等待用户交互后播放...");
+                document.body.addEventListener('pointerdown', function() {
+                    bgm.play();
+                }, { once: true }); // { once: true } 确保只触发一次
+            });
+        }
+
+        // ==================== 建筑解剖功能逻辑 ====================
+        function toggleAnatomy() {
+            const overlay = document.getElementById('anatomy-overlay');
+            overlay.classList.add('show');
+            // 延时添加类名以触发炫酷爆炸展开效果
+            setTimeout(() => {
+                document.getElementById('explosion-box').classList.add('exploded');
+            }, 300);
+        }
+
+        function closeAnatomy() {
+            document.getElementById('explosion-box').classList.remove('exploded');
+            const overlay = document.getElementById('anatomy-overlay');
+            setTimeout(() => {
+                overlay.classList.remove('show');
+            }, 500); // 等待聚合动画结束再隐藏
+        }
+
+        function showAnatomyInfo(title, desc) {
+            document.getElementById('anatomy-info').innerHTML = `
+                <h3 class="glow-title">${title}</h3>
+                <p style="margin:0; line-height: 1.8;">${desc}</p>
+            `;
+        }
+
+        function grantSecretItem() {
+            showAnatomyInfo('踏板与双足：稳不可摧', '【工序】实心夯造，采用底层踏板加实心双腿以稳固重心。<br>【典故】头轻脚重，历经二千年沉寂而不倒。<br>💡 此时你发现了一卷布帛，获得隐藏奖励：地下禁军密文！');
+            
+            if (localStorage.getItem('got_secret_item_bingmayong') !== 'true') {
+                localStorage.setItem('got_secret_item_bingmayong', 'true');
+                let currentUser = localStorage.getItem('ancient_username');
+                if(currentUser) {
+                    fetch('http://127.0.0.1:5000/api/add-item', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            username: currentUser,
+                            item_name: '地下禁军密文',
+                            item_desc: '兵马俑解剖模式隐藏奖励'
+                        })
+                    }).catch(e => console.error(e));
+                }
+                setTimeout(() => {
+                    alert('🎉 恭喜获得隐藏文物：【地下禁军密文】！返回主场景后可在背包中查看。');
+                }, 300);
+            }
+        }
+    </script>
+
+</body>
+</html>

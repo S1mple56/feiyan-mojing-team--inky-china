@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>古建游览 - 洹北商城(早期殷都)</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #2b1a10; font-family: "KaiTi", "楷体", serif; }
+        #game-container { width: 100%; height: 100%; }
+        .sys-btn-left { position: absolute; top: 20px; left: 20px; z-index: 100; background-color: rgba(0, 0, 0, 0.7); border: 2px solid #ceae75; color: #ceae75; padding: 10px 20px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px; cursor: pointer; transition: 0.3s; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+        .sys-btn-left:hover { background-color: #ceae75; color: #000; }
+        #ui-layer { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 800px; display: none; flex-direction: column; gap: 10px; pointer-events: none; z-index: 90; }
+        .dialog-box { background-color: rgba(70, 30, 10, 0.95); border: 3px solid #ceae75; color: #fff; padding: 25px; font-size: 24px; border-radius: 8px; text-align: center; line-height: 1.6; text-shadow: 1px 1px 2px #000; }
+        .options-container { display: none; flex-direction: column; gap: 10px; pointer-events: auto; }
+        .option-btn { background-color: rgba(0, 0, 0, 0.8); border: 2px solid #ceae75; color: #ceae75; padding: 15px; font-size: 22px; border-radius: 5px; cursor: pointer; transition: 0.3s; text-align: left; font-family: "KaiTi"; }
+        .option-btn:hover { background-color: #ceae75; color: #000; }
+        #toast { position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(0, 0, 0, 0.9); border: 2px solid #ffae00; color: #ffae00; padding: 15px 30px; font-size: 24px; border-radius: 8px; display: none; z-index: 300; transition: opacity 0.5s; text-align: center; }
+    </style>
+</head>
+<body>
+
+<button class="sys-btn-left" onclick="window.location.href='yinxu.html'">🔙 返回宫殿宗庙遗址</button>
+<div id="game-container"></div>
+<div id="ui-layer">
+    <div id="dialog-text" class="dialog-box"></div>
+    <div id="options-box" class="options-container">
+        <button class="option-btn" onclick="document.getElementById('ui-layer').style.display='none';">【继续探索】</button>
+    </div>
+</div>
+<div id="toast"></div>
+
+<script>
+function showToast(msg) {
+    const toast = document.getElementById('toast'); toast.innerHTML = msg; toast.style.display = 'block'; toast.style.opacity = 1;
+    setTimeout(() => { toast.style.opacity = 0; setTimeout(() => toast.style.display = 'none', 500); }, 3500);
+}
+
+const config = { type: Phaser.AUTO, width: window.innerWidth, height: window.innerHeight, parent: 'game-container', physics: { default: 'arcade', arcade: { debug: false } }, scene: { preload: preload, create: create, update: update } };
+const game = new Phaser.Game(config);
+let player, cursors, wasd, spaceKey, activeLM = null; let lZones = [];
+
+function preload() {
+    this.load.image('bg_huanbei', 'province/henan/Architecture/location/bg_yinxu.png'); 
+    let playerSkin = localStorage.getItem('playerSkin') || 'player.png';
+    if (playerSkin.startsWith('data:image')) {
+        let arr = playerSkin.split(','); let bstr = atob(arr[1]); let n = bstr.length; let u8arr = new Uint8Array(n);
+        while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+        this.load.image('player', URL.createObjectURL(new Blob([u8arr], { type: arr[0].match(/:(.*?);/)[1] })));
+    } else { this.load.image('player', playerSkin); }
+}
+
+function create() {
+    let bg = this.add.image(0, 0, 'bg_huanbei').setOrigin(0, 0).setTint(0xbb8855); // 更古老的土色
+    let scale = Math.max(this.cameras.main.width / bg.width, this.cameras.main.height / bg.height) * 1.5; bg.setScale(scale);
+    let ww = bg.width * scale; let wh = bg.height * scale;
+    this.physics.world.setBounds(0, 0, ww, wh); this.cameras.main.setBounds(0, 0, ww, wh);
+
+    player = this.physics.add.sprite(ww * 0.1, wh * 0.8, 'player').setScale(150 / this.textures.get('player').getSourceImage().height);
+    player.setCollideWorldBounds(true); player.body.setSize(player.width * 0.6, player.height * 0.6);
+
+    const ruins = [
+        { name: '🏛️ 宫城与宫殿基址', x: 0.4, y: 0.3, desc: '中轴线上的广阔宫殿，推测为盘庚迁殷的“第一站”。' },
+        { name: '🧱 城墙与城壕遗迹', x: 0.2, y: 0.5, desc: '巨大的城壕展现了比殷墟还要早一阶段的早期大型城防体系。' },
+        { name: '🔥 手工业铸铜作坊', x: 0.6, y: 0.6, desc: '制骨与铸铜的混合区，大量的制骨碎料揭示出这片土地的手工业极度繁荣。' },
+        { name: '💀 祭祀沟遗存', x: 0.8, y: 0.4, desc: '巨大的祭祀长沟，里面残留着早商至中商交替期间神秘的祭祀残骨。' }
+    ];
+
+    ruins.forEach(r => {
+        let zone = this.add.zone(ww * r.x, wh * r.y).setSize(200, 200);
+        this.physics.world.enable(zone); zone.body.setAllowGravity(false); zone.body.moves = false;
+        let p = this.add.rectangle(ww * r.x, wh * r.y - 100, 280, 50, 0x1a0500, 0.8).setStrokeStyle(2, 0xffae00);
+        let txt = this.add.text(ww * r.x, wh * r.y - 100, r.name, { font: '24px KaiTi', fill: '#ffae00', fontStyle: 'bold' }).setOrigin(0.5);
+        this.tweens.add({ targets: [p, txt], y: '-=15', duration: 1800, yoyo: true, repeat: -1 });
+        zone.lmData = r; lZones.push(zone);
+    });
+
+    let returnZone = this.add.zone(ww * 0.05, wh * 0.5).setSize(150, wh);
+    this.physics.world.enable(returnZone); returnZone.body.setAllowGravity(false); returnZone.body.moves = false;
+    this.add.text(ww * 0.08, wh * 0.5, '⛩️ 传送阵 (往西：回宫殿宗庙)', { font: '28px KaiTi', fill: '#ceae75', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
+
+    window.transitioning = false;
+    window.nearReturnPortal = false;
+    this.physics.add.overlap(player, returnZone, () => {
+        window.nearReturnPortal = true;
+    });
+
+    cursors = this.input.keyboard.createCursorKeys(); wasd = this.input.keyboard.addKeys({ W: 87, A: 65, S: 83, D: 68 });
+    spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.cameras.main.startFollow(player, true, 0.08, 0.08); 
+    this.input.on('wheel', (p, o, dx, dy) => { this.cameras.main.zoom = Phaser.Math.Clamp(this.cameras.main.zoom - (dy * 0.001), 1, 3); });
+}
+
+function update() {
+    if(window.transitioning) return;
+    const speed = 250; 
+    if (cursors.left.isDown || wasd.A.isDown) { player.setVelocityX(-speed); player.setFlipX(false); } 
+    else if (cursors.right.isDown || wasd.D.isDown) { player.setVelocityX(speed); player.setFlipX(true); } 
+    else { player.setVelocityX(0); }
+    if (cursors.up.isDown || wasd.W.isDown) { player.setVelocityY(-speed); } 
+    else if (cursors.down.isDown || wasd.S.isDown) { player.setVelocityY(speed); } 
+    else { player.setVelocityY(0); }
+
+    let cZ = null; let minD = 180;
+    lZones.forEach(z => { let d = Phaser.Math.Distance.Between(player.x, player.y, z.x, z.y); if (d < minD) { minD = d; cZ = z; } });
+
+    if(cZ) {
+        if(activeLM !== cZ) {
+            activeLM = cZ;
+            document.getElementById('ui-layer').style.display = 'flex'; document.getElementById('options-box').style.display = 'flex';
+            document.getElementById('dialog-text').innerHTML = `<span style="color:#ffae00; font-weight:bold">${cZ.lmData.name}</span><br><br>${cZ.lmData.desc}`;
+        }
+    } else if(!window.nearReturnPortal) { activeLM = null; document.getElementById('ui-layer').style.display = 'none'; document.getElementById('options-box').style.display = 'none'; }
+
+    if(window.nearReturnPortal) {
+        document.getElementById('ui-layer').style.display = 'flex';
+        document.getElementById('dialog-text').innerHTML = '<span style="color:#ceae75; font-weight:bold">⛩️ 传送阵</span><br><br>往西返回宫殿宗庙遗址区<br><br><span style="color:#ffd700">▶ 按【空格键】传送</span>';
+        if(Phaser.Input.Keyboard.JustDown(spaceKey)) {
+            window.transitioning = true; showToast("经传送阵向西返回宫殿宗庙区..."); player.setVelocity(0);
+            setTimeout(() => window.location.href = 'yinxu.html', 1000);
+        }
+    }
+    window.nearReturnPortal = false;
+}
+</script>
+    <script src="digital_human.js"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D文物/建筑交互展示</title>
+    <!-- 引入 Google 官方 model-viewer，使用 unpkg CDN，国内外均可访问 -->
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        .viewer-container { 
+            width: 80vw; 
+            height: 80vh; 
+            background-color: #ffffff; 
+            border-radius: 12px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15); 
+            overflow: hidden; 
+            position: relative; 
+        }
+        /* model-viewer 核心组件样式 */
+        model-viewer { 
+            width: 100%; 
+            height: 100%; 
+            outline: none; 
+            background-color: #f7f9fa;
+        }
+        /* 左下角信息介绍浮层 */
+        .info-panel { 
+            position: absolute; 
+            bottom: 30px; 
+            left: 30px; 
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(10px);
+            padding: 20px 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08); 
+            pointer-events: none; /* 让鼠标事件穿透，不影响拖拽模型 */
+        }
+        .info-panel h2 { 
+            margin: 0 0 10px 0; 
+            font-size: 22px; 
+            color: #1a1a1a; 
+        }
+        .info-panel p { 
+            margin: 0; 
+            font-size: 14px; 
+            color: #555; 
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewer-container">
+        <!-- 
+          src: 你的模型相对路径
+          camera-controls: 开启鼠标拖拽和滚轮缩放功能
+          auto-rotate: 开启模型自动缓慢旋转
+          shadow-intensity: 开启底部接触阴影，显得更真实
+          camera-orbit: 初始相机角度
+        -->
+        <model-viewer 
+            src="../test/111.glb" 
+            camera-controls 
+            auto-rotate 
+            rotation-per-second="30deg"
+            shadow-intensity="1.5"
+            exposure="1"
+            alt="殷墟 3D 模型展示"
+            bounds="tight"
+            field-of-view="10deg"
+            camera-orbit="0deg 75deg 100m"
+            min-camera-orbit="auto auto 50%"
+            max-camera-orbit="auto auto 200%"
+            disable-zoom="false"
+            camera-target="auto auto auto"
+        >
+            
+            <!-- 加载时的提示动效 (可选) -->
+            <div slot="poster" style="display:flex; justify-content:center; align-items:center; height:100%; color:#888;">
+                模型加载中，请稍候...
+            </div>
+        </model-viewer>
+        
+        <div class="info-panel">
+            <h2>珍贵文物 / 建筑构件 3D全景</h2>
+            <p><b>操作说明：</b><br>按住鼠标左键即可 360° 旋转查看<br>滑动滑轮即可放大/缩小模型细节</p>
+        </div>
+    </div>
+    <script src="digital_human.js"></script>
+</body>
+</html>

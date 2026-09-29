@@ -1,0 +1,44 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>真实场景 - 亚好墓遗存</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: "KaiTi", "楷体", serif; background-color: #000; }
+        #panorama { width: 100%; height: 100%; }
+        
+        .btn-back {
+            position: absolute; top: 30px; left: 30px; padding: 12px 25px; font-size: 22px; font-family: "KaiTi"; font-weight: bold;
+            background: rgba(0,0,0,0.7); color: #ffd700; border: 2px solid #ceae75; border-radius: 8px; cursor: pointer; transition: 0.3s; z-index: 100; box-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+        }
+        .btn-back:hover { background: #ceae75; color: #000; transform: scale(1.05); }
+        .title { position: absolute; top: 30px; right: 30px; font-size: 36px; color: #fff; text-shadow: 2px 2px 8px #000; pointer-events: none; z-index: 100; letter-spacing: 4px; font-weight: bold; }
+        .subtitle { position: absolute; top: 80px; right: 30px; font-size: 20px; color: #ceae75; text-shadow: 1px 1px 4px #000; pointer-events: none; z-index: 100; }
+    </style>
+</head>
+<body>
+
+    <button class="btn-back" onclick="window.close()">🔙 返回</button>
+    
+    <div class="title">亚好墓遗存</div>
+    <div class="subtitle">鼠标拖拽环视 / 滚轮缩放</div>
+
+    <div id="panorama"></div>
+
+    <script>
+        pannellum.viewer('panorama', {
+            "type": "equirectangular",
+            "panorama": "../../yinxu_photo/yahao/yahaomu.png", 
+            "autoLoad": true,          
+            "autoRotate": -2,          
+            "compass": false,          
+            "showControls": true,      
+            "pitch": 0,               
+            "yaw": 0,                  
+            "hfov": 100                
+        });
+    </script>
+</body>
+</html>

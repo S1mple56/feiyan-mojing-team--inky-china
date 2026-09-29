@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水墨神州 - 叠彩洞</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; font-family: "KaiTi", "楷体", serif; }
+        #bg {
+            position: fixed; inset: 0; z-index: 0;
+            background: url('../province/henan/Architecture/location/yuntaishan/bg_diecaidong.png') center center / cover no-repeat;
+        }
+        #overlay {
+            position: fixed; inset: 0; z-index: 1;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.55) 100%);
+        }
+        #top-left {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            display: flex; align-items: center; gap: 20px;
+        }
+        .btn-back {
+            padding: 10px 20px; font-size: 20px; font-family: "KaiTi";
+            background: rgba(0,0,0,0.6); color: #ceae75; border: 1px solid #ceae75;
+            cursor: pointer; transition: 0.3s; border-radius: 8px;
+        }
+        .btn-back:hover { background: #ceae75; color: #000; }
+        #page-title {
+            font-size: 36px; color: #ffd700; text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+            letter-spacing: 6px;
+        }
+        #info {
+            position: fixed; bottom: 60px; left: 50px; z-index: 50;
+            max-width: 500px; background: rgba(0,0,0,0.55); backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(206,174,117,0.3);
+            border-radius: 16px; padding: 30px 36px; color: #f5f0e6;
+        }
+        #info h2 {
+            font-size: 32px; color: #ffd700; letter-spacing: 4px; margin-bottom: 6px;
+        }
+        #info .sub {
+            font-size: 16px; color: #ceae75; letter-spacing: 2px; margin-bottom: 16px;
+        }
+        #info .desc {
+            font-size: 17px; line-height: 1.9; color: #d4c4a0;
+        }
+        #top-right-ui {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+        }
+        .sys-btn {
+            background: rgba(0,0,0,0.7); border: 2px solid #ceae75; color: #ceae75;
+            padding: 10px 20px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px;
+            cursor: pointer; transition: 0.3s; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        }
+        .sys-btn:hover { background: #ceae75; color: #000; }
+        .sys-btn.primary {
+            background: linear-gradient(135deg, #ffd700, #b8860b);
+            color: #1a1a1a; border-color: #ffd700; font-weight: bold;
+        }
+        .sys-btn.primary:hover { transform: scale(1.05); }
+        #poem {
+            position: fixed; bottom: 30px; right: 50px; z-index: 50;
+            text-align: right; color: rgba(206,174,117,0.7);
+            font-size: 18px; letter-spacing: 4px; line-height: 2.2;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="overlay"></div>
+<div id="top-left">
+    <button class="btn-back" onclick="window.location.href='../yuntaishan.html'">← 返回云台山</button>
+    <span id="page-title">叠彩洞</span>
+</div>
+<div id="top-right-ui">
+    <button class="sys-btn primary" onclick="window.location.href='diecaidong_scene.html'">🌍 进入场景</button>
+</div>
+<div id="info">
+    <h2>叠彩洞</h2>
+    <div class="sub">公路奇观 · 人工天河</div>
+    <div class="desc">
+        叠彩洞是连接云台山景区茱萸峰与外界的公路隧道群，由19条隧道组成，全长4800余米，是修武人民历时十年在绝壁上开凿而成的公路奇迹。<br><br>
+        隧道群穿行于悬崖峭壁之间，洞洞相连，曲折迂回，如同一条巨龙蜿蜒盘旋于太行山间。从洞中向外望去，一幅幅天然画框将太行美景尽收眼底，被誉为"太行天路"。
+    </div>
+</div>
+<div id="poem">
+    绝壁通途开天路<br>叠彩洞中画屏来
+</div>
+</body>
+</html>

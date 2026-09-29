@@ -1,0 +1,11 @@
+# Large files over 100MB
+test/111.glb
+test/41-2.glb
+test/41-nk.glb
+test/chengchi.glb
+test/foguangsi.glb
+test/large3.glb
+
+# IDE configs
+.claude/
+.vscode/

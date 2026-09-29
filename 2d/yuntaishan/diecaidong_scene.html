@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>场景探索 - 叠彩洞</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
+        #game-container { width: 100%; height: 100%; }
+        #top-right-ui { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; z-index: 100; }
+        .sys-btn { background-color: rgba(0, 0, 0, 0.7); border: 2px solid #ceae75; color: #ceae75; padding: 10px 20px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px; cursor: pointer; transition: 0.3s; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+        .sys-btn:hover { background-color: #ceae75; color: #000; }
+        #ui-layer { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 800px; display: none; flex-direction: column; gap: 10px; pointer-events: none; z-index: 90; }
+        .dialog-box { background-color: rgba(139, 69, 19, 0.95); border: 3px solid #ceae75; color: #fff; padding: 25px; font-size: 24px; border-radius: 8px; text-align: center; line-height: 1.6; text-shadow: 1px 1px 2px #000; }
+        .options-container { display: none; flex-direction: column; gap: 10px; pointer-events: auto; }
+        .option-btn { background-color: rgba(0, 0, 0, 0.8); border: 2px solid #ceae75; color: #ceae75; padding: 15px; font-size: 22px; border-radius: 5px; cursor: pointer; transition: 0.3s; text-align: left; font-family: "KaiTi"; }
+        .option-btn:hover { background-color: #ceae75; color: #000; }
+        .highlight { color: #ffd700; font-weight: bold; }
+        .modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(15, 15, 15, 0.95); border: 4px solid #ceae75; color: #fff; padding: 40px; border-radius: 12px; display: none; z-index: 200; text-align: center; min-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #ffd700; font-size: 32px; border-bottom: 1px solid #ceae75; padding-bottom: 10px; }
+        .close-btn { background-color: #ceae75; color: #000; border: none; padding: 10px 30px; font-size: 22px; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: "KaiTi"; margin-top: 20px; }
+        .close-btn:hover { background-color: #fff; }
+        .btn-group { margin-top: 30px; display: flex; justify-content: center; gap: 30px; }
+        #toast { position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(139, 69, 19, 0.9); border: 2px solid #ffd700; color: #fff; padding: 15px 30px; font-size: 24px; border-radius: 8px; display: none; z-index: 300; text-align: center; }
+    </style>
+</head>
+<body>
+<div id="game-container"></div>
+<div id="top-right-ui"><button class="sys-btn" onclick="window.location.href='diecaidong.html'">← 返回叠彩洞</button><button class="sys-btn" onclick="toggleBackpack()">🎒 背包</button><button class="sys-btn" onclick="togglePause()">⏸ 暂停</button></div>
+<div id="ui-layer"><div id="dialog-text" class="dialog-box"></div><div id="options-box" class="options-container"><button class="option-btn" onclick="answerQuestion(0)" id="opt-0"></button><button class="option-btn" onclick="answerQuestion(1)" id="opt-1"></button><button class="option-btn" onclick="answerQuestion(2)" id="opt-2"></button></div></div>
+<div id="backpack-modal" class="modal"><h2>行囊记录</h2><div id="bp-list" style="font-size:24px;line-height:2;margin-bottom:20px;"></div><button class="close-btn" onclick="toggleBackpack()">关闭</button></div>
+<div id="pause-modal" class="modal"><h2>游览已暂停</h2><div class="btn-group"><button class="close-btn" onclick="togglePause()">继续游览</button><button class="close-btn" onclick="returnToMap()">返回云台山</button></div></div>
+<div id="completion-modal" class="modal"><h2 style="color:#00ff00;font-size:36px;">🎉 穿越完成 🎉</h2><p style="font-size:22px;line-height:1.8;">您已穿越叠彩洞，感受太行天路之奇。<br><span style="color:#ffd700;">🎁 获得信物：天路石</span></p><div class="btn-group"><button class="close-btn" onclick="returnToMap()">返回云台山</button></div></div>
+<div id="toast"></div>
+<script>
+let inventory=[],totalItems=3,isPaused=false;
+const config={type:Phaser.AUTO,width:window.innerWidth,height:window.innerHeight,parent:'game-container',physics:{default:'arcade',arcade:{debug:false}},scale:{mode:Phaser.Scale.RESIZE,autoCenter:Phaser.Scale.CENTER_BOTH},scene:{preload:preload,create:create,update:update}};
+const game=new Phaser.Game(config);
+let player,cursors,wasd,spaceKey,npcs=[],activeNPC=null,dialogState='hidden';
+const uiLayer=document.getElementById('ui-layer'),dialogText=document.getElementById('dialog-text'),optionsBox=document.getElementById('options-box'),optBtns=[document.getElementById('opt-0'),document.getElementById('opt-1'),document.getElementById('opt-2')];
+function preload(){this.load.image('bg','../province/henan/Architecture/location/yuntaishan/bg_diecaidong.png');this.load.image('crafter','../province/henan/Architecture/location/crafter.png');this.load.image('qijiguang','../province/henan/Architecture/location/qijiguang.png');this.load.image('yuwenkai','../province/henan/Architecture/location/yuwenkai.png');let ps=localStorage.getItem('playerSkin')||'player.png';if(ps.startsWith('data:image')){let a=ps.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);this.load.image('player',URL.createObjectURL(new Blob([u],{type:m})));}else{this.load.image('player','../'+ps);}}
+function create(){let bg=this.add.image(0,0,'bg').setOrigin(0,0);let bs=Math.max(this.cameras.main.width/bg.width,this.cameras.main.height/bg.height)*1.5;bg.setScale(bs);let W=bg.width*bs,H=bg.height*bs;this.physics.world.setBounds(0,0,W,H);this.cameras.main.setBounds(0,0,W,H);player=this.physics.add.sprite(W*0.3,H*0.6,'player');player.setScale(150/player.height);player.setCollideWorldBounds(true);player.body.setSize(player.width*0.6,player.height*0.6);
+const nc=[{id:'crafter',name:'修路老工匠',x:0.4,y:0.5,scale:0.3,item:'天路石',hasGivenItem:false,intro:'<span class="highlight">【修路老工匠】</span><br>此路历时十年，在绝壁上开凿而成，是修武人民的血汗结晶。<br><br>▶ 按【空格键】聆听故事',question:'叠彩洞是历时多少年开凿而成的？',options:['A. 五年','B. 十年','C. 二十年'],correct:1,success:'不错！历时十年，修武人民在绝壁上开凿出这条天路。',fail:'叠彩洞历时十年开凿而成。'},{id:'qijiguang',name:'戚继光',x:0.6,y:0.45,scale:0.08,item:'太行风景照',hasGivenItem:false,intro:'<span class="highlight">【戚继光】</span><br>19条隧洞，洞洞相连，曲折迂回，如同巨龙蜿蜒。<br><br>▶ 按【空格键】交流见闻',question:'叠彩洞由多少条隧道组成？',options:['A. 9条','B. 14条','C. 19条'],correct:2,success:'正确！由19条隧道组成，全长4800余米。',fail:'叠彩洞由19条隧道组成。'},{id:'yuwenkai',name:'宇文恺',x:0.7,y:0.55,scale:0.25,item:'采访笔记',hasGivenItem:false,intro:'<span class="highlight">【宇文恺】</span><br>此路被誉为"太行天路"，洞中向外望去如画框。<br><br>▶ 按【空格键】接受采访',question:'叠彩洞被誉为什么？',options:['A. 太行天路','B. 绝壁长廊','C. 人工天河'],correct:0,success:'正是！被誉为"太行天路"。',fail:'叠彩洞被誉为"太行天路"。'}];
+nc.forEach(c=>{let n=this.physics.add.sprite(W*c.x,H*c.y,c.id);n.setScale(c.scale);n.setImmovable(true);n.body.setSize(n.width*0.6,n.height*0.6);n.npcData=c;npcs.push(n);this.physics.add.collider(player,n);});
+cursors=this.input.keyboard.createCursorKeys();wasd=this.input.keyboard.addKeys({W:87,A:65,S:83,D:68});spaceKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);this.cameras.main.startFollow(player,true,0.08,0.08);}
+function update(){if(isPaused){player.setVelocity(0);return;}const s=250;if(cursors.left.isDown||wasd.A.isDown){player.setVelocityX(-s);player.setFlipX(false);}else if(cursors.right.isDown||wasd.D.isDown){player.setVelocityX(s);player.setFlipX(true);}else{player.setVelocityX(0);}if(cursors.up.isDown||wasd.W.isDown){player.setVelocityY(-s);}else if(cursors.down.isDown||wasd.S.isDown){player.setVelocityY(s);}else{player.setVelocityY(0);}let cl=null,md=150;npcs.forEach(n=>{let d=Phaser.Math.Distance.Between(player.x,player.y,n.x,n.y);if(d<md){md=d;cl=n;}});if(cl){if(activeNPC!==cl){activeNPC=cl;dialogState='intro';uiLayer.style.display='flex';optionsBox.style.display='none';dialogText.innerHTML=activeNPC.npcData.intro;}if(Phaser.Input.Keyboard.JustDown(spaceKey)&&dialogState==='intro'){dialogState='question';dialogText.innerHTML=`<span class="highlight">提问：</span><br>${activeNPC.npcData.question}`;optionsBox.style.display='flex';for(let i=0;i<3;i++)optBtns[i].innerText=activeNPC.npcData.options[i];}}else{activeNPC=null;dialogState='hidden';uiLayer.style.display='none';optionsBox.style.display='none';}}
+window.answerQuestion=function(i){if(!activeNPC||dialogState!=='question')return;optionsBox.style.display='none';dialogState='result';if(i===activeNPC.npcData.correct){if(!activeNPC.npcData.hasGivenItem){activeNPC.npcData.hasGivenItem=true;inventory.push(activeNPC.npcData.item);showToast(`🎁 获得信物：【${activeNPC.npcData.item}】`);}dialogText.innerHTML=`<span style="color:#aaffaa;">【正确】</span><br>${activeNPC.npcData.success}`;if(inventory.length>=totalItems)setTimeout(()=>{document.getElementById('completion-modal').style.display='block';isPaused=true;},2000);}else{dialogText.innerHTML=`<span style="color:#ffaaaa;">【错误】</span><br>${activeNPC.npcData.fail}<br><br><span style="color:#ccc;font-size:18px;">（走到远处再回来即可重新挑战）</span>`;}};
+function showToast(m){let t=document.getElementById('toast');t.innerHTML=m;t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
+window.togglePause=function(){if(document.getElementById('backpack-modal').style.display==='block')return;isPaused=!isPaused;document.getElementById('pause-modal').style.display=isPaused?'block':'none';};
+window.toggleBackpack=function(){let bp=document.getElementById('backpack-modal');if(bp.style.display==='block'){bp.style.display='none';isPaused=false;}else{isPaused=true;let l=inventory.length>0?inventory.map(i=>`<div style="color:#ffd700;margin:10px 0;">📜 ${i}</div>`).join(''):'<div style="color:#aaa;margin:20px 0;">行囊空空如也</div>';document.getElementById('bp-list').innerHTML=`${l}<div style="color:#aaa;font-size:18px;margin-top:30px;border-top:1px solid #555;padding-top:10px;">收集进度：${inventory.length}/${totalItems}</div>`;bp.style.display='block';}};
+window.returnToMap=function(){window.location.href='../yuntaishan.html';};
+</script>
+</body>
+</html>

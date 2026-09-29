@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>古建游览 - 兵马俑寻秦记</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
+        #game-container { width: 100%; height: 100%; }
+        #top-right-ui { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; z-index: 100; }
+        .sys-btn { background-color: rgba(0, 0, 0, 0.7); border: 2px solid #ceae75; color: #ceae75; padding: 10px 12px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px; cursor: pointer; transition: 0.3s; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+        .sys-btn:hover { background-color: #ceae75; color: #000; }
+        #ui-layer { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 800px; display: none; flex-direction: column; gap: 10px; pointer-events: none; z-index: 90; }
+        .dialog-box { background-color: rgba(139, 69, 19, 0.95); border: 3px solid #ceae75; color: #fff; padding: 25px; font-size: 24px; border-radius: 8px; text-align: center; line-height: 1.6; text-shadow: 1px 1px 2px #000; }
+        .options-container { display: none; flex-direction: column; gap: 10px; pointer-events: auto; }
+        .option-btn { background-color: rgba(0, 0, 0, 0.8); border: 2px solid #ceae75; color: #ceae75; padding: 15px; font-size: 22px; border-radius: 5px; cursor: pointer; transition: 0.3s; text-align: left; font-family: "KaiTi"; }
+        .option-btn:hover { background-color: #ceae75; color: #000; }
+        .highlight { color: #ffd700; font-weight: bold; }
+        
+        /* 默认弹窗样式 */
+        .modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(15, 15, 15, 0.95); border: 4px solid #ceae75; color: #fff; padding: 40px; border-radius: 12px; display: none; z-index: 200; text-align: center; min-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .modal h2 { margin-top: 0; color: #ffd700; font-size: 32px; border-bottom: 1px solid #ceae75; padding-bottom: 10px; }
+        .close-btn { background-color: #ceae75; color: #000; border: none; padding: 10px 30px; font-size: 22px; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: "KaiTi"; margin-top: 20px;}
+        .close-btn:hover { background-color: #fff; }
+        .btn-group { margin-top: 30px; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;}
+        #toast { position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(139, 69, 19, 0.9); border: 2px solid #ffd700; color: #fff; padding: 15px 30px; font-size: 24px; border-radius: 8px; display: none; z-index: 300; opacity: 0; transition: opacity 0.5s; text-align: center; }
+        
+        #clay-tracker { 
+            position: absolute; top: 80px; right: 20px; color: #ceae75; 
+            font-size: 22px; font-weight: bold; z-index: 100; 
+            text-shadow: 2px 2px 4px #000; cursor: pointer; 
+            transition: 0.2s; text-align: right; user-select: none;
+        }
+        #clay-tracker:hover { color: #ffd700; transform: scale(1.05); }
+
+        /* ========= 新增功能 UI 样式 ========= */
+        .sandbox-grid { display: grid; grid-template-columns: repeat(3, 80px); grid-template-rows: repeat(3, 80px); gap: 10px; justify-content: center; margin: 20px 0; }
+        .grid-cell { width: 80px; height: 80px; background: rgba(255, 215, 0, 0.1); border: 2px dashed #ceae75; display: flex; justify-content: center; align-items: center; }
+        .unit { width: 60px; height: 60px; background: #8B4513; border-radius: 50%; color: #fff; display: flex; justify-content: center; align-items: center; cursor: grab; font-weight: bold; font-size: 20px;}
+        .unit-pool { display: flex; gap: 10px; justify-content: center; min-height: 80px; padding: 10px; border: 1px solid #555; margin-bottom: 20px;}
+
+        #maze-canvas { border: 2px solid #ceae75; background: #e8dcb8; cursor: crosshair; }
+        #ai-gen-input { width: 80%; padding: 15px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px; margin-bottom: 20px;}
+        #ai-gen-preview { max-width: 250px; max-height: 300px; display: none; border: 2px solid #ceae75; border-radius: 10px; margin: 0 auto; }
+        .loading { display: none; color: #ffd700; font-size: 20px; margin: 15px 0; }
+
+        /* ================= 始皇呼吸与悬浮动画 ================= */
+        @keyframes breathing {
+            0% { transform: scale(1) translateY(0px); filter: brightness(1); }
+            50% { transform: scale(1.02) translateY(-8px); filter: brightness(1.05); } 
+            100% { transform: scale(1) translateY(0px); filter: brightness(1); }
+        }
+
+        /* ================= 始皇推演天机文字动画 ================= */
+        @keyframes text-pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; text-shadow: 0 0 15px rgba(206,174,117,0.8); }
+            100% { opacity: 0.6; }
+        }
+        .thinking-text {
+            animation: text-pulse 2s infinite ease-in-out;
+            color: #ceae75;
+            font-style: italic;
+        }
+
+        /* ================= 视频切换白光闪烁特效 ================= */
+        @keyframes flash-transition {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(4) drop-shadow(0 0 30px #ffd700); }
+            100% { filter: brightness(1); }
+        }
+        .flash-effect {
+            animation: flash-transition 0.6s ease-in-out;
+        }
+
+        /* 隐藏对话框的滚动条但保持可滚动 */
+        #dialogue-content::-webkit-scrollbar { width: 6px; }
+        #dialogue-content::-webkit-scrollbar-track { background: transparent; }
+        #dialogue-content::-webkit-scrollbar-thumb { background: rgba(206,174,117,0.5); border-radius: 3px; }
+
+        #chat-input:focus { border-bottom: 2px solid #ceae75 !important; }
+    </style>
+</head>
+<body>
+
+<div id="game-container"></div>
+<div id="clay-tracker" onclick="reopenAIGen()">陶土碎片: 0/3</div>
+
+<div id="top-right-ui">
+    <button class="sys-btn" style="background-color: #ffd700; color: #000; border-color: #ceae75;" onclick="openRealPanorama()">👁️ 真实场景</button>
+    <button class="sys-btn" onclick="toggleBackpack()">🎒 背包</button>
+    <button class="sys-btn" onclick="togglePause()">⏸ 暂停</button>
+</div>
+
+<div id="ui-layer">
+    <div id="dialog-text" class="dialog-box"></div>
+    <div id="options-box" class="options-container">
+        <button class="option-btn" onclick="answerQuestion(0)" id="opt-0"></button>
+        <button class="option-btn" onclick="answerQuestion(1)" id="opt-1"></button>
+        <button class="option-btn" onclick="answerQuestion(2)" id="opt-2"></button>
+    </div>
+</div>
+
+<div id="chat-modal" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="width: 80vw; max-width: 1000px; height: 80vh; display: flex; flex-direction: column; background: rgba(20, 20, 20, 0.95); border: 3px solid #ceae75; border-radius: 15px; padding: 40px; box-shadow: 0 15px 30px rgba(0,0,0,0.8);">
+        <h2 style="color: #ffd700; font-size: 36px; margin-top: 0; border-bottom: 1px solid #ceae75; padding-bottom: 15px; text-align: center; font-family: 'KaiTi';">与千古一帝论道</h2>
+        
+        <div style="display: flex; width: 100%; height: calc(100% - 70px); gap: 30px; margin-top: 10px;">
+            
+            <div style="flex: 1; border: 2px solid #ceae75; border-radius: 10px; background: #111; position: relative; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+                <div id="qin-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: bottom center; animation: breathing 4s ease-in-out infinite;">
+                    <video id="qin-talking" src="" loop muted playsinline style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; pointer-events: none;"></video>
+                    <img id="qin-static" src="province/shaanxi/Architecture/location/qinshihuang.png" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; background: #111; z-index: 2; transition: opacity 0.3s ease-in-out;" onerror="this.src='player.png'">
+                </div>
+                
+                <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); border: 1px solid #ceae75; padding: 5px 25px; border-radius: 20px; z-index: 10;">
+                    <span style="color: #ffd700; font-size: 26px; font-weight: bold; text-shadow: 2px 2px 5px #000; letter-spacing: 2px;">秦始皇</span>
+                </div>
+            </div>
+
+            <div style="flex: 2; display: flex; flex-direction: column; justify-content: space-between; gap: 20px;">
+                
+                <div style="flex: 1; background: linear-gradient(to bottom, rgba(30,30,30,0.9), rgba(10,10,10,0.95)); border: 2px solid #ceae75; border-radius: 12px; padding: 40px 30px 30px 30px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; margin-top: 20px;">
+                    
+                    <div id="dialogue-speaker" style="position: absolute; top: -25px; left: 30px; background: linear-gradient(135deg, #ceae75, #8b6508); color: #000; padding: 8px 35px; border-radius: 8px; font-size: 28px; font-weight: bold; border: 2px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.6); letter-spacing: 2px; transition: 0.3s;">秦始皇</div>
+                    
+                    <div id="dialogue-content" style="color: #f5f5f5; font-size: 26px; line-height: 1.8; font-family: 'KaiTi'; text-shadow: 1px 1px 3px #000; overflow-y: auto;">
+                        汝乃何人？见朕为何不拜？大秦扫灭六国，功耀千秋，汝可知晓？
+                    </div>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.6); padding: 15px 25px; border-radius: 10px; border: 1px solid rgba(206,174,117,0.5);">
+                        <span style="color: #ceae75; font-size: 24px; font-weight: bold;">少侠进言：</span>
+                        <input type="text" id="chat-input" placeholder="输入你想对秦始皇说的话..." style="flex: 1; background: transparent; border: none; border-bottom: 2px solid rgba(206,174,117,0.5); color: #fff; font-size: 26px; font-family: 'KaiTi'; outline: none; padding: 5px 10px; transition: 0.3s;">
+                        <button class="sys-btn" style="width: 150px; padding: 10px; font-size: 26px; background: rgba(139, 69, 19, 0.9);" onclick="sendChatMessage()" id="btn-send-chat">诉说</button>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; justify-content: center; margin-top: 5px;">
+                        <button class="sys-btn" style="padding: 12px 30px; font-size: 24px; background: #333;" onclick="closeChat()">告退 (关闭)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="sandbox-modal" class="modal">
+    <h2>推演秦军战阵</h2>
+    <p style="font-size: 18px; color: #ccc;">请将下方兵种拖入九宫格。<br>提示：前排(上)抗伤，中排(中)冲锋，后排(下)输出。</p>
+    <div id="sandbox-result" style="font-size: 22px; margin-bottom: 10px; height: 26px; font-weight:bold;"></div>
+    
+    <div class="unit-pool" id="unit-pool">
+        <div class="unit" draggable="true" data-type="shield" id="u1">盾兵</div>
+        <div class="unit" draggable="true" data-type="shield" id="u2">盾兵</div>
+        <div class="unit" draggable="true" data-type="chariot" id="u3">战车</div>
+        <div class="unit" draggable="true" data-type="bow" id="u4">弓兵</div>
+        <div class="unit" draggable="true" data-type="bow" id="u5">弓兵</div>
+    </div>
+    <div class="sandbox-grid" id="sandbox-grid">
+        <div class="grid-cell" data-row="0"></div><div class="grid-cell" data-row="0"></div><div class="grid-cell" data-row="0"></div>
+        <div class="grid-cell" data-row="1"></div><div class="grid-cell" data-row="1"></div><div class="grid-cell" data-row="1"></div>
+        <div class="grid-cell" data-row="2"></div><div class="grid-cell" data-row="2"></div><div class="grid-cell" data-row="2"></div>
+    </div>
+    <div class="btn-group">
+        <button class="close-btn" style="background:#ffd700;" onclick="checkFormation()">确认阅兵</button>
+        <button class="close-btn" onclick="closeSandbox()">放弃推演</button>
+    </div>
+</div>
+
+<div id="maze-modal" class="modal">
+    <h2>规划丹砂商路</h2>
+    <p style="font-size: 18px; color: #ccc;">请依次点击节点连线：巴蜀(起) -> 栈道 -> 水路 -> 咸阳(终)。避开土匪！</p>
+    <div id="maze-result" style="font-size: 22px; margin-bottom: 10px; height: 26px; font-weight:bold;"></div>
+    <canvas id="maze-canvas" width="400" height="300"></canvas>
+    <br>
+    <button class="close-btn" onclick="closeMaze()">放弃规划</button>
+</div>
+
+<div id="ai-gen-modal" class="modal">
+    <h2>皇陵再塑：点土成兵</h2>
+    <p style="font-size: 18px; color: #ccc;">向天道祈求（描述）你想唤醒的兵马俑神态（越细致越真实）。</p>
+    <input type="text" id="ai-gen-input" placeholder="例如：一位怒目圆睁的秦国老将军，穿着写实的陶土重甲...">
+    <div id="ai-loading" class="loading">天道感应中，泥俑重塑中...</div>
+    <img id="ai-gen-preview" src="">
+    <div class="btn-group">
+        <button class="close-btn" style="background:#ffd700;" onclick="generateWarrior()" id="btn-gen-warrior">注入灵魂</button>
+        <button class="close-btn" style="background:#4CAF50; display:none;" onclick="downloadWarrior()" id="btn-download-warrior">💾 保存画像</button>
+        <button class="close-btn" onclick="closeAIGen()">暂不唤醒</button>
+    </div>
+</div>
+
+<div id="backpack-modal" class="modal">
+    <h2>行囊记录</h2>
+    <div id="bp-list" style="font-size: 24px; line-height: 2; margin-bottom: 20px;"></div>
+    <button class="close-btn" onclick="toggleBackpack()">关闭</button>
+</div>
+
+<div id="pause-modal" class="modal">
+    <h2>游览已暂停</h2>
+    <div class="btn-group">
+        <button class="close-btn" onclick="togglePause()">继续游览</button>
+        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+    </div>
+</div>
+
+<div id="completion-modal" class="modal">
+    <h2 style="color: #00ff00; font-size: 40px;">🎉 寻秦圆满 🎉</h2>
+    <p style="font-size: 24px; line-height: 1.8;">
+        您已成功集齐大秦的所有信物，并唤醒了专属兵马俑！<br>
+        <span style="color:#ffd700;">🎁 隐藏奖励：已解锁【千古一帝·秦始皇】皮肤！</span><br>
+        可在首页角色设置中更换。
+    </p>
+    <div class="btn-group">
+        <button class="close-btn" onclick="restartJourney()">重新游历</button>
+        <button class="close-btn" onclick="returnToMap()">返回地图</button>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let inventory = []; 
+const totalItems = 5; 
+let isPaused = false; 
+
+let clayCount = 0;
+let claysGroup;
+let currentChatNPC = null;
+let currentSandboxNPC = null;
+let currentMazeNPC = null;
+let hasGivenAIItem = false; 
+
+const config = {
+    type: Phaser.AUTO, width: window.innerWidth, height: window.innerHeight, parent: 'game-container',
+    physics: { default: 'arcade', arcade: { debug: false } },
+    scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scene: { preload: preload, create: create, update: update }
+};
+
+const game = new Phaser.Game(config);
+let player, cursors, wasd, spaceKey;
+let npcs = []; let activeNPC = null; let dialogState = 'hidden'; 
+
+const uiLayer = document.getElementById('ui-layer');
+const dialogText = document.getElementById('dialog-text');
+const optionsBox = document.getElementById('options-box');
+const optBtns = [document.getElementById('opt-0'), document.getElementById('opt-1'), document.getElementById('opt-2')];
+
+function preload() {
+    this.load.image('bg', 'province/shaanxi/Architecture/location/bg_bingmayong.png'); 
+    this.load.image('qinshihuang', 'province/shaanxi/Architecture/location/qinshihuang.png');
+    this.load.image('lisi', 'province/shaanxi/Architecture/location/lisi.png');
+    this.load.image('wangjian', 'province/shaanxi/Architecture/location/wangjian.png');
+    this.load.image('fuqing', 'province/shaanxi/Architecture/location/fuqing.png');
+    this.load.audio('bgm_shaanxi', 'audio/shaanxi.mp3');
+    this.load.image('clay', 'province/shaanxi/Architecture/location/clay.png');
+
+    let playerSkin = localStorage.getItem('playerSkin') || 'player.png';
+    if (playerSkin.startsWith('data:image')) {
+        let arr = playerSkin.split(','); let mime = arr[0].match(/:(.*?);/)[1];
+        let bstr = atob(arr[1]); let n = bstr.length; let u8arr = new Uint8Array(n);
+        while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+        let blob = new Blob([u8arr], { type: mime });
+        this.load.image('player', URL.createObjectURL(blob));
+    } else {
+        this.load.image('player', playerSkin);
+    }
+}
+
+function create() {
+    let bgm = this.sound.add('bgm_shaanxi', { loop: true, volume: 0.2 });
+    bgm.play();
+    let bg = this.add.image(0, 0, 'bg').setOrigin(0, 0);
+    let scaleX = this.cameras.main.width / bg.width;
+    let scaleY = this.cameras.main.height / bg.height;
+    let baseScale = Math.max(scaleX, scaleY) * 1.5; 
+    bg.setScale(baseScale);
+
+    let worldWidth = bg.width * baseScale; let worldHeight = bg.height * baseScale;
+    this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+    this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+
+    player = this.physics.add.sprite(worldWidth * 0.5, worldHeight * 0.5, 'player');
+    let dynamicScale = 150 / player.height;
+    player.setScale(dynamicScale); player.setCollideWorldBounds(true); player.body.setSize(player.width * 0.6, player.height * 0.6);
+
+    const npcConfigs = [
+        { id: 'qinshihuang', name: '秦始皇 嬴政', x: 0.35, y: 0.75, scale: 0.1, customAction: 'chat', item: '和氏璧玉玺', hasGivenItem: false, intro: '<span class="highlight">【秦始皇】</span><br>朕扫六合，定天下！<br><br>▶ 按【空格键】与朕灵魂辩论' },
+        { id: 'lisi', name: '丞相 李斯', x: 0.45, y: 0.85, scale: 0.1, isMain: false, item: '小篆范本', hasGivenItem: false, 
+          intro: '<span class="highlight">【李斯】</span><br>臣辅佐陛下统一文字。<br><br>▶ 按【空格键】接受大秦典故连环考问', 
+          questions: [
+              { q: '秦朝为了统一文字，官方推行的标准字体是什么？', options: ['A. 大篆', 'B. 小篆', 'C. 楷书'], correct: 1, success: '善！不仅如此，陛下还推行了度同制！' },
+              { q: '被称为“世界第八大奇迹”的兵马俑，当初修筑的目的是什么？', options: ['A. 始皇帝的地下禁军', 'B. 祭祀神灵', 'C. 抵御匈奴'], correct: 0, success: '正确！千军万马护卫千古一帝！' },
+              { q: '秦朝时期修筑的“高速公路”被称为什么？', options: ['A. 驰道', 'B. 栈道', 'C. 丝绸之路'], correct: 0, success: '精通史理！我大秦车同轨，驰道通达天下！' }
+          ],
+          currentQ: 0
+        },
+        { id: 'wangjian', name: '名将 王翦', x: 0.15, y: 0.70, scale: 0.1, customAction: 'sandbox', item: '灭楚帅印', hasGivenItem: false, intro: '<span class="highlight">【王翦】</span><br>吾乃秦军主将！<br><br>▶ 按【空格键】推演秦军战阵' },
+        { id: 'fuqing', name: '巴寡妇清', x: 0.8, y: 0.89, scale: 0.1, customAction: 'maze', item: '丹砂秘卷', hasGivenItem: false, intro: '<span class="highlight">【巴寡妇清】</span><br>吾执掌丹砂巨业！<br><br>▶ 按【空格键】规划丹砂商路' }
+    ];
+
+    npcConfigs.forEach(config => {
+        let npcSprite = this.physics.add.sprite(worldWidth * config.x, worldHeight * config.y, config.id);
+        npcSprite.setScale(config.scale); npcSprite.setImmovable(true);  
+        npcSprite.body.setSize(npcSprite.width * 0.6, npcSprite.height * 0.6); npcSprite.npcData = config; 
+        npcs.push(npcSprite); this.physics.add.collider(player, npcSprite);
+    });
+
+    claysGroup = this.physics.add.group();
+    for(let i=0; i<3; i++) {
+        let clay = this.physics.add.sprite(worldWidth * (0.2 + Math.random()*0.6), worldHeight * (0.2 + Math.random()*0.6), 'clay');
+        clay.setScale(0.1); 
+        claysGroup.add(clay);
+    }
+    
+    this.physics.add.overlap(player, claysGroup, (p, clayObj) => {
+        clayObj.destroy();
+        clayCount++;
+        
+        if (clayCount < 3) {
+            document.getElementById('clay-tracker').innerText = `陶土碎片: ${clayCount}/3`;
+            showToast(`获得古老陶土块 (${clayCount}/3)`);
+        } else {
+            document.getElementById('clay-tracker').innerHTML = `✨ 碎片集齐！<br><span style="font-size:18px; text-decoration:underline;">点击唤醒兵俑</span>`;
+            showToast(`陶土块已集齐！`);
+            setTimeout(openAIGen, 1000); 
+        }
+    }, null, this);
+
+    cursors = this.input.keyboard.createCursorKeys();
+    wasd = this.input.keyboard.addKeys({ W: 87, A: 65, S: 83, D: 68 });
+    spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.cameras.main.startFollow(player, true, 0.08, 0.08); 
+    
+    setupDragAndDrop();
+    setupMazeClick();
+}
+
+function update() {
+    if (isPaused) { player.setVelocity(0); return; }
+    const speed = 250; 
+    if (cursors.left.isDown || wasd.A.isDown) { player.setVelocityX(-speed); player.setFlipX(false); } 
+    else if (cursors.right.isDown || wasd.D.isDown) { player.setVelocityX(speed); player.setFlipX(true); } 
+    else { player.setVelocityX(0); }
+    if (cursors.up.isDown || wasd.W.isDown) { player.setVelocityY(-speed); } 
+    else if (cursors.down.isDown || wasd.S.isDown) { player.setVelocityY(speed); } 
+    else { player.setVelocityY(0); }
+
+    let closestNPC = null; let minDistance = 150; 
+    npcs.forEach(npc => {
+        let distance = Phaser.Math.Distance.Between(player.x, player.y, npc.x, npc.y);
+        if (distance < minDistance) { minDistance = distance; closestNPC = npc; }
+    });
+
+    if (closestNPC) {
+        if (activeNPC !== closestNPC) {
+            activeNPC = closestNPC; dialogState = 'intro';
+            uiLayer.style.display = 'flex'; optionsBox.style.display = 'none';
+            dialogText.innerHTML = activeNPC.npcData.intro;
+        }
+        
+        if (Phaser.Input.Keyboard.JustDown(spaceKey) && dialogState === 'intro') {
+            uiLayer.style.display = 'none'; 
+
+            // 增加人物动作：简单的跳动和缩放
+            game.scene.scenes[0].tweens.add({
+                targets: activeNPC,
+                y: activeNPC.y - 15,
+                scaleX: activeNPC.scaleX * 1.1,
+                scaleY: activeNPC.scaleY * 1.1,
+                yoyo: true,
+                duration: 200
+            });
+
+            if (activeNPC.npcData.customAction === 'chat') {
+                openChat(activeNPC);
+            } else if (activeNPC.npcData.customAction === 'sandbox') {
+                openSandbox(activeNPC);
+            } else if (activeNPC.npcData.customAction === 'maze') {
+                openMaze(activeNPC);
+            } else if (activeNPC.npcData.questions) {
+                // 连环答题逻辑
+                uiLayer.style.display = 'flex';
+                dialogState = 'question'; 
+                let qData = activeNPC.npcData.questions[activeNPC.npcData.currentQ];
+                dialogText.innerHTML = `<span class="highlight">【第${activeNPC.npcData.currentQ + 1}题】</span><br>${qData.q}`;
+                optionsBox.style.display = 'flex'; 
+                for(let i=0; i<3; i++) { optBtns[i].innerText = qData.options[i]; }
+            }
+        }
+    } else {
+        activeNPC = null; dialogState = 'hidden'; uiLayer.style.display = 'none'; optionsBox.style.display = 'none';
+    }
+}
+
+function grantItem(npc, customItemName = null) {
+    let itemName = customItemName || (npc ? npc.npcData.item : '');
+    let npcName = npc ? npc.npcData.name : '神秘人';
+    let giveItem = false;
+
+    if (npc && !npc.npcData.hasGivenItem) {
+        npc.npcData.hasGivenItem = true;
+        giveItem = true;
+    } else if (!npc && !hasGivenAIItem) {
+        hasGivenAIItem = true;
+        giveItem = true;
+    }
+
+    if (giveItem) {
+        inventory.push(itemName); 
+        
+        let currentUser = localStorage.getItem('ancient_username');
+        if(currentUser) {
+            fetch('http://127.0.0.1:5000/api/add-item', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    username: currentUser,
+                    item_name: itemName,
+                    item_desc: '寻秦记探秘获得：' + npcName + '的信物'
+                })
+            }).catch(e => console.error(e));
+        }
+
+        showToast(`🎁 获得文物：【${itemName}】`);
+        checkWin();
+    }
+}
+
+window.answerQuestion = function(selectedIndex) {
+    let qData = activeNPC.npcData.questions[activeNPC.npcData.currentQ];
+    if (selectedIndex === qData.correct) {
+        // 答对当前题，增加特效或动作
+        game.scene.scenes[0].tweens.add({ targets: activeNPC, angle: 10, yoyo: true, duration: 150 });
+        showToast(`✅ ${qData.success}`);
+        
+        activeNPC.npcData.currentQ++;
+        if (activeNPC.npcData.currentQ >= activeNPC.npcData.questions.length) {
+            // 全部答对
+            optionsBox.style.display = 'none';
+            dialogText.innerHTML = `<span style="color:#00ff00;">通关！</span><br>你已深刻领悟大秦律规，此【${activeNPC.npcData.item}】赠予你！`;
+            showToast("🎟️ [奖励]恭喜获得：大秦特权 - 临潼景区门票8折优惠券 (稍后在首页使用)");
+            grantItem(activeNPC);
+            setTimeout(() => { dialogState = 'hidden'; uiLayer.style.display = 'none'; }, 3000);
+        } else {
+            // 继续下一题
+            setTimeout(() => {
+                let nextQ = activeNPC.npcData.questions[activeNPC.npcData.currentQ];
+                dialogText.innerHTML = `<span class="highlight">【第${activeNPC.npcData.currentQ + 1}题】</span><br>${nextQ.q}`;
+                for(let i=0; i<3; i++) { optBtns[i].innerText = nextQ.options[i]; }
+            }, 1500);
+        }
+    } else {
+        // 答错
+        game.scene.scenes[0].tweens.add({ targets: activeNPC, x: activeNPC.x + 10, yoyo: true, duration: 100, repeat: 2 });
+        dialogText.innerHTML = `<span style="color:red;">❌ 答错啦，请再去多了解一下大秦历史哦！</span><br>按空格重新接受考问。`;
+        optionsBox.style.display = 'none';
+        activeNPC.npcData.currentQ = 0; // 重置进度
+        setTimeout(() => { dialogState = 'hidden'; uiLayer.style.display = 'none'; }, 2000);
+    }
+}
+
+function checkWin() {
+    if (inventory.length === totalItems) {
+        localStorage.setItem('unlocked_qinshihuang', 'true');
+        
+        
+        
+
+        setTimeout(() => {
+            document.getElementById('completion-modal').innerHTML = `
+                <h2 style="color: #00ff00; font-size: 40px;">🎉 游历圆满 🎉</h2>
+                <p style="font-size: 24px;">
+                    <span style="color:#ffd700;">🎁 隐藏奖励1：已解锁【千古一帝·秦始皇】皮肤！(首页可见)</span><br>
+                    <span style="color:#00ff00;">🎫 隐藏奖励2：兵马俑景区电子门票优惠券 × 1</span><br>
+                </p>
+                <div class="btn-group">
+                    <button class="close-btn" onclick="returnToMap()">返回地图</button>
+                    <button class="close-btn" onclick="document.getElementById('completion-modal').style.display='none';">关闭</button>
+                </div>
+            `;
+            document.getElementById('completion-modal').style.display = 'block';
+            isPaused = true;
+        }, 2000);
+    }
+}
+
+// =========================================================================
+// 【核心修改点：加入视频切换与“障眼法”闪烁特效】
+// =========================================================================
+function typeWriterEffect(element, text, speed = 100, callback, isSuccess = false) {
+    let i = 0;
+    element.innerHTML = ""; 
+    
+    const staticImg = document.getElementById('qin-static');
+    const talkingVid = document.getElementById('qin-talking');
+    const videoContainer = document.getElementById('qin-container');
+
+    // 1. 根据判定结果，动态设定视频源
+    talkingVid.src = isSuccess ? "province/shaanxi/Architecture/location/皇帝赐予玉玺视频.mp4" : "province/shaanxi/Architecture/location/qin_angry.mp4";
+
+    // 2. 触发 CSS 白光闪烁特效，用来掩盖直接切视频的生硬感
+    videoContainer.classList.add('flash-effect');
+
+    // 3. 在特效亮光最盛的时候（0.3秒处），进行底层元素的无缝替换
+    setTimeout(() => {
+        if (staticImg && talkingVid) {
+            talkingVid.play().catch(e => console.warn("视频播放受浏览器限制:", e));
+            staticImg.style.opacity = '0'; // 静态图变透明，露出视频
+        }
+
+        // 4. 开始一行一行敲字
+        function typing() {
+            if (i < text.length) {
+                element.innerHTML += text.charAt(i);
+                i++;
+                element.scrollTop = element.scrollHeight; 
+                setTimeout(typing, speed);
+            } else {
+                // 敲字结束：让静态图恢复实体，挡住视频，随后暂停视频
+                if (staticImg && talkingVid) {
+                    staticImg.style.opacity = '1';
+                    setTimeout(() => { talkingVid.pause(); }, 300);
+                }
+                if (callback) callback(); 
+            }
+        }
+        typing();
+
+    }, 300); // 300ms 后执行
+
+    // 5. 动画播放完后移除 class，方便下一次调用
+    setTimeout(() => {
+        videoContainer.classList.remove('flash-effect');
+    }, 600);
+}
+
+function openChat(npc) {
+    currentChatNPC = npc; 
+    isPaused = true;
+    
+    const speakerEl = document.getElementById('dialogue-speaker');
+    const contentEl = document.getElementById('dialogue-content');
+    speakerEl.innerText = "秦始皇";
+    speakerEl.style.background = "linear-gradient(135deg, #ceae75, #8b6508)";
+    contentEl.innerHTML = "汝乃何人？见朕为何不拜？大秦扫灭六国，功耀千秋，汝可知晓？";
+    
+    document.getElementById('chat-modal').style.display = 'flex';
+}
+
+window.closeChat = function() { 
+    document.getElementById('chat-modal').style.display = 'none'; 
+    isPaused = false; 
+}
+
+window.sendChatMessage = async function() {
+    const inputEl = document.getElementById('chat-input');
+    const msg = inputEl.value.trim();
+    if(!msg) return;
+    
+    const speakerEl = document.getElementById('dialogue-speaker');
+    const contentEl = document.getElementById('dialogue-content');
+
+    // 玩家发言
+    speakerEl.innerText = "少侠";
+    speakerEl.style.background = "linear-gradient(135deg, #e0e0e0, #999999)";
+    contentEl.innerHTML = msg;
+    inputEl.value = '';
+    
+    const btn = document.getElementById('btn-send-chat');
+    btn.innerText = "倾听中..."; 
+    btn.disabled = true; 
+    inputEl.disabled = true;
+    
+    // 如果玩家说出了关键词，前端直接判定为满意 (防卡关)
+    let isFrontendSuccess = msg.includes('统一') || msg.includes('千古一帝') || msg.includes('书同文') || msg.includes('车同轨') || msg.includes('伟大') || msg.includes('大秦');
+
+    const unlockInput = () => {
+        btn.innerText = "诉说"; 
+        btn.disabled = false;
+        inputEl.disabled = false;
+        inputEl.focus();
+    };
+
+    // 模拟始皇推演思考
+    setTimeout(async () => {
+        speakerEl.innerText = "秦始皇";
+        speakerEl.style.background = "linear-gradient(135deg, #ceae75, #8b6508)";
+        contentEl.innerHTML = "<span class='thinking-text'>(始皇微闭双目，威严的气场在大殿中弥漫，正在审视你的言辞...)</span>";
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/api/chat', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg })
+            });
+            const data = await response.json();
+            
+            if (!response.ok) {
+                if(isFrontendSuccess) {
+                    typeWriterEffect(contentEl, "善！汝言之有理，深得朕心！", 40, () => triggerChatSuccess(contentEl), true);
+                } else {
+                    typeWriterEffect(contentEl, "(天道提示：后端连线失败。请输入包含“统一”、“伟大”等词语直接过关)", 40, unlockInput, false);
+                }
+            } else {
+                let finalReply = data.reply.replace(/^嬴政：/g, '').trim(); 
+                let successFlag = data.success || isFrontendSuccess;
+                
+                // 将成功或失败的状态 (successFlag) 传给特效函数，决定播放哪个视频
+                typeWriterEffect(contentEl, finalReply, 40, () => {
+                    if(successFlag) {
+                        setTimeout(() => triggerChatSuccess(contentEl), 800);
+                    } else {
+                        unlockInput();
+                    }
+                }, successFlag);
+            }
+        } catch (e) {
+            if(isFrontendSuccess) {
+                typeWriterEffect(contentEl, "善！汝言之有理，深得朕心！", 40, () => triggerChatSuccess(contentEl), true);
+            } else {
+                typeWriterEffect(contentEl, "(天道提示：连接异常。请输入包含“统一”、“伟大”等词语直接过关)", 40, unlockInput, false);
+            }
+        }
+    }, 800);
+}
+
+function triggerChatSuccess(contentEl) {
+    if(!currentChatNPC.npcData.hasGivenItem) {
+        contentEl.innerHTML += `<br><br><span style="color: #00ff00; font-weight:bold; font-size: 20px;">【系统提示】：始皇帝龙颜大悦，赐予你信物！</span>`;
+        grantItem(currentChatNPC);
+        setTimeout(() => { closeChat(); }, 3000);
+    }
+}
+
+// ======================== 核心玩法 2：王翦沙盘 ========================
+function openSandbox(npc) {
+    currentSandboxNPC = npc; isPaused = true;
+    document.getElementById('sandbox-result').innerText = "";
+    document.getElementById('sandbox-modal').style.display = 'block';
+}
+window.closeSandbox = function() { document.getElementById('sandbox-modal').style.display = 'none'; isPaused = false; }
+
+function setupDragAndDrop() {
+    const units = document.querySelectorAll('.unit');
+    const cells = document.querySelectorAll('.grid-cell');
+    const pool = document.getElementById('unit-pool');
+    
+    units.forEach(u => { u.ondragstart = (e) => { e.dataTransfer.setData('text/plain', e.target.id); }; });
+    cells.forEach(c => {
+        c.ondragover = (e) => { e.preventDefault(); }; 
+        c.ondrop = (e) => {
+            e.preventDefault();
+            const id = e.dataTransfer.getData('text/plain');
+            if(e.target.classList.contains('grid-cell') && e.target.children.length === 0) e.target.appendChild(document.getElementById(id));
+        };
+    });
+    pool.ondragover = (e) => { e.preventDefault(); };
+    pool.ondrop = (e) => {
+        e.preventDefault();
+        const id = e.dataTransfer.getData('text/plain');
+        pool.appendChild(document.getElementById(id));
+    };
+}
+window.checkFormation = function() {
+    let hasShieldFront = false, hasChariotMid = false, hasBowBack = false;
+    const cells = document.querySelectorAll('.grid-cell');
+
+    cells.forEach(c => {
+        if(c.children.length > 0) {
+            let type = c.children[0].dataset.type;
+            let row = c.dataset.row;
+            if(row === "0" && type === "shield") hasShieldFront = true;
+            if(row === "1" && type === "chariot") hasChariotMid = true;
+            if(row === "2" && type === "bow") hasBowBack = true;
+        }
+    });
+
+    const res = document.getElementById('sandbox-result');
+    if(hasShieldFront && hasChariotMid && hasBowBack) {
+        res.innerHTML = "<span style='color:#00ff00'>王翦大喜：善哉！此乃破楚之阵！获得【灭楚帅印】</span>";
+        grantItem(currentSandboxNPC);
+        setTimeout(() => closeSandbox(), 2000);
+    } else {
+        res.innerHTML = "<span style='color:#ff4444'>王翦皱眉：阵法散乱！第一排需盾兵，第二排需战车，第三排需弓弩！</span>";
+    }
+}
+
+// ======================== 核心玩法 3：巴清迷宫 ========================
+let mazeNodes = [ {x: 60, y: 150, name: '巴蜀'}, {x: 150, y: 60, name: '土匪(禁)'}, {x: 200, y: 180, name: '栈道'}, {x: 300, y: 250, name: '水路'}, {x: 340, y: 100, name: '咸阳'} ];
+let mazeStep = 0;
+let correctOrder = ['巴蜀', '栈道', '水路', '咸阳'];
+let clickedPath = [];
+
+function openMaze(npc) {
+    currentMazeNPC = npc; isPaused = true; clickedPath = []; mazeStep = 0;
+    document.getElementById('maze-result').innerText = "";
+    document.getElementById('maze-modal').style.display = 'block';
+    drawMaze();
+}
+window.closeMaze = function() { document.getElementById('maze-modal').style.display = 'none'; isPaused = false; }
+
+function drawMaze() {
+    const canvas = document.getElementById('maze-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0, canvas.width, canvas.height);
+    
+    if(clickedPath.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(clickedPath[0].x, clickedPath[0].y);
+        for(let i=1; i<clickedPath.length; i++) ctx.lineTo(clickedPath[i].x, clickedPath[i].y);
+        ctx.strokeStyle = '#ceae75'; ctx.lineWidth = 3; ctx.stroke();
+    }
+    
+    mazeNodes.forEach(n => {
+        ctx.beginPath(); ctx.arc(n.x, n.y, 15, 0, Math.PI*2);
+        ctx.fillStyle = n.name.includes('禁') ? '#ff4444' : '#44ff44';
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#000'; ctx.font = '16px KaiTi';
+        ctx.fillText(n.name, n.x - 15, n.y - 20);
+    });
+}
+
+function setupMazeClick() {
+    document.getElementById('maze-canvas').addEventListener('click', (e) => {
+        if (mazeStep >= correctOrder.length) return; 
+        
+        const rect = e.target.getBoundingClientRect();
+        const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+        
+        let clickedNode = null;
+        mazeNodes.forEach(n => { if(Math.hypot(n.x - x, n.y - y) < 20) clickedNode = n; });
+        if (!clickedNode) return;
+
+        const res = document.getElementById('maze-result');
+
+        if(clickedNode.name.includes('禁')) { 
+            res.innerHTML = "<span style='color:#ff4444'>遭遇土匪，货物被劫！请重新开始连线。</span>";
+            clickedPath = []; mazeStep = 0;
+        } else { 
+            if (clickedNode.name === correctOrder[mazeStep]) {
+                clickedPath.push(clickedNode);
+                mazeStep++;
+                res.innerHTML = `<span style='color:#aaffaa'>到达 ${clickedNode.name}，请继续连接下一处...</span>`;
+                
+                if (mazeStep === correctOrder.length) {
+                    res.innerHTML = "<span style='color:#00ff00'>巴清赞赏：商道通畅，大功告成！获得【丹砂秘卷】</span>";
+                    grantItem(currentMazeNPC);
+                    setTimeout(() => closeMaze(), 2000);
+                }
+            } else {
+                res.innerHTML = "<span style='color:#ff4444'>顺序错误！必须按：巴蜀 -> 栈道 -> 水路 -> 咸阳。</span>";
+                clickedPath = []; mazeStep = 0;
+            }
+        }
+        drawMaze();
+    });
+}
+
+// ======================== 核心玩法 4：AI 点土成兵 ========================
+function openAIGen() {
+    isPaused = true;
+    document.getElementById('ai-gen-modal').style.display = 'block';
+}
+window.closeAIGen = function() { document.getElementById('ai-gen-modal').style.display = 'none'; isPaused = false; }
+
+window.generateWarrior = async function() {
+    const input = document.getElementById('ai-gen-input').value.trim();
+    if(!input) return alert("请先输入神态描述！");
+    
+    document.getElementById('ai-loading').style.display = 'block';
+    document.getElementById('btn-gen-warrior').disabled = true;
+    
+    try {
+        const response = await fetch('http://127.0.0.1:5000/api/generate-warrior', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: input })
+        });
+        const data = await response.json();
+        
+        if(data.data && data.data.length > 0) {
+            const aiImageUrl = 'data:image/png;base64,' + data.data[0].b64_json;
+            const preview = document.getElementById('ai-gen-preview');
+            preview.src = aiImageUrl;
+            preview.style.display = 'block';
+            document.getElementById('ai-loading').style.display = 'none';
+            
+            document.getElementById('btn-download-warrior').style.display = 'inline-block';
+            document.getElementById('btn-gen-warrior').innerText = "重新注入"; 
+            
+            setTimeout(() => {
+                alert("泥俑苏醒！它已永久站在了皇陵之中。你也可以点击绿色的按钮将它的画像保存到电脑上！");
+                grantItem(null, "AI专属兵马俑");
+                document.getElementById('clay-tracker').innerHTML = `✅ 兵俑已苏醒`;
+                
+                game.scene.scenes[0].textures.addBase64('ai_warrior', aiImageUrl);
+                game.scene.scenes[0].events.once('addBase64', () => {
+                    let aiSprite = game.scene.scenes[0].add.sprite(player.x + 100, player.y, 'ai_warrior');
+                    aiSprite.setScale(0.2); 
+                });
+            }, 500);
+        } else {
+            throw new Error("No data");
+        }
+    } catch (e) {
+        document.getElementById('ai-loading').style.display = 'none';
+        alert("天道（API）连接异常！系统已为您发放默认陶土兵俑以防卡关。");
+        grantItem(null, "古朴兵马俑");
+        document.getElementById('clay-tracker').innerHTML = `✅ 兵俑已苏醒`;
+        closeAIGen();
+    }
+    document.getElementById('btn-gen-warrior').disabled = false;
+}
+
+window.downloadWarrior = function() {
+    const preview = document.getElementById('ai-gen-preview');
+    if (preview.src) {
+        const link = document.createElement('a');
+        link.href = preview.src;
+        link.download = '大秦专属兵马俑_修复存档.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+
+// ======================== 系统菜单 ========================
+function showToast(msg) {
+    const toast = document.getElementById('toast'); toast.innerHTML = msg; toast.style.display = 'block'; toast.style.opacity = 1;
+    setTimeout(() => { toast.style.opacity = 0; setTimeout(() => toast.style.display = 'none', 500); }, 2500);
+}
+window.togglePause = function() {
+    if(document.getElementById('backpack-modal').style.display === 'block') return;
+    isPaused = !isPaused; document.getElementById('pause-modal').style.display = isPaused ? 'block' : 'none';
+}
+window.toggleBackpack = function() {
+    if(document.getElementById('pause-modal').style.display === 'block' || document.getElementById('completion-modal').style.display === 'block') return;
+    let bp = document.getElementById('backpack-modal');
+    if (bp.style.display === 'block') { bp.style.display = 'none'; isPaused = false; } 
+    else {
+        isPaused = true;  
+        let displayInventory = [...inventory];
+        if (localStorage.getItem('got_secret_item_bingmayong') === 'true' && !displayInventory.includes('地下禁军密文')) {
+            displayInventory.push('地下禁军密文 (隐藏)');
+        }
+        
+        let listHtml = displayInventory.length > 0 ? displayInventory.map(item => `<div style="color:#ffd700; margin:10px 0;">📜 ${item}</div>`).join('') : '<div style="color:#aaa; margin: 20px 0;">行囊空空如也</div>';
+        document.getElementById('bp-list').innerHTML = `${listHtml}<div style="color:#aaa; font-size:18px; margin-top:30px; border-top: 1px solid #555; padding-top: 10px;">任务主线进度：${inventory.length} / ${totalItems}</div>`;
+        bp.style.display = 'block';
+    }
+}
+
+window.restartJourney = function() { location.reload(); }
+window.returnToMap = function() { window.location.href = 'index.html?region=shaanxi'; }
+
+window.reopenAIGen = function() {
+    if (clayCount >= 3 && !hasGivenAIItem) {
+        openAIGen(); 
+    } else if (clayCount < 3) {
+        showToast(`还差 ${3 - clayCount} 个陶土碎片哦，请在地图上寻找！`);
+    } else {
+        showToast("兵俑已经成功苏醒啦！");
+    }
+}
+
+window.openRealPanorama = function() {
+    const panoUrl = 'panorama/panorama_bingmayong.html'; 
+    window.open(panoUrl, '_blank');
+}
+</script>
+    <script src="digital_human.js"></script>
+</body>
+</html>

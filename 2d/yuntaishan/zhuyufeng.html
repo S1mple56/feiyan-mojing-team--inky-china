@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水墨神州 - 茱萸峰</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; font-family: "KaiTi", "楷体", serif; }
+        #bg {
+            position: fixed; inset: 0; z-index: 0;
+            background: url('../province/henan/Architecture/location/yuntaishan/bg_zhuyufeng.png') center center / cover no-repeat;
+        }
+        #overlay {
+            position: fixed; inset: 0; z-index: 1;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.55) 100%);
+        }
+        #top-left {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            display: flex; align-items: center; gap: 20px;
+        }
+        .btn-back {
+            padding: 10px 20px; font-size: 20px; font-family: "KaiTi";
+            background: rgba(0,0,0,0.6); color: #ceae75; border: 1px solid #ceae75;
+            cursor: pointer; transition: 0.3s; border-radius: 8px;
+        }
+        .btn-back:hover { background: #ceae75; color: #000; }
+        #page-title {
+            font-size: 36px; color: #ffd700; text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+            letter-spacing: 6px;
+        }
+        #top-right-ui {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+        }
+        .sys-btn {
+            background: rgba(0,0,0,0.7); border: 2px solid #ceae75; color: #ceae75;
+            padding: 10px 20px; font-size: 20px; font-family: "KaiTi"; border-radius: 8px;
+            cursor: pointer; transition: 0.3s; box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        }
+        .sys-btn:hover { background: #ceae75; color: #000; }
+        .sys-btn.primary {
+            background: linear-gradient(135deg, #ffd700, #b8860b);
+            color: #1a1a1a; border-color: #ffd700; font-weight: bold;
+        }
+        .sys-btn.primary:hover { transform: scale(1.05); }
+        #info {
+            position: fixed; bottom: 60px; left: 50px; z-index: 50;
+            max-width: 500px; background: rgba(0,0,0,0.55); backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(206,174,117,0.3);
+            border-radius: 16px; padding: 30px 36px; color: #f5f0e6;
+        }
+        #info h2 { font-size: 32px; color: #ffd700; letter-spacing: 4px; margin-bottom: 6px; }
+        #info .sub { font-size: 16px; color: #ceae75; letter-spacing: 2px; margin-bottom: 16px; }
+        #info .desc { font-size: 17px; line-height: 1.9; color: #d4c4a0; }
+        #poem {
+            position: fixed; bottom: 30px; right: 50px; z-index: 50;
+            text-align: right; color: rgba(206,174,117,0.7);
+            font-size: 18px; letter-spacing: 4px; line-height: 2.2;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="overlay"></div>
+<div id="top-left">
+    <button class="btn-back" onclick="window.location.href='../yuntaishan.html'">← 返回云台山</button>
+    <span id="page-title">茱萸峰</span>
+</div>
+<div id="top-right-ui">
+    <button class="sys-btn primary" onclick="window.location.href='zhuyufeng_scene.html'">🌍 进入场景</button>
+    <button class="sys-btn" onclick="window.location.href='zhuyufeng_game.html'">🎮 登高游戏</button>
+    <button class="sys-btn" onclick="window.location.href='zhuyufeng_poem.html'">📜 诗词对诗</button>
+</div>
+<div id="info">
+    <h2>茱萸峰</h2>
+    <div class="sub">云台山主峰 · 海拔1308米</div>
+    <div class="desc">
+        茱萸峰是云台山的主峰，海拔1308米，因遍生茱萸而得名。唐代诗人王维登临此峰，写下了"独在异乡为异客，每逢佳节倍思亲"的千古名句。<br><br>
+        峰顶有真武大帝庙，始建于唐代。登顶远眺，可见黄河如带、太行群峰连绵。每逢重阳佳节，满山茱萸红果累累，游人如织，登高望远，感受千年诗意。
+    </div>
+</div>
+<div id="poem">
+    遥知兄弟登高处<br>遍插茱萸少一人
+</div>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>结构总览</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <style>
+        body { margin:0; font-family: "STKaiti", "华文楷体", KaiTi, serif; background: linear-gradient(180deg,#061018,#08121a); color:#e8d099 }
+        .top-bar { display:flex; align-items:center; gap:16px; padding:14px 20px; }
+        .back-btn { background:linear-gradient(135deg,#111,#000); color:#ffd700; padding:8px 14px; text-decoration:none; border:1px solid #8b6b33; border-radius:4px }
+        .grid { display:flex; gap:18px; flex-wrap:wrap; padding:18px; justify-content:center }
+        .card { width:260px; height:300px; background:rgba(10,10,10,0.45); border:1px solid rgba(206,174,117,0.18); border-radius:10px; display:flex; flex-direction:column; align-items:center; padding:12px; box-shadow:0 8px 20px rgba(0,0,0,0.6) }
+        .card canvas { width:220px; height:180px; border-radius:6px; background:#000 }
+        .card h3 { margin:10px 0 6px 0; color:#ffd700; font-size:18px }
+        .card p { font-size:13px; color:#ddd; text-align:center; flex:1; overflow:hidden }
+        .card button { margin-top:8px; background:#ceae75; border:none; padding:8px 10px; border-radius:6px; cursor:pointer }
+        .modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:40 }
+        .modal .inner { width:980px; max-width:96%; background:#0b0b0b; border:1px solid #8b6b33; padding:18px; border-radius:10px; display:flex; gap:16px }
+        .modal .left { width:460px } .modal canvas { width:100%; height:520px; background:#000 }
+        .modal .right { flex:1; color:#e8d099 }
+        .close { background:transparent; border:1px solid rgba(206,174,117,0.25); color:#ffd700; padding:6px 8px; border-radius:4px; cursor:pointer }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <a class="back-btn" href="glb_111.html">⬅ 返回模型页</a>
+        <h1 style="margin:0; color:#ffd700">结构总览</h1>
+    </div>
+    <div class="grid" id="partsGrid"></div>
+
+    <div class="modal" id="partModal">
+        <div class="inner">
+            <div class="left">
+                <canvas id="previewCanvas"></canvas>
+            </div>
+            <div class="right">
+                <h2 id="modalTitle"></h2>
+                <p id="modalDesc"></p>
+                <div id="preview-chat" style="margin-top:12px; display:flex; flex-direction:column; gap:8px;">
+                    <div id="preview-chat-area" style="max-height:180px; overflow:auto; padding:8px; background:rgba(0,0,0,0.25); border-radius:6px;">
+                        <div style="color:#e8d099; font-size:14px;">你好！关于这个结构件，你有什么想了解的吗？</div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <input id="preview-input" type="text" placeholder="输入问题..." style="flex:1; padding:8px; border-radius:6px; border:1px solid rgba(206,174,117,0.2); background:#111; color:#fff;">
+                        <button id="preview-send" style="background:#ceae75; border:none; padding:8px 10px; border-radius:6px; cursor:pointer;">发送</button>
+                    </div>
+                </div>
+                <div style="margin-top:12px"><button class="close" id="modalClose">关闭</button></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 使用与 glb_111 中相同的结构件配置（路径相对本文件）
+        const STRUCTURE_PARTS = [
+            { file: '../../test/01(1).glb', title: '柱头斗拱', desc: '位于立柱顶端的斗拱，是整组斗拱的起始点。' },
+            { file: '../../test/02(1).glb', title: '补间斗拱', desc: '位于两柱之间的额枋之上，填补柱头斗拱之间空档的斗拱。' },
+            { file: '../../test/03(1).glb', title: '转角斗拱', desc: '位于建筑转角处的斗拱，是斗拱体系中最复杂的类型。' },
+            { file: '../../test/04.glb', title: '昂与耍头', desc: '昂是斗拱中斜向伸出的构件，耍头为其装饰性构件。' }
+        ];
+
+        const grid = document.getElementById('partsGrid');
+        const loader = new THREE.GLTFLoader();
+
+        STRUCTURE_PARTS.forEach((p, idx) => {
+            const card = document.createElement('div'); card.className = 'card';
+            const canvas = document.createElement('canvas'); canvas.id = 'cv-' + idx; card.appendChild(canvas);
+            const title = document.createElement('h3'); title.innerText = p.title; card.appendChild(title);
+            const desc = document.createElement('p'); desc.innerText = p.desc; card.appendChild(desc);
+            const btn = document.createElement('button'); btn.innerText = '查看并旋转'; card.appendChild(btn);
+            grid.appendChild(card);
+
+            // small renderer for each card
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias:true });
+            renderer.setSize(220,180);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            // 更高对比和曝光便于观察细节
+            renderer.setClearColor(0x080808);
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            const scene = new THREE.Scene(); scene.background = new THREE.Color(0x000000);
+            const cam = new THREE.PerspectiveCamera(45, 220/180, 0.1, 1000); cam.position.set(0,0,300);
+            // 加强环境光和主光，提高模型亮度
+            scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+            const light = new THREE.DirectionalLight(0xffffff, 1.2); light.position.set(1,1,1); scene.add(light);
+            // 额外补光以减少阴影死角
+            scene.add(new THREE.HemisphereLight(0x888888, 0x222222, 0.35));
+
+            let model = null;
+            loader.load(p.file, gltf => {
+                model = gltf.scene;
+                const box = new THREE.Box3().setFromObject(model);
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x,size.y,size.z) || 1;
+                const scale = 120 / maxDim;
+                model.scale.set(scale,scale,scale);
+                const center = box.getCenter(new THREE.Vector3()); model.position.set(-center.x, -center.y, -center.z);
+                scene.add(model);
+            }, undefined, e=>{ console.warn('load fail', p.file, e); });
+
+            let ang = 0;
+            function renderSmall(){
+                requestAnimationFrame(renderSmall);
+                if(model) { ang += 0.008; model.rotation.y = ang; }
+                renderer.render(scene, cam);
+            }
+            renderSmall();
+
+            btn.addEventListener('click', () => openModal(idx));
+        });
+
+        // modal preview
+        const modal = document.getElementById('partModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDesc = document.getElementById('modalDesc');
+        const modalClose = document.getElementById('modalClose');
+        const previewCanvas = document.getElementById('previewCanvas');
+
+        let previewRenderer, previewScene, previewCam, previewModel, previewPivot;
+        function initPreviewRenderer(){
+            previewRenderer = new THREE.WebGLRenderer({ canvas: previewCanvas, antialias:true });
+            previewRenderer.setSize(previewCanvas.clientWidth, previewCanvas.clientHeight);
+            previewRenderer.setPixelRatio(window.devicePixelRatio);
+            previewRenderer.setClearColor(0x070707);
+            previewRenderer.outputEncoding = THREE.sRGBEncoding;
+            previewRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+            previewRenderer.toneMappingExposure = 1.4;
+            previewScene = new THREE.Scene(); previewScene.background = new THREE.Color(0x000000);
+            previewCam = new THREE.PerspectiveCamera(45, previewCanvas.clientWidth/previewCanvas.clientHeight, 0.1, 2000);
+            previewCam.position.set(0,0,350);
+            previewPivot = new THREE.Group();
+            previewScene.add(previewPivot);
+            previewScene.add(new THREE.AmbientLight(0xffffff,1.4));
+            const light = new THREE.DirectionalLight(0xffffff,1.2); light.position.set(1,1,1); previewScene.add(light);
+            // 半球灯用于柔和环境填充，提升模型细节
+            previewScene.add(new THREE.HemisphereLight(0x999999, 0x222222, 0.5));
+                // 手动旋转与缩放控制
+                let isPreviewDragging = false;
+                let prevPos = { x: 0, y: 0 };
+                let manualRotX = 0, manualRotY = 0;
+                previewCanvas.addEventListener('mousedown', (e)=>{ isPreviewDragging = true; prevPos = { x: e.offsetX, y: e.offsetY }; previewCanvas.style.cursor = 'grabbing'; });
+                window.addEventListener('mouseup', ()=>{ isPreviewDragging = false; previewCanvas.style.cursor = 'default'; });
+                previewCanvas.addEventListener('mousemove', (e)=>{
+                    if(!isPreviewDragging || !previewPivot) return;
+                    const dx = e.offsetX - prevPos.x; const dy = e.offsetY - prevPos.y;
+                    prevPos = { x: e.offsetX, y: e.offsetY };
+                    manualRotY += dx * 0.01;
+                    manualRotX += dy * 0.01;
+                    previewPivot.rotation.x = manualRotX;
+                    previewPivot.rotation.y = manualRotY;
+                });
+                previewCanvas.addEventListener('wheel', (e)=>{
+                    e.preventDefault(); previewCam.position.z += e.deltaY * 0.5; previewCam.position.z = Math.max(80, Math.min(1200, previewCam.position.z));
+                }, { passive:false });
+
+                function loop(){ requestAnimationFrame(loop); if(previewPivot && !isPreviewDragging && Math.abs(manualRotX)<0.0001 && Math.abs(manualRotY)<0.0001) previewPivot.rotation.y += 0.01; previewRenderer.render(previewScene, previewCam); }
+                loop();
+        }
+
+        function openModal(idx){
+            const p = STRUCTURE_PARTS[idx];
+            modalTitle.innerText = p.title; modalDesc.innerText = p.desc;
+            modal.style.display = 'flex';
+            if(!previewRenderer) initPreviewRenderer();
+            // load model
+            if(previewPivot){
+                while(previewPivot.children.length){
+                    previewPivot.remove(previewPivot.children[0]);
+                }
+            }
+            previewModel = null;
+            loader.load(p.file, gltf=>{
+                previewModel = gltf.scene;
+                const box = new THREE.Box3().setFromObject(previewModel);
+                const size = box.getSize(new THREE.Vector3()); const maxDim = Math.max(size.x,size.y,size.z) || 1;
+                const scale = 260 / maxDim; previewModel.scale.set(scale,scale,scale);
+                const center = box.getCenter(new THREE.Vector3()); previewModel.position.set(-center.x, -center.y, -center.z);
+                if(previewPivot){
+                    previewPivot.rotation.set(0, 0, 0);
+                    previewPivot.add(previewModel);
+                } else {
+                    previewScene.add(previewModel);
+                }
+            }, undefined, e=>{ console.warn('preview load fail', p.file, e); });
+        }
+        modalClose.addEventListener('click', ()=>{ modal.style.display='none'; if(previewPivot){ while(previewPivot.children.length){ previewPivot.remove(previewPivot.children[0]); } } previewModel=null; });
+
+        // 聊天 / 问答功能（复用后端接口，如有）
+        document.getElementById('preview-send').addEventListener('click', sendPreviewMessage);
+        document.getElementById('preview-input').addEventListener('keypress', function(e){ if(e.key==='Enter') sendPreviewMessage(); });
+
+        async function sendPreviewMessage(){
+            const input = document.getElementById('preview-input');
+            const v = input.value.trim(); if(!v) return;
+            const area = document.getElementById('preview-chat-area');
+            const u = document.createElement('div'); u.style.textAlign='right'; u.style.color='#000'; u.style.background='#ceae75'; u.style.padding='6px'; u.style.borderRadius='6px'; u.innerText = v; area.appendChild(u); area.scrollTop = area.scrollHeight; input.value = '';
+            const ai = document.createElement('div'); ai.style.color='#e8d099'; ai.style.background='rgba(0,0,0,0.25)'; ai.style.padding='6px'; ai.style.borderRadius='6px'; ai.innerText='正在思考...'; area.appendChild(ai); area.scrollTop = area.scrollHeight;
+            try{
+                const res = await fetch('http://127.0.0.1:5000/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: '关于结构“'+document.getElementById('modalTitle').innerText+'”：' + v, system_prompt: '你现在是一位资深的中国古代建筑专家，回答简明扼要。' }) });
+                const data = await res.json(); ai.innerText = data.reply || '无响应';
+            }catch(e){ ai.innerText = '请求失败'; }
+            area.scrollTop = area.scrollHeight;
+        }
+
+        window.addEventListener('resize', ()=>{
+            // resize preview renderer
+            if(previewRenderer){ previewRenderer.setSize(previewCanvas.clientWidth, previewCanvas.clientHeight); previewCam.aspect = previewCanvas.clientWidth/previewCanvas.clientHeight; previewCam.updateProjectionMatrix(); }
+        });
+    </script>
+</body>
+</html>
