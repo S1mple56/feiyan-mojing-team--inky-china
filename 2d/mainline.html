@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>神州长卷寻墨记 · 水墨神州主线游历</title>
+    <meta name="description" content="化身执笔人，陪伴小墨灵走进黄鹤楼、赵州桥、拙政园、应县木塔与福建土楼，在五段往事中寻回长卷的生活记忆。">
+    <style>
+        :root {
+            --ink: #161313;
+            --paper: #ead9b7;
+            --gold: #c8a45b;
+            --gold-light: #f0d38b;
+            --mist: #9f8d70;
+            --white: #fff8ea;
+            --line: rgba(200, 164, 91, .35);
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; min-height: 100%; background: var(--ink); color: var(--white); font-family: "KaiTi", "楷体", serif; }
+        body { overflow-x: hidden; }
+        button { font: inherit; cursor: pointer; }
+        .page-shell { min-height: 100vh; background: radial-gradient(circle at 50% -10%, #403526 0, #1b1715 42%, #0c0b0b 100%); }
+        .topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 16px 5vw; background: rgba(12, 11, 11, .9); border-bottom: 1px solid var(--line); backdrop-filter: blur(12px); }
+        .brand { color: var(--gold-light); letter-spacing: .18em; font-size: clamp(18px, 2.2vw, 28px); }
+        .brand small { display: block; color: #a99c84; font-family: sans-serif; letter-spacing: .08em; font-size: 11px; margin-top: 4px; }
+        .ghost-btn, .primary-btn { border: 1px solid var(--gold); color: var(--gold-light); background: transparent; border-radius: 999px; padding: 9px 18px; transition: .25s; }
+        .ghost-btn:hover, .primary-btn:hover { color: #161313; background: var(--gold-light); transform: translateY(-1px); }
+        .hero { max-width: 1180px; margin: 0 auto; padding: 52px 5vw 30px; display: grid; grid-template-columns: 1.2fr .8fr; gap: 36px; align-items: center; }
+        .eyebrow { color: var(--gold); letter-spacing: .3em; font-size: 13px; margin-bottom: 12px; }
+        h1 { font-size: clamp(34px, 5vw, 62px); line-height: 1.1; margin: 0 0 20px; color: #f6e4b4; }
+        .hero-copy { color: #d6c9ae; line-height: 1.9; font-size: 18px; max-width: 720px; }
+        .hero-note { color: #9e917b; font-family: sans-serif; font-size: 13px; margin-top: 18px; }
+        .ink-orb { aspect-ratio: 1; max-width: 300px; width: 100%; justify-self: end; border-radius: 50%; background: radial-gradient(circle at 35% 32%, #f0ddb6 0 8%, transparent 9%), radial-gradient(circle, #302a24 0 42%, #877252 43% 44%, #1b1815 45% 62%, transparent 63%), conic-gradient(from 20deg, #3d3327, #c0a36a, #3b332b, #b7955a, #3d3327); box-shadow: 0 0 80px rgba(200, 164, 91, .18), inset 0 0 40px #000; opacity: .9; }
+        .progress-wrap { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; color: #b8aa90; font-family: sans-serif; font-size: 13px; }
+        .progress-track { height: 8px; flex: 1; border-radius: 99px; background: #28221b; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, #8e6a2d, var(--gold-light)); transition: width .35s ease; }
+        .section-title { max-width: 1180px; margin: 0 auto; padding: 24px 5vw 10px; display: flex; justify-content: space-between; align-items: end; gap: 20px; }
+        .section-title h2 { margin: 0; color: #f0d38b; font-size: 28px; }
+        .section-title p { margin: 0; color: #9e917b; font-family: sans-serif; font-size: 13px; }
+        .chapter-grid { max-width: 1180px; margin: 0 auto; padding: 10px 5vw 40px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+        .chapter-card { position: relative; min-height: 230px; border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: linear-gradient(155deg, rgba(70, 56, 39, .7), rgba(20, 18, 17, .9)); overflow: hidden; text-align: left; color: var(--white); transition: .25s; }
+        .chapter-card:not(.locked):hover { transform: translateY(-5px); border-color: var(--gold-light); box-shadow: 0 14px 32px rgba(0,0,0,.35); }
+        .chapter-card.locked { opacity: .45; cursor: not-allowed; filter: grayscale(.6); }
+        .chapter-card.complete { border-color: rgba(138, 224, 184, .65); }
+        .chapter-number { color: var(--gold-light); font-family: sans-serif; font-size: 12px; letter-spacing: .18em; }
+        .chapter-card h3 { margin: 18px 0 5px; font-size: 24px; color: #f5e2ae; }
+        .chapter-card .subtitle { color: #b8aa90; font-size: 15px; }
+        .chapter-card p { color: #a99c84; line-height: 1.55; font-size: 14px; margin: 18px 0 0; }
+        .status { position: absolute; right: 14px; top: 14px; font-family: sans-serif; font-size: 11px; color: #998d79; }
+        .status.done { color: #9de2b7; }
+        .ending { max-width: 1180px; margin: 0 auto 50px; padding: 24px 5vw; display: none; }
+        .ending.show { display: block; }
+        .ending-card { border: 1px solid var(--gold); border-radius: 18px; padding: 30px; background: linear-gradient(135deg, rgba(82, 62, 33, .65), rgba(20, 18, 17, .92)); }
+        .ending-card h2 { margin: 0 0 10px; color: #f2d795; }
+        .ending-card p { color: #d5c6a8; line-height: 1.8; }
+        .panel-overlay { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(0,0,0,.72); backdrop-filter: blur(7px); }
+        .panel-overlay.show { display: flex; }
+        .journey-panel { width: min(940px, 100%); max-height: min(88vh, 820px); overflow: auto; border: 1px solid var(--gold); border-radius: 18px; background: linear-gradient(145deg, #292117, #121110); box-shadow: 0 30px 80px #000; padding: 28px; }
+        .panel-head { display: flex; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); padding-bottom: 18px; margin-bottom: 20px; }
+        .panel-head h2 { margin: 0; color: #f3d798; font-size: 32px; }
+        .panel-head .theme { color: #a99c84; margin-top: 5px; }
+        .panel-close { border: 0; background: transparent; color: #c8b795; font-size: 26px; }
+        .story-box { padding: 18px; border-left: 3px solid var(--gold); background: rgba(0,0,0,.2); color: #dbcdb2; line-height: 1.8; }
+        .story-box strong { color: #f1d28b; }
+        .task-head { display: flex; justify-content: space-between; gap: 15px; align-items: center; margin: 24px 0 10px; }
+        .task-head h3 { margin: 0; color: #f3d798; }
+        .task-counter { color: #a99c84; font-family: sans-serif; font-size: 12px; }
+        .task-desc { color: #cbbb9d; line-height: 1.8; }
+        .choice-list { display: grid; gap: 10px; margin-top: 15px; }
+        .choice-btn { border: 1px solid rgba(200,164,91,.45); background: rgba(255,255,255,.03); color: #e9dcc1; border-radius: 10px; padding: 13px 16px; text-align: left; transition: .2s; }
+        .choice-btn:hover:not(:disabled) { background: rgba(200,164,91,.16); border-color: var(--gold-light); transform: translateX(4px); }
+        .choice-btn:disabled { cursor: default; }
+        .choice-btn.correct { border-color: #89d7a8; background: rgba(80, 180, 120, .18); color: #b7f0cc; }
+        .choice-btn.wrong { border-color: #dc8a78; background: rgba(180, 70, 55, .15); color: #f0b1a3; }
+        .feedback { min-height: 26px; margin-top: 12px; color: #f0d38b; line-height: 1.5; }
+        .panel-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 26px; }
+        .panel-actions .primary-btn { color: #171313; background: var(--gold-light); }
+        .token-box { display: none; margin-top: 20px; border: 1px dashed var(--gold); border-radius: 12px; padding: 20px; background: rgba(200,164,91,.08); }
+        .token-box.show { display: block; }
+        .token-box h4 { color: #f0d38b; margin: 0 0 8px; }
+        .token-box p { color: #d6c9ae; line-height: 1.8; margin: 0; }
+        .knowledge { margin-top: 18px; color: #9e917b; font-family: sans-serif; font-size: 13px; line-height: 1.7; }
+        .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); z-index: 30; opacity: 0; padding: 10px 18px; border: 1px solid var(--gold); border-radius: 999px; background: #1e1914; color: #f0d38b; pointer-events: none; transition: .25s; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        @media (max-width: 900px) {
+            .hero { grid-template-columns: 1fr; }
+            .ink-orb { display: none; }
+            .chapter-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 560px) {
+            .topbar { padding: 13px 18px; }
+            .hero { padding: 34px 18px 20px; }
+            .section-title, .chapter-grid, .ending { padding-left: 18px; padding-right: 18px; }
+            .chapter-grid { grid-template-columns: 1fr; }
+            .journey-panel { padding: 20px; }
+        }
+    
+    </style>
+    <link rel="stylesheet" href="mainline.css">
+</head>
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <div class="brand">水墨神州<small>INK CHINA · MAINLINE JOURNEY</small></div>
+            <button class="ghost-btn" onclick="window.location.href='index.html#map-china'">← 返回神州地图</button>
+        </header>
+
+        <main>
+            <section class="hero">
+                <div>
+                    <div class="eyebrow">神州长卷 · 寻墨记</div>
+                    <h1>神州长卷<br>寻墨记</h1>
+                    <p class="hero-role">主线游历 · 你是这一卷故事的执笔人</p>
+                    <div class="hero-copy">
+                        神州长卷正在褪色。古建仍有轮廓，其中的告别、守候、劳作与团聚却渐渐消失。小墨灵听得见建筑的回声，却记不起自己的来处。请陪它走进五处记忆空间，接续那些尚未完成的往事。
+                    </div>
+                    <div class="hero-actions"><button class="primary-btn" id="continueJourney" onclick="continueJourney()">启程 · 黄鹤楼 →</button><a class="hero-link" href="#journeyGuide">先读游历手记 ↓</a></div>
+                    <div class="hero-note">五处三维墨境 · 十九个连续任务 · 五件信物<br>自由探索、登临观景、转墨解谜，让往事在你的行动中继续。</div>
+                </div>
+                <div class="ink-orb" aria-hidden="true"></div>
+                <div class="progress-wrap">
+                    <span>长卷修复度</span>
+                    <div class="progress-track" role="progressbar" aria-label="长卷修复度" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" id="journeyProgress"><div class="progress-fill" id="progressFill"></div></div>
+                    <span id="progressText">0 / 5 章</span>
+                </div>
+            </section>
+
+            <section class="journey-intro" aria-label="游历方式">
+                <p class="journey-direction" id="journeyDirection"></p>
+                <div class="journey-principles"><div><span>壹 · 听见愿望</span><p>每座建筑，都封存着一个人未完成的往事。</p></div><div><span>贰 · 以行动续写</span><p>观察窗景、修复通路、接续托付，让空间回应你的选择。</p></div><div><span>叁 · 收集回声</span><p>一件信物，一句记忆。五段旅程，慢慢拼出小墨灵的来处。</p></div></div>
+            </section>
+
+            <div class="section-title">
+                <h2>五处墨灵空间</h2>
+                <p>告别 → 守候 → 变化 → 承托 → 团聚</p>
+            </div>
+            <section class="chapter-grid" id="chapterGrid"></section>
+            <section class="journey-guide" id="journeyGuide" aria-labelledby="guideTitle">
+                <div class="guide-intro"><div><div class="eyebrow">循着建筑，读懂往事</div><h2 id="guideTitle">游历手记</h2></div><p>选择章节，查看人物愿望、任务脉络与沿途景物。</p></div>
+                <div class="guide-tabs" id="guideTabs" role="group" aria-label="选择章节手记"></div>
+                <article id="guideContent" aria-label="章节手记内容"></article>
+                <p class="fiction-note">五处空间是依据古建筑特征创作的记忆故事，人物经历与机关为原创。建筑观察与剧情分别呈现，构件操作为简化示意。</p>
+            </section>
+            <section class="journey-bag"><h2>行囊 · 信物与回声</h2><div id="journeyBag"></div><p id="saveStatus" role="status">三维探索、章节完成记录与交互手记保存在当前浏览器，重新进入可继续游历。</p></section>
+
+            <section class="ending" id="endingSection">
+                <div class="ending-card">
+                    <h2>执笔归来 · 主线结局</h2>
+                    <p>五件信物汇入长卷，小墨灵终于明白：它由建筑中许多人留下的生活记忆汇成，所以没有唯一的房间，也没有唯一的名字。它说：“原来每一个地方，都有人记得我。”</p>
+                    <p>你回到神州地图，五处古建恢复了色彩与生活声响。主线成就：<strong style="color:#f0d38b;">执笔归来</strong></p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="panel-overlay" id="journeyOverlay" role="dialog" aria-modal="true" aria-labelledby="panelTitle">
+        <article class="journey-panel">
+            <div class="panel-head">
+                <div>
+                    <h2 id="panelTitle">章节</h2>
+                    <div class="theme" id="panelTheme"></div>
+                </div>
+                <button class="panel-close" onclick="closeChapterPanel()" aria-label="关闭">×</button>
+            </div>
+            <div class="story-box" id="storyBox"></div>
+
+            <div id="memoryScene" class="memory-scene"></div>
+            <div class="task-head">
+                <h3 id="taskTitle"></h3>
+                <div class="task-counter" id="taskCounter"></div>
+            </div>
+            <div class="task-desc" id="taskDesc"></div>
+            <div class="choice-list" id="choiceList"></div>
+            <div class="feedback" id="feedback" role="status" aria-live="polite"></div><button class="ghost-btn" id="hintBtn" onclick="showHint()">向小墨灵求助</button>
+            <div class="token-box" id="tokenBox"></div>
+            <div class="knowledge" id="knowledgeBox"></div>
+            <div class="panel-actions">
+                <button class="ghost-btn" onclick="closeChapterPanel()">返回章节</button>
+                <button class="primary-btn" id="nextTaskBtn" style="display:none;" onclick="nextTask()">继续 →</button>
+            </div>
+        </article>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="mainline-data.js"></script>
+    <script src="mainline.js"></script>
+</body>
+</html>

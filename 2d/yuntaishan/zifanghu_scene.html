@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>场景探索 - 子房湖</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script src="../vendor/phaser-3.55.2.min.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
         #game-container { width: 100%; height: 100%; }
@@ -23,6 +23,8 @@
         .btn-group { margin-top: 30px; display: flex; justify-content: center; gap: 30px; }
         #toast { position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(139, 69, 19, 0.9); border: 2px solid #ffd700; color: #fff; padding: 15px 30px; font-size: 24px; border-radius: 8px; display: none; z-index: 300; text-align: center; }
     </style>
+<script src="../landmark-renderer.js"></script>
+<script src="../scene-character-renderer.js"></script>
 </head>
 <body>
 <div id="game-container"></div>
@@ -38,8 +40,9 @@ const config={type:Phaser.AUTO,width:window.innerWidth,height:window.innerHeight
 const game=new Phaser.Game(config);
 let player,cursors,wasd,spaceKey,npcs=[],activeNPC=null,dialogState='hidden';
 const uiLayer=document.getElementById('ui-layer'),dialogText=document.getElementById('dialog-text'),optionsBox=document.getElementById('options-box'),optBtns=[document.getElementById('opt-0'),document.getElementById('opt-1'),document.getElementById('opt-2')];
-function preload(){this.load.image('bg','../province/henan/Architecture/location/yuntaishan/bg_zifanghu.png');this.load.image('pangeng','../province/henan/Architecture/location/pangeng.png');this.load.image('fuyue','../province/henan/Architecture/location/fuyue.png');this.load.image('fuhao','../province/henan/Architecture/location/fuhao.png');let ps=localStorage.getItem('playerSkin')||'player.png';if(ps.startsWith('data:image')){let a=ps.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);this.load.image('player',URL.createObjectURL(new Blob([u],{type:m})));}else{this.load.image('player','../'+ps);}}
-function create(){let bg=this.add.image(0,0,'bg').setOrigin(0,0);let bs=Math.max(this.cameras.main.width/bg.width,this.cameras.main.height/bg.height)*1.5;bg.setScale(bs);let W=bg.width*bs,H=bg.height*bs;this.physics.world.setBounds(0,0,W,H);this.cameras.main.setBounds(0,0,W,H);player=this.physics.add.sprite(W*0.5,H*0.6,'player');player.setScale(150/player.height);player.setCollideWorldBounds(true);player.body.setSize(player.width*0.6,player.height*0.6);
+function preload(){this.load.image('bg','../province/henan/Architecture/location/yuntaishan/bg_zifanghu.jpg');this.load.image('pangeng','../province/henan/Architecture/location/pangeng.jpg');this.load.image('fuyue','../province/henan/Architecture/location/fuyue.jpg');this.load.image('fuhao','../province/henan/Architecture/location/fuhao.jpg');let ps=localStorage.getItem('playerSkin')||'player.png';if(ps.startsWith('data:image')){let a=ps.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);this.load.image('player',URL.createObjectURL(new Blob([u],{type:m})));}else{this.load.image('player','../'+ps);}}
+function create(){
+    SceneCharacterRenderer.attach(this);let bg=this.add.image(0,0,'bg').setOrigin(0,0);let bs=Math.max(this.cameras.main.width/bg.width,this.cameras.main.height/bg.height)*1.5;bg.setScale(bs);let W=bg.width*bs,H=bg.height*bs;this.physics.world.setBounds(0,0,W,H);this.cameras.main.setBounds(0,0,W,H);player=this.physics.add.sprite(W*0.5,H*0.6,'player');player.setScale(150/player.height);player.setCollideWorldBounds(true);player.body.setSize(player.width*0.6,player.height*0.6);
 const nc=[{id:'pangeng',name:'张良 字子房',x:0.45,y:0.55,scale:0.4,item:'子房湖碧玉',hasGivenItem:false,intro:'<span class="highlight">【张良 字子房】</span><br>吾曾在此隐居，湖因吾字而名。<br><br>▶ 按【空格键】与谋圣对话',question:'子房湖因何人而得名？',options:['A. 韩信','B. 张良','C. 萧何'],correct:1,success:'善哉！张良字子房，曾在此隐居，湖因此得名。',fail:'子房湖因汉代张良（字子房）而得名。'},{id:'fuyue',name:'渔夫',x:0.6,y:0.65,scale:0.4,item:'锦鲤',hasGivenItem:false,intro:'<span class="highlight">【渔夫】</span><br>湖水碧绿如玉，最深处约60余米，四周群山环抱。<br><br>▶ 按【空格键】了解湖泊',question:'子房湖最深处约多少米？',options:['A. 30米','B. 60米','C. 90米'],correct:1,success:'不错！湖水最深处约60余米。',fail:'子房湖最深处约60余米。'},{id:'fuhao',name:'隐士',x:0.35,y:0.5,scale:0.4,item:'山水画卷',hasGivenItem:false,intro:'<span class="highlight">【隐士】</span><br>泛舟湖上，远眺茱萸峰，近观红石崖，美不胜收。<br><br>▶ 按【空格键】品茗论道',question:'从子房湖上可以远眺哪座山峰？',options:['A. 茱萸峰','B. 红石峡','C. 叠彩洞'],correct:0,success:'正是！泛舟湖上，可远眺茱萸峰。',fail:'从子房湖上可以远眺茱萸峰。'}];
 nc.forEach(c=>{let n=this.physics.add.sprite(W*c.x,H*c.y,c.id);n.setScale(c.scale);n.setImmovable(true);n.body.setSize(n.width*0.6,n.height*0.6);n.npcData=c;npcs.push(n);this.physics.add.collider(player,n);});
 cursors=this.input.keyboard.createCursorKeys();wasd=this.input.keyboard.addKeys({W:87,A:65,S:83,D:68});spaceKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);this.cameras.main.startFollow(player,true,0.08,0.08);}

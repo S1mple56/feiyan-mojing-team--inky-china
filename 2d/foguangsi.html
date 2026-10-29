@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>古建游览 - 佛光寺</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script src="vendor/phaser-3.55.2.min.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
         #game-container { width: 100%; height: 100%; }
@@ -30,6 +30,8 @@
         #search-modal .flashlight { position: absolute; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,200,0.4) 0%, transparent 70%); pointer-events: none; display: none; }
         #search-hint { font-size: 18px; color: #aaa; margin-top: 10px; }
     </style>
+<script src="landmark-renderer.js"></script>
+<script src="scene-character-renderer.js"></script>
 </head>
 <body>
 
@@ -128,11 +130,11 @@ const optionsBox = document.getElementById('options-box');
 const optBtns = [document.getElementById('opt-0'), document.getElementById('opt-1'), document.getElementById('opt-2')];
 
 function preload() {
-    this.load.image('bg', 'province/shanxi/Architecture/location/bg_foguangsi.png');
-    this.load.image('liangsicheng', 'province/shanxi/Architecture/location/liangsicheng.png');
-    this.load.image('linhuiyin', 'province/shanxi/Architecture/location/linhuiyin.png');
-    this.load.image('ninggongyu', 'province/shanxi/Architecture/location/ninggongyu.png');
-    this.load.image('yuanchengheshang', 'province/shanxi/Architecture/location/yuanchengheshang.png');
+    this.load.image('bg', 'province/shanxi/Architecture/location/bg_foguangsi.jpg');
+    this.load.image('liangsicheng', 'province/shanxi/Architecture/location/liangsicheng.jpg');
+    this.load.image('linhuiyin', 'province/shanxi/Architecture/location/linhuiyin.jpg');
+    this.load.image('ninggongyu', 'province/shanxi/Architecture/location/ninggongyu.jpg');
+    this.load.image('yuanchengheshang', 'province/shanxi/Architecture/location/yuanchengheshang.jpg');
 
     let playerSkin = localStorage.getItem('playerSkin') || 'player.png';
     if (playerSkin.startsWith('data:image')) {
@@ -150,6 +152,7 @@ function preload() {
 }
 
 function create() {
+    SceneCharacterRenderer.attach(this);
     let bg = this.add.image(0, 0, 'bg').setOrigin(0, 0);
 
     if (bg.width < 100) {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>古建游览 - 少林寺武宗禅影</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script src="vendor/phaser-3.55.2.min.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
         #game-container { width: 100%; height: 100%; }
@@ -45,6 +45,8 @@
         #ai-gen-preview { max-width: 250px; max-height: 300px; display: none; border: 2px solid #ceae75; border-radius: 10px; margin: 0 auto; }
         .loading { display: none; color: #ffd700; font-size: 20px; margin: 15px 0; }
     </style>
+<script src="landmark-renderer.js"></script>
+<script src="scene-character-renderer.js"></script>
 </head>
 <body>
 
@@ -183,15 +185,15 @@ const optionsBox = document.getElementById('options-box');
 const optBtns = [document.getElementById('opt-0'), document.getElementById('opt-1'), document.getElementById('opt-2')];
 
 function preload() {
-    this.load.image('bg', 'province/henan/Architecture/location/bg_shaolinsi.png'); 
-    this.load.image('damo', 'province/henan/Architecture/location/damo.png');
-    this.load.image('tanzong', 'province/henan/Architecture/location/tanzong.png');
-    this.load.image('huike', 'province/henan/Architecture/location/huike.png');
-    this.load.image('batuo', 'province/henan/Architecture/location/batuo.png');
-    this.load.image('qijiguang', 'province/henan/Architecture/location/qijiguang.png'); 
+    this.load.image('bg', 'province/henan/Architecture/location/bg_shaolinsi.jpg'); 
+    this.load.image('damo', 'province/henan/Architecture/location/damo.jpg');
+    this.load.image('tanzong', 'province/henan/Architecture/location/tanzong.jpg');
+    this.load.image('huike', 'province/henan/Architecture/location/huike.jpg');
+    this.load.image('batuo', 'province/henan/Architecture/location/batuo.jpg');
+    this.load.image('qijiguang', 'province/henan/Architecture/location/qijiguang.jpg'); 
     this.load.audio('bgm_henan', 'audio/henan.mp3');
     // 【加载残页图片】⚠️需确保有此文件
-    this.load.image('page', 'province/henan/Architecture/location/page.png');
+    this.load.svg('page', 'assets/game/paper.svg');
 
     let playerSkin = localStorage.getItem('playerSkin') || 'player.png';
     if (playerSkin.startsWith('data:image')) {
@@ -206,6 +208,7 @@ function preload() {
 }
 
 function create() {
+    SceneCharacterRenderer.attach(this);
     let bgm = this.sound.add('bgm_henan', { loop: true, volume: 0.2 });
     bgm.play();
     let bg = this.add.image(0, 0, 'bg').setOrigin(0, 0);

@@ -11,7 +11,7 @@
         /* ===== 云台山背景 ===== */
         #bg {
             position: fixed; inset: 0; z-index: 0;
-            background: url('province/henan/Architecture/location/bg_yuntaishan.png') center center / cover no-repeat;
+            background: url('province/henan/Architecture/location/bg_yuntaishan.jpg') center center / cover no-repeat;
         }
         #overlay {
             position: fixed; inset: 0; z-index: 1;
@@ -58,12 +58,17 @@
             transform: translateY(-12px) scale(1.08);
             filter: drop-shadow(0 0 20px rgba(255,215,0,0.6));
         }
-        .logo-card img {
+        .logo-card img,
+        .logo-card .landmark-art {
             width: 150px; height: 150px; object-fit: contain;
             filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
             transition: filter 0.3s;
         }
-        .logo-card:hover img {
+        .logo-card[data-art-state="pending"] img,
+        .logo-card[data-art-state="loading"] img { visibility: hidden; }
+        .logo-card[data-art-state="ready"] img { display: none; }
+        .logo-card:hover img,
+        .logo-card:hover .landmark-art {
             filter: drop-shadow(0 6px 20px rgba(255,215,0,0.5));
         }
         .logo-card .name {
@@ -98,24 +103,24 @@
 
 <!-- 五个子景点 logo -->
 <div id="logo-grid">
-    <div class="logo-card" onclick="enterScene('zhuyufeng')">
-        <img src="province/henan/Architecture/logo/yuntaishan/zhuyufeng.png" alt="茱萸峰">
+    <div class="logo-card" data-art-state="pending" onclick="enterScene('zhuyufeng')">
+        <img src="province/henan/Architecture/logo/yuntaishan/zhuyufeng.jpg" alt="茱萸峰">
         <span class="name">茱萸峰</span>
     </div>
-    <div class="logo-card" onclick="enterScene('hongshixia')">
-        <img src="province/henan/Architecture/logo/yuntaishan/hongshixia.png" alt="红石峡">
+    <div class="logo-card" data-art-state="pending" onclick="enterScene('hongshixia')">
+        <img src="province/henan/Architecture/logo/yuntaishan/hongshixia.jpg" alt="红石峡">
         <span class="name">红石峡</span>
     </div>
-    <div class="logo-card" onclick="enterScene('wanshansi')">
-        <img src="province/henan/Architecture/logo/yuntaishan/wanshansi.png" alt="万善寺">
+    <div class="logo-card" data-art-state="pending" onclick="enterScene('wanshansi')">
+        <img src="province/henan/Architecture/logo/yuntaishan/wanshansi.jpg" alt="万善寺">
         <span class="name">万善寺</span>
     </div>
-    <div class="logo-card" onclick="enterScene('zifanghu')">
-        <img src="province/henan/Architecture/logo/yuntaishan/zifanghu.png" alt="子房湖">
+    <div class="logo-card" data-art-state="pending" onclick="enterScene('zifanghu')">
+        <img src="province/henan/Architecture/logo/yuntaishan/zifanghu.jpg" alt="子房湖">
         <span class="name">子房湖</span>
     </div>
-    <div class="logo-card" onclick="enterScene('diecaidong')">
-        <img src="province/henan/Architecture/logo/yuntaishan/diecaidong.png" alt="叠彩洞">
+    <div class="logo-card" data-art-state="pending" onclick="enterScene('diecaidong')">
+        <img src="province/henan/Architecture/logo/yuntaishan/diecaidong.jpg" alt="叠彩洞">
         <span class="name">叠彩洞</span>
     </div>
 </div>
@@ -126,7 +131,21 @@
     遥知兄弟登高处 · 遍插茱萸少一人
 </div>
 
+<script src="landmark-renderer.js"></script>
 <script>
+    document.querySelectorAll('.logo-card').forEach(async card => {
+        const image = card.querySelector('img');
+        try {
+            const canvas = await LandmarkRenderer.mount(card, image.getAttribute('src'));
+            canvas.removeAttribute('aria-hidden');
+            canvas.setAttribute('role', 'img');
+            canvas.setAttribute('aria-label', image.alt);
+        } catch (error) {
+            card.dataset.artState = 'error';
+            console.warn('景点图透明背景加载失败', error);
+        }
+    });
+
     function enterScene(name) {
         window.location.href = 'yuntaishan/' + name + '.html';
     }

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>黄鹤楼 · 未送出的告别</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0808;color:#f0d38b;font-family:"KaiTi","STKaiti","Microsoft YaHei",serif;touch-action:none}
+canvas{display:block;width:100vw;height:100vh}
+button{font-family:inherit;cursor:pointer}
+
+#start-screen{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:linear-gradient(rgba(10,8,6,.55),rgba(10,8,6,.9)),radial-gradient(circle at 50% 30%,#4a3820,#1a1210 60%,#0a0808 100%)}
+#start-screen.hide{opacity:0;pointer-events:none;transition:opacity .5s}
+h1{color:#f0d38b;font-size:48px;letter-spacing:8px;text-shadow:0 3px 18px rgba(0,0,0,.8)}
+.sub{margin-top:8px;color:#c8a45b;font-size:18px;letter-spacing:4px}
+.intro{max-width:700px;margin:24px auto 28px;line-height:2;color:rgba(234,217,183,.88);font-size:16px}
+.primary-btn{font-size:20px;padding:12px 32px;border-radius:8px;border:2px solid #c8a45b;background:linear-gradient(135deg,#f0d38b,#a07828);color:#1a1207;font-weight:bold;transition:.2s}
+.primary-btn:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.controls-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:600px;margin:16px auto;text-align:left}
+.control-item{background:rgba(30,25,20,.8);border:1px solid rgba(200,164,91,.3);border-radius:6px;padding:10px 14px;font-size:13px;color:#d6c9ae}
+.control-item b{color:#f0d38b}
+
+#hud{position:fixed;top:12px;left:12px;z-index:20;width:min(300px,calc(100vw - 24px));background:rgba(22,19,19,.88);border:1px solid rgba(200,164,91,.4);border-radius:8px;padding:10px 14px;backdrop-filter:blur(6px);display:none}
+.hud-row{display:flex;justify-content:space-between;gap:10px;margin:4px 0;font-size:14px}
+.hud-label{color:#9e8a62}.hud-value{color:#f0d38b;text-align:right}
+
+#task-panel{position:fixed;top:12px;right:12px;z-index:20;width:min(240px,calc(100vw - 24px));background:rgba(22,19,19,.88);border:1px solid rgba(200,164,91,.4);border-radius:8px;padding:10px 14px;display:none}
+#task-panel h3{color:#c8a45b;font-size:14px;margin-bottom:6px}
+#task-panel .task-desc{color:#d6c9ae;font-size:13px;line-height:1.6}
+
+#view-btn{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:25;padding:8px 20px;background:rgba(22,19,19,.85);border:1px solid rgba(200,164,91,.5);border-radius:6px;color:#f0d38b;font-size:14px;display:none;cursor:pointer}
+#view-btn:hover{background:rgba(200,164,91,.2)}
+
+#crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:15;width:20px;height:20px;display:none;pointer-events:none}
+#crosshair::before,#crosshair::after{content:'';position:absolute;background:rgba(240,211,139,.7)}
+#crosshair::before{left:50%;top:0;width:1px;height:100%;transform:translateX(-50%)}
+#crosshair::after{top:50%;left:0;height:1px;width:100%;transform:translateY(-50%)}
+
+#interact-prompt{position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:40;padding:8px 18px;background:rgba(30,25,20,.9);border:1px solid rgba(240,211,139,.6);border-radius:6px;color:#f0d38b;font-size:14px;display:none;pointer-events:none}
+
+#dialogue-box{position:fixed;bottom:0;left:0;right:0;z-index:50;padding:20px 24px 24px;background:linear-gradient(transparent,rgba(10,8,6,.95) 30%);display:none}
+#dialogue-inner{max-width:760px;margin:0 auto;background:rgba(30,25,20,.92);border:1px solid rgba(200,164,91,.5);border-radius:10px;padding:16px 20px}
+#dialogue-speaker{color:#c8a45b;font-size:15px;margin-bottom:6px;font-weight:bold}
+#dialogue-text{color:#ead9b7;font-size:16px;line-height:1.8;min-height:50px}
+#dialogue-next{display:block;margin-top:10px;color:#9e8a62;font-size:12px;text-align:right}
+
+#toast{position:fixed;top:18%;left:50%;transform:translateX(-50%);z-index:60;min-width:200px;max-width:min(600px,86vw);padding:10px 18px;background:rgba(38,30,18,.93);border:1px solid rgba(240,211,139,.5);border-radius:8px;color:#f0d38b;text-align:center;font-size:15px;display:none;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+
+#top-actions{position:fixed;left:12px;bottom:12px;z-index:25;display:none;gap:8px}
+#top-actions button{font-size:14px;color:#c8a45b;background:rgba(0,0,0,.5);border:1px solid rgba(200,164,91,.5);border-radius:6px;padding:7px 12px;cursor:pointer}
+
+#mobile-pad{display:none;position:fixed;bottom:20px;z-index:35}
+#joy-base{position:absolute;left:20px;bottom:20px;width:120px;height:120px;border-radius:50%;border:2px solid rgba(240,211,139,.3);background:rgba(22,19,19,.4)}
+#joy-stick{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(240,211,139,.4);border:1px solid rgba(240,211,139,.6)}
+#mobile-e{position:absolute;right:30px;bottom:40px;width:60px;height:60px;border-radius:50%;background:rgba(120,80,30,.6);border:1px solid rgba(240,211,139,.5);color:#f0d38b;font-size:18px;display:flex;align-items:center;justify-content:center}
+#mobile-view{position:absolute;right:30px;bottom:120px;width:50px;height:50px;border-radius:50%;background:rgba(22,19,19,.5);border:1px solid rgba(240,211,139,.4);color:#f0d38b;font-size:14px;display:flex;align-items:center;justify-content:center}
+
+#result-modal{position:fixed;inset:0;z-index:90;display:none;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:rgba(10,8,6,.92)}
+#result-modal.show{display:flex}
+#result-title{color:#f0d38b;font-size:42px;margin-bottom:12px}
+#result-detail{max-width:700px;line-height:2;color:#d6c9ae;font-size:17px;margin-bottom:24px}
+#result-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+
+@media(max-width:760px){
+h1{font-size:32px;letter-spacing:4px}.intro{font-size:14px}
+.controls-grid{grid-template-columns:1fr}
+#hud{top:6px;left:6px;width:calc(100vw - 130px);padding:6px 10px;font-size:12px}
+#task-panel{top:6px;right:6px;width:120px;padding:6px 8px;font-size:11px}
+#mobile-pad{display:block}
+#top-actions{bottom:150px;left:6px}
+}
+</style>
+</head>
+<body>
+<div id="start-screen">
+<h1>黄鹤楼</h1>
+<div class="sub">未送出的告别 · 楼阁与江景</div>
+<div class="intro">你踏入停在黄昏的黄鹤楼。楼下，一位送行人反复望着渡口；楼上，诗文回响落在空白屏风上。<br>找到三片信纸，依次打开三扇窗，循光路来到渡口，完成这场未送出的告别。</div>
+<div class="controls-grid">
+<div class="control-item"><b>移动</b>　WASD / 方向键 / 左摇杆</div>
+<div class="control-item"><b>视角</b>　鼠标拖动 / 右摇杆</div>
+<div class="control-item"><b>互动</b>　E / 空格 / A键</div>
+<div class="control-item"><b>切换视角</b>　V / 右摇杆按下</div>
+<div class="control-item"><b>手机</b>　左侧摇杆移动，右侧按钮互动</div>
+<div class="control-item"><b>提示</b>　靠近发光目标出现互动按钮</div>
+</div>
+<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><button class="primary-btn" onclick="startGame()">进入黄鹤楼</button><button class="primary-btn" style="background:linear-gradient(135deg,#c8a45b,#6a5020)" onclick="window.location.href='character-customize.html'">定制角色</button></div>
+</div>
+
+<div id="hud">
+<div class="hud-row"><span class="hud-label">当前目标</span><span class="hud-value" id="hud-goal">寻找信纸</span></div>
+<div class="hud-row"><span class="hud-label">信纸</span><span class="hud-value" id="hud-fragments">0 / 3</span></div>
+<div class="hud-row"><span class="hud-label">窗景</span><span class="hud-value" id="hud-windows">0 / 3</span></div>
+</div>
+
+<div id="task-panel"><h3 id="tp-title">任务一 · 读回信件</h3><div class="task-desc" id="tp-desc">在题壁、屏风和栏杆旁找到三片信纸。</div></div>
+<button id="view-btn" onclick="toggleView()">切换视角 (V)</button>
+<div id="crosshair"></div>
+<div id="interact-prompt"></div>
+
+<div id="dialogue-box"><div id="dialogue-inner"><div id="dialogue-speaker"></div><div id="dialogue-text"></div><div id="dialogue-next">按 E / 空格 继续</div></div></div>
+<div id="toast"></div>
+
+<div id="top-actions"><button onclick="location.reload()">重新开始</button><button onclick="location.href='mainline.html'">返回主线</button></div>
+
+<div id="mobile-pad">
+<div id="joy-base"><div id="joy-stick"></div></div>
+<div id="mobile-e">E</div>
+<div id="mobile-view">视角</div>
+</div>
+
+<div id="result-modal"><h2 id="result-title"></h2><div id="result-detail"></div><div id="result-actions"><button class="primary-btn" onclick="location.href='mainline.html'">返回主线</button></div></div>
+
+<script src="three.min.js"></script>
+<script src="huanghelou-3d.js"></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>定制旅行者 · 水墨神州</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#161313;color:#f0d38b;font-family:"KaiTi","STKaiti","Microsoft YaHei",serif;touch-action:manipulation}
+canvas{display:block}
+button{font-family:inherit;cursor:pointer}
+
+#app{display:flex;width:100%;height:100%}
+#preview-area{flex:1;position:relative;min-width:0}
+#preview-area canvas{width:100%;height:100%}
+#preview-label{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:#9e8a62;font-size:13px;pointer-events:none}
+
+#panel{width:380px;max-width:45vw;background:rgba(18,15,12,.95);border-left:1px solid rgba(200,164,91,.3);display:flex;flex-direction:column;overflow:hidden}
+#panel-header{padding:16px 20px;border-bottom:1px solid rgba(200,164,91,.2);flex-shrink:0}
+#panel-header h2{color:#f0d38b;font-size:22px;letter-spacing:3px}
+#panel-header p{color:#9e8a62;font-size:12px;margin-top:4px}
+
+#tabs{display:flex;border-bottom:1px solid rgba(200,164,91,.2);flex-shrink:0;overflow-x:auto}
+.tab{padding:10px 16px;color:#9e8a62;font-size:14px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.2s}
+.tab:hover{color:#c8a45b}
+.tab.active{color:#f0d38b;border-bottom-color:#c8a45b}
+
+#options{flex:1;overflow-y:auto;padding:16px 20px}
+#options::-webkit-scrollbar{width:4px}
+#options::-webkit-scrollbar-thumb{background:#5a4632;border-radius:2px}
+
+.opt-group{margin-bottom:20px}
+.opt-group h4{color:#c8a45b;font-size:14px;margin-bottom:10px;letter-spacing:1px}
+.opt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.opt-btn{padding:10px 8px;background:rgba(40,34,26,.8);border:1px solid rgba(200,164,91,.25);border-radius:6px;color:#d6c9ae;font-size:13px;cursor:pointer;transition:.2s;text-align:center}
+.opt-btn:hover{border-color:rgba(200,164,91,.5);color:#f0d38b}
+.opt-btn.active{background:rgba(200,164,91,.15);border-color:#c8a45b;color:#f0d38b}
+
+.color-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.color-swatch{width:100%;aspect-ratio:1;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:.2s;position:relative}
+.color-swatch:hover{transform:scale(1.1)}
+.color-swatch.active{border-color:#f0d38b;box-shadow:0 0 8px rgba(240,211,139,.4)}
+.color-swatch .name{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:#9e8a62;white-space:nowrap;pointer-events:none}
+
+#panel-footer{padding:14px 20px;border-top:1px solid rgba(200,164,91,.2);display:flex;gap:10px;flex-shrink:0}
+.btn-primary{flex:1;padding:12px;border-radius:8px;border:2px solid #c8a45b;background:linear-gradient(135deg,#f0d38b,#a07828);color:#1a1207;font-weight:bold;font-size:16px;cursor:pointer;transition:.2s}
+.btn-primary:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.btn-secondary{padding:12px 16px;border-radius:8px;border:1px solid rgba(200,164,91,.4);background:rgba(40,34,26,.8);color:#c8a45b;font-size:14px;cursor:pointer}
+.btn-secondary:hover{background:rgba(200,164,91,.15)}
+
+#rotate-hint{position:absolute;top:16px;left:50%;transform:translateX(-50%);color:#9e8a62;font-size:12px;background:rgba(22,19,19,.7);padding:6px 14px;border-radius:20px;pointer-events:none}
+
+@media(max-width:760px){
+#app{flex-direction:column}
+#preview-area{height:45vh;flex-shrink:0}
+#panel{width:100%;max-width:none;flex:1;border-left:none;border-top:1px solid rgba(200,164,91,.3)}
+.opt-grid{grid-template-columns:repeat(2,1fr)}
+.color-grid{grid-template-columns:repeat(6,1fr)}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="preview-area">
+<canvas id="preview"></canvas>
+<div id="rotate-hint">拖动旋转 · 滚轮缩放</div>
+<div id="preview-label">神州长卷之外的行旅者</div>
+</div>
+<div id="panel">
+<div id="panel-header"><h2>定制旅行者</h2><p>来自长卷之外，能看见诗文记忆与墨雾</p></div>
+<div id="tabs">
+<div class="tab active" data-tab="body">身形</div>
+<div class="tab" data-tab="face">面容</div>
+<div class="tab" data-tab="hair">发式</div>
+<div class="tab" data-tab="clothes">服饰</div>
+<div class="tab" data-tab="acc">佩饰</div>
+</div>
+<div id="options"></div>
+<div id="panel-footer">
+<button class="btn-secondary" onclick="resetChar()">重置</button>
+<button class="btn-primary" onclick="saveAndGo()">保存并进入</button>
+</div>
+</div>
+</div>
+<script src="three.min.js"></script>
+<script src="character-customize.js"></script>
+</body>
+</html>

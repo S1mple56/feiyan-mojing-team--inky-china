@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>水墨神州 - 古建游览</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="three.min.js"></script>
+    <link rel="stylesheet" href="province-content.css">
     <style>
         /* ---------------- 全局与水墨风基础样式 ---------------- */
         body, html {
@@ -264,43 +265,63 @@
         }
         
         /* ---------------- 保留你所有的省份板块坐标，未作任何修改 ---------------- */
-        #region-jiangxi { top: 68%; left: 55.5%; width: 10%; height: 15%; background-image: url('province/jiangxi/plate/jiangxi.png'); }
-        #region-henan { top: 52%; left: 53%; width: 7.98%; height: 13.05%; background-image: url('province/henan/plate/henan.png'); }
-        #region-anhui { top: 56.5%; left: 58.35%; width: 6.5%; height: 13%; background-image: url('province/anhui/plate/anhui.png'); }
-        #region-hebei { top: 35.6%; left: 53%; width: 14%; height: 17%; background-image: url('province/hebei/plate/hebei.png'); }
-        #region-shanxi { top: 41%; left: 52%; width: 7%; height: 16%; background-image: url('province/shanxi/plate/shanxi.png'); } 
-        #region-shaanxi { top: 43.90%; left: 46.96%; width: 8%; height: 21%; background-image: url('province/shaanxi/plate/shaanxi.png'); } 
-        #region-shandong { top: 46.55%; left: 58.5%; width: 8%; height: 10.5%; background-image: url('province/shandong/plate/shandong.png'); }
-        #region-xizang { top: 45.5%; left: 15.8%; width: 24%; height: 28%; background-image: url('province/xizang/plate/xizang.png'); }
-        #region-beijing { top: 39.5%; left: 58%; width: 3%; height: 4.5%; background-image: url('province/beijing/plate/beijing.png'); }
-        #region-chongqing { top: 63.16%; left: 45.14%; width: 10%; height: 10%; background-image: url('province/chongqing/plate/chongqing.png'); }
-        #region-gansu { top: 34%; left: 6%; width: 73%; height: 28%; background-image: url('province/gansu/plate/gansu.png'); }
-        #region-guizhou { top: 70.5%; left: 44.5%; width: 8.4%; height: 12%; background-image: url('province/guizhou/plate/guizhou.png'); }
-        #region-heilongjiang { top: 6.5%; left: 47.6%; width: 44%; height: 24%; background-image: url('province/heilongjiang/plate/heilongjiang.png'); }
-        #region-hunan { top: 68.5%; left: 50.1%; width: 9.6%; height: 13.5%; background-image: url('province/hunan/plate/hunan.png'); }
-        #region-jiangsu { top: 54.5%; left: 59.5%; width: 8%; height: 11%; background-image: url('province/jiangsu/plate/jiangsu.png'); }
-        #region-jilin { top: 24.93%; left: 64.15%; width: 10.5%; height: 13.5%; background-image: url('province/jilin/plate/jilin.png'); }
-        #region-liaoning { top: 32%; left: 55.9%; width: 20%; height: 12%; background-image: url('province/liaoning/plate/liaoning.png'); }
-        #region-yunnan { top: 69.5%; left: 33.5%; width: 17.5%; height: 20.5%; background-image: url('province/yunnan/plate/yunnan.png'); }
-        #region-zhejiang { top: 64.5%; left: 61%; width: 8.5%; height: 10.5%; background-image: url('province/zhejiang/plate/zhejiang.png'); }
-        #region-tianjin { top: 42%; left: 59.7%; width: 2%; height: 4%; background-image: url('province/tianjin/plate/tianjin.png'); }
-        #region-fujian { top: 72.4%; left: 59.20%; width: 8.5%; height: 12.5%; background-image: url('province/fujian/plate/fujian.png'); }
-        #region-guangdong { top: 79.8%; left: 51.4%; width: 11.5%; height: 13.5%; background-image: url('province/guangdong/plate/guangdong.png'); }
-        #region-taiwan { top: 79%; left: 61.2%; width: 12%; height: 9%; background-image: url('province/taiwan/plate/taiwan.png'); }
-        #region-hainan { top: 93%; left: 50.5%; width: 4%; height: 6%; background-image: url('province/hainan/plate/hainan.png'); }
-        #region-xinjiang { top: 14.84%; left: 13.75%; width: 25%; height: 35%; background-image: url('province/xinjiang/plate/xinjiang.png'); }
-        #region-ningxia { top: 43.99%; left: 43.25%; width: 10.1%; height: 11.1%; background-image: url('province/ningxia/plate/ningxia.png'); }
-        #region-neimenggu { top: 8.15%; left: 25.75%; width: 55.35%; height: 40.95%; background-image: url('province/neimenggu/plate/neimenggu.png'); }
-        #region-qinghai { top: 42.5%; left: 15%; width: 44%; height: 20%; background-image: url('province/qinghai/plate/qinghai.png'); }
-        #region-sichuan { top: 56%; left: 37%; width: 15%; height: 22%; background-image: url('province/sichuan/plate/sichuan.png'); }
-        #region-guangxi { top: 78%; left: 44%; width: 13.5%; height: 12.45%; background-image: url('province/guangxi/plate/guangxi.png'); }
-        #region-hubei { top: 55.5%; left: 50.5%; width: 10%; height: 20%; background-image: url('province/hubei/plate/hubei.png'); }
+        #region-jiangxi { top: 68%; left: 55.5%; width: 10%; height: 15%; background-image: url('ditu/jiangxi.png'); }
+        #region-henan { top: 52%; left: 53%; width: 7.98%; height: 13.05%; background-image: url('ditu/henan.png'); }
+        #region-anhui { top: 56.5%; left: 58.35%; width: 6.5%; height: 13%; background-image: url('ditu/anhui.png'); }
+        #region-hebei { top: 35.6%; left: 53%; width: 14%; height: 17%; background-image: url('ditu/hebei.png'); }
+        #region-shanxi { top: 41%; left: 52%; width: 7%; height: 16%; background-image: url('ditu/shanxi.png'); } 
+        #region-shaanxi { top: 43.90%; left: 46.96%; width: 8%; height: 21%; background-image: url('ditu/shannxi.png'); } 
+        #region-shandong { top: 46.55%; left: 58.5%; width: 8%; height: 10.5%; background-image: url('ditu/shandong.png'); }
+        #region-xizang { top: 45.5%; left: 15.8%; width: 24%; height: 28%; background-image: url('ditu/xizang.png'); }
+        #region-beijing { top: 39.5%; left: 58%; width: 3%; height: 4.5%; background-image: url('province/beijing/plate/beijing.jpg'); }
+        #region-chongqing { top: 63.16%; left: 45.14%; width: 10%; height: 10%; background-image: url('province/chongqing/plate/chongqing.jpg'); }
+        #region-gansu { top: 34%; left: 6%; width: 73%; height: 28%; background-image: url('ditu/gansu.png'); }
+        #region-guizhou { top: 70.5%; left: 44.5%; width: 8.4%; height: 12%; background-image: url('ditu/guizhou.png'); }
+        #region-heilongjiang { top: 6.5%; left: 47.6%; width: 44%; height: 24%; background-image: url('ditu/heilongjiang.png'); }
+        #region-hunan { top: 68.5%; left: 50.1%; width: 9.6%; height: 13.5%; background-image: url('ditu/hunan.png'); }
+        #region-jiangsu { top: 54.5%; left: 59.5%; width: 8%; height: 11%; background-image: url('province/jiangsu/plate/jiangsu.jpg'); }
+        #region-jilin { top: 24.93%; left: 64.15%; width: 10.5%; height: 13.5%; background-image: url('ditu/jilin.png'); }
+        #region-liaoning { top: 32%; left: 55.9%; width: 20%; height: 12%; background-image: url('ditu/liaoning.png'); }
+        #region-yunnan { top: 69.5%; left: 33.5%; width: 17.5%; height: 20.5%; background-image: url('ditu/yunnan.png'); }
+        #region-zhejiang { top: 64.5%; left: 61%; width: 8.5%; height: 10.5%; background-image: url('ditu/zhejiang.png'); }
+        #region-tianjin { top: 42%; left: 59.7%; width: 2%; height: 4%; background-image: url('province/tianjin/plate/tianjin.jpg'); }
+        #region-fujian { top: 72.4%; left: 59.20%; width: 8.5%; height: 12.5%; background-image: url('ditu/fujian.png'); }
+        #region-guangdong { top: 79.8%; left: 51.4%; width: 11.5%; height: 13.5%; background-image: url('ditu/guangdong.png'); }
+        #region-taiwan { top: 79%; left: 61.2%; width: 12%; height: 9%; background-image: url('ditu/taiwan.png'); }
+        #region-hainan { top: 93%; left: 50.5%; width: 4%; height: 6%; background-image: url('ditu/hainan.png'); }
+        #region-xinjiang { top: 14.84%; left: 13.75%; width: 25%; height: 35%; background-image: url('ditu/xinjiang.png'); }
+        #region-ningxia { top: 43.99%; left: 43.25%; width: 10.1%; height: 11.1%; background-image: url('province/ningxia/plate/ningxia.jpg'); }
+        #region-neimenggu { top: 8.15%; left: 25.75%; width: 55.35%; height: 40.95%; background-image: url('ditu/neimenggu.png'); }
+        #region-qinghai { top: 42.5%; left: 15%; width: 44%; height: 20%; background-image: url('ditu/qinghai.png'); }
+        #region-sichuan { top: 56%; left: 37%; width: 15%; height: 22%; background-image: url('ditu/sichuan.png'); }
+        #region-guangxi { top: 78%; left: 44%; width: 13.5%; height: 12.45%; background-image: url('ditu/guangxi.png'); }
+        #region-hubei { top: 55.5%; left: 50.5%; width: 10%; height: 20%; background-image: url('province/hubei/plate/hubei.jpg'); }
         /* 新增：香港、澳门、上海 热区（复用现有命名/资源路径，使用 SVG 占位图） */
         #region-hongkong { top: 88%; left: 59%; width: 2%; height: 2%; background-image: url('province/hongkong/plate/hongkong.png'); }
         #region-macau { top: 90%; left: 57%; width: 1.59%; height: 1.59%; background-image: url('province/macau/plate/macau.png'); }
-        #region-shanghai { top: 60.7%; left: 65.5%; width: 3.5%; height: 5%; background-image: url('province/shanghai/plate/shanghai.png'); }
+        #region-shanghai { top: 60.7%; left: 65.5%; width: 3.5%; height: 5%; background-image: url('province/shanghai/plate/shanghai.jpg'); }
 
         /* ================= 景点地标通用样式 ================= */
+        .landmark-art {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: contain; object-position: bottom center;
+            pointer-events: none; z-index: -1;
+        }
+        .landmark-preview-art { display: block; width: 100%; max-height: 50vh; object-fit: contain; }
+        .landmark-spot[data-art-state="pending"], .landmark-spot[data-art-state="loading"] { background-image: none !important; }
+        .landmark-label {
+            position: absolute; bottom: -12px; left: 50%; transform: translate(-50%, 100%);
+            min-width: 112px; padding: 7px 14px; border: 1px solid #94703e99; border-radius: 5px;
+            background: rgba(249,235,199,.94); color: #382b1e; text-shadow: none;
+            font: 26px/1.3 "KaiTi", "Microsoft YaHei", serif; text-align: center; white-space: nowrap;
+            pointer-events: none; box-shadow: 0 3px 8px #493b2422;
+        }
+        .landmark-label small { display: none; font: 17px/1.6 "Microsoft YaHei", sans-serif; color: #70512a; }
+        .landmark-spot:is(:hover,:focus-visible,.is-highlighted) .landmark-label small { display: block; }
+        .landmark-spot:focus-visible { outline: none; }
+        .landmark-spot:focus-visible .landmark-label { outline: 3px solid #a26b25; outline-offset: 4px; }
+        .province-spot-link.is-highlighted { border-color: #edcf90; background: #354236; }
+        .province-dialog figure[aria-busy="true"]::before { content: "正在载入景点图景…"; display: block; padding: 16px; color: #d6c39a; }
         .landmark-spot {
             position: absolute;
             width: 200px; height: 200px; 
@@ -309,58 +330,58 @@
             background-position: bottom center;
             cursor: pointer;
             transition: transform 0.3s ease, filter 0.3s ease;
-            filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.6)); 
+            filter: drop-shadow(0px 4px 4px rgba(35,30,20,0.22));
             display: flex; justify-content: center; align-items: flex-end;
             color: transparent; 
             font-size: 24px; font-weight: bold; text-shadow: 2px 2px 5px #000;
         }
-        .landmark-spot:hover {
-            transform: scale(1.15) translateY(-15px); 
-            filter: drop-shadow(0px 20px 30px rgba(255, 215, 0, 0.6)); 
-            color: #ffd700; 
-            padding-bottom: 25px; 
+        .landmark-spot:is(:hover,:focus-visible,.is-highlighted) {
+            transform: scale(1.08) translateY(-8px);
+            filter: drop-shadow(0px 6px 8px rgba(145,105,35,0.35));
+            z-index: 5;
         }
+        @media (prefers-reduced-motion: reduce) { .landmark-spot { transition: none; } }
 
         /* ---------------- 保留你调整好的地标图标坐标 ---------------- */
-        #spot-ciguangge { top: 38%; left: 48%; background-image: url('province/anhui/Architecture/logo/ciguangge.png'); }
-        #spot-changcheng { top: 25%; left: 45%; background-image: url('province/beijing/Architecture/logo/changcheng.png'); }
-        #spot-tiantan { top: 60%; left: 55%; background-image: url('province/beijing/Architecture/logo/tiantan.png'); }
-        #spot-gugong { top: 42%; left: 48%; background-image: url('province/beijing/Architecture/logo/gugong.png'); }
-        #spot-hualinsi { top: 35%; left: 60%; background-image: url('province/fujian/Architecture/logo/hualinsi.png'); }
-        #spot-qingjingsi { top: 65%; left: 55%; background-image: url('province/fujian/Architecture/logo/qingjingsi.png'); }
-        #spot-zhaozhouqiao { top: 45%; left: 55%; background-image: url('province/hebei/Architecture/logo/zhaozhouqiao.png'); }
-        #spot-kaiyuansita { top: 40%; left: 40%; background-image: url('province/hebei/Architecture/logo/kaiyuansita.png'); }
-        #spot-yaowangmiao { top: 70%; left: 50%; background-image: url('province/hebei/Architecture/logo/yaowangmiao.png'); }
-        #spot-tazicheng { top: 40%; left: 50%; background-image: url('province/heilongjiang/Architecture/logo/tazicheng.png'); }
-        #spot-heilongjiangmiao { top: 70%; left: 45%; background-image: url('province/heilongjiang/Architecture/logo/heilongjiangmiao.png'); }
-        #spot-tengwangge { top: 40%; left: 60%; background-image: url('province/jiangxi/Architecture/logo/twg.png'); }
-        #spot-shaolinsi { top: 35%; left: 40%; background-image: url('province/henan/Architecture/logo/shaolinsi.png'); }
-        #spot-longmenshiku { top: 45%; left: 60%; background-image: url('province/henan/Architecture/logo/longmenshiku.png'); }
-        #spot-songyuesita { top: 60%; left: 55%; background-image: url('province/henan/Architecture/logo/songyuesita.png'); }
-        #spot-yinxu { top: 25%; left: 50%; background-image: url('province/henan/Architecture/logo/yinxu.png'); /* TODO: 请替换为正式的图标 */ }
-        #spot-suitangluoyang { top: 50%; left: 45%; background-image: url('province/henan/Architecture/logo/suitangluoyang.png'); /* TODO: 请替换为正式的图标 */ }
-        #spot-yuntaishan { top: 70%; left: 35%; background-image: url('province/henan/Architecture/logo/yuntaishan.png'); }
-        #spot-huanghelou { top: 40%; left: 70%; background-image: url('province/hubei/Architecture/logo/huanghelou.png'); }
-        #spot-yueyanglou { top: 40%; left: 70%; background-image: url('province/hunan/Architecture/logo/yueyanglou.png'); }
-        #spot-shuyuan { top: 50%; left: 40%; background-image: url('province/hunan/Architecture/logo/shuyuan.png'); }
-        #spot-mingxiaoling { top: 35%; left: 20%; background-image: url('province/jiangsu/Architecture/logo/mingxiaoling.png'); }
-        #spot-zhuozhengyuan { top: 45%; left: 60%; background-image: url('province/jiangsu/Architecture/logo/zhuozhengyuan.png'); }
-        #spot-guandimiao { top: 45%; left: 30%; background-image: url('province/jilin/Architecture/logo/guandimiao.png'); }
-        #spot-jilinmiao { top: 20%; left: 80%; background-image: url('province/jilin/Architecture/logo/jilinmiao.png'); }
-        #spot-fengguosi { top: 40%; left: 30%; background-image: url('province/liaoning/Architecture/logo/fengguosi.png'); }
-        #spot-shenyanggugong { top: 20%; left: 50%; background-image: url('province/liaoning/Architecture/logo/shenyanggugong.png'); }
-        #spot-dazhaosi { top: 25%; left: 35%; background-image: url('province/neimenggu/Architecture/logo/dazhaosi.png'); }
-        #spot-xilituzhao { top: 60%; left: 55%; background-image: url('province/nei/menggu/Architecture/logo/xilituzhao.png'); }
-        #spot-bingmayong { top: 35%; left: 20%; background-image: url('province/shaanxi/Architecture/logo/bingmayong.png'); }
-        #spot-penglaige { top: 40%; left: 50%; background-image: url('province/shandong/Architecture/logo/penglaige.png'); }
-        #spot-kongmiao { top: 70%; left: 20%; background-image: url('province/shandong/Architecture/logo/kongmiao.png'); }
-        #spot-foguangsi { top: 40%; left: 80%; background-image: url('province/shanxi/Architecture/logo/foguangsi.png'); }
-        #spot-nanchansi { top: 20%; left: 40%; background-image: url('province/shanxi/Architecture/logo/nanchansi.png'); }
-        #spot-yaozhi { top: 60%; left: 30%; background-image: url('province/jiangxi/Architecture/logo/yaozhi.png'); }
-        #spot-dulesi { top: 60%; left: 50%; background-image: url('province/tianjin/Architecture/logo/dulesi.png'); }
-        #spot-tianhougong { top: 30%; left: 50%; background-image: url('province/tianjin/Architecture/logo/tianhougong.png'); }
-        #spot-budalagong { top: 40%; left: 50%; background-image: url('province/xizang/Architecture/logo/budalagong.png'); }
-        #spot-liuheta { top: 25%; left: 30%; background-image: url('province/zhejiang/Architecture/logo/liuheta.png'); }
+        #spot-ciguangge { top: 38%; left: 48%; background-image: url('province/anhui/Architecture/logo/ciguangge.jpg'); }
+        #spot-changcheng { top: 25%; left: 45%; background-image: url('province/beijing/Architecture/logo/changcheng.jpg'); }
+        #spot-tiantan { top: 60%; left: 55%; background-image: url('province/beijing/Architecture/logo/tiantan.jpg'); }
+        #spot-gugong { top: 42%; left: 48%; background-image: url('province/beijing/Architecture/logo/gugong.jpg'); }
+        #spot-hualinsi { top: 35%; left: 60%; background-image: url('province/fujian/Architecture/logo/hualinsi.jpg'); }
+        #spot-qingjingsi { top: 65%; left: 55%; background-image: url('province/fujian/Architecture/logo/qingjingsi.jpg'); }
+        #spot-zhaozhouqiao { top: 45%; left: 55%; background-image: url('province/hebei/Architecture/logo/zhaozhouqiao.jpg'); }
+        #spot-kaiyuansita { top: 40%; left: 40%; background-image: url('province/hebei/Architecture/logo/kaiyuansita.jpg'); }
+        #spot-yaowangmiao { top: 70%; left: 50%; background-image: url('province/hebei/Architecture/logo/yaowangmiao.jpg'); }
+        #spot-tazicheng { top: 40%; left: 50%; background-image: url('province/heilongjiang/Architecture/logo/tazicheng.jpg'); }
+        #spot-heilongjiangmiao { top: 70%; left: 45%; background-image: url('province/heilongjiang/Architecture/logo/heilongjiangmiao.jpg'); }
+        #spot-tengwangge { top: 40%; left: 60%; background-image: url('province/jiangxi/Architecture/logo/twg.jpg'); }
+        #spot-shaolinsi { top: 35%; left: 40%; background-image: url('province/henan/Architecture/logo/shaolinsi.jpg'); }
+        #spot-longmenshiku { top: 45%; left: 60%; background-image: url('province/henan/Architecture/logo/longmenshiku.jpg'); }
+        #spot-songyuesita { top: 60%; left: 55%; background-image: url('province/henan/Architecture/logo/songyuesita.jpg'); }
+        #spot-yinxu { top: 25%; left: 50%; background-image: url('province/henan/Architecture/logo/yinxu.jpg'); /* TODO: 请替换为正式的图标 */ }
+        #spot-suitangluoyang { top: 50%; left: 45%; background-image: url('province/henan/Architecture/logo/suitangluoyang.jpg'); /* TODO: 请替换为正式的图标 */ }
+        #spot-yuntaishan { top: 70%; left: 35%; background-image: url('province/henan/Architecture/logo/yuntaishan.jpg'); }
+        #spot-huanghelou { top: 40%; left: 70%; background-image: url('province/hubei/Architecture/logo/huanghelou.jpg'); }
+        #spot-yueyanglou { top: 40%; left: 70%; background-image: url('province/hunan/Architecture/logo/yueyanglou.jpg'); }
+        #spot-shuyuan { top: 50%; left: 40%; background-image: url('province/hunan/Architecture/logo/shuyuan.jpg'); }
+        #spot-mingxiaoling { top: 35%; left: 20%; background-image: url('province/jiangsu/Architecture/logo/mingxiaoling.jpg'); }
+        #spot-zhuozhengyuan { top: 45%; left: 60%; background-image: url('province/jiangsu/Architecture/logo/zhuozhengyuan.jpg'); }
+        #spot-guandimiao { top: 45%; left: 30%; background-image: url('province/jilin/Architecture/logo/guandimiao.jpg'); }
+        #spot-jilinmiao { top: 20%; left: 80%; background-image: url('province/jilin/Architecture/logo/jilinmiao.jpg'); }
+        #spot-fengguosi { top: 40%; left: 30%; background-image: url('province/liaoning/Architecture/logo/fengguosi.jpg'); }
+        #spot-shenyanggugong { top: 20%; left: 50%; background-image: url('province/liaoning/Architecture/logo/shenyanggugong.jpg'); }
+        #spot-dazhaosi { top: 25%; left: 35%; background-image: url('province/neimenggu/Architecture/logo/dazhaosi.jpg'); }
+        #spot-xilituzhao { top: 60%; left: 55%; background-image: url('province/neimenggu/Architecture/logo/xilituzhao.jpg'); }
+        #spot-bingmayong { top: 35%; left: 20%; background-image: url('province/shaanxi/Architecture/logo/bingmayong.jpg'); }
+        #spot-penglaige { top: 40%; left: 50%; background-image: url('province/shandong/Architecture/logo/penglaige.jpg'); }
+        #spot-kongmiao { top: 70%; left: 20%; background-image: url('province/shandong/Architecture/logo/kongmiao.jpg'); }
+        #spot-foguangsi { top: 40%; left: 80%; background-image: url('province/shanxi/Architecture/logo/foguangsi.jpg'); }
+        #spot-nanchansi { top: 20%; left: 40%; background-image: url('province/shanxi/Architecture/logo/nanchansi.jpg'); }
+        #spot-yaozhi { top: 60%; left: 30%; background-image: url('province/jiangxi/Architecture/logo/yaozhi.jpg'); }
+        #spot-dulesi { top: 60%; left: 50%; background-image: url('province/tianjin/Architecture/logo/dulesi.jpg'); }
+        #spot-tianhougong { top: 30%; left: 50%; background-image: url('province/tianjin/Architecture/logo/tianhougong.jpg'); }
+        #spot-budalagong { top: 40%; left: 50%; background-image: url('province/xizang/Architecture/logo/budalagong.jpg'); }
+        #spot-liuheta { top: 25%; left: 30%; background-image: url('province/zhejiang/Architecture/logo/liuheta.jpg'); }
         .btn-back {
             position: absolute; top: 30px; left: 30px; padding: 10px 20px; font-size: 20px; font-family: "KaiTi";
             background: rgba(0,0,0,0.6); color: #ceae75; border: 1px solid #ceae75; cursor: pointer; transition: 0.3s;
@@ -454,6 +475,7 @@
         .reward-btn:hover:not(:disabled) { background: #00ffcc; color: #000; }
         .reward-btn:disabled { border-color: #555; color: #555; background: #333; cursor: not-allowed; }
     </style>
+    <link rel="stylesheet" href="main-menu.css">
 </head>
 <body>
     <!-- Top Right Buttons -->
@@ -509,9 +531,31 @@
 
     <div id="screen-main" class="screen active">
         
-        <video id="bg-video" autoplay loop muted playsinline>
-            <source src="video/index.mp4" type="video/mp4">
-        </video>
+        <div id="main-menu-stage" aria-label="墨游华夏主菜单">
+            <video id="bg-video" autoplay loop muted playsinline preload="auto" poster="assets/main-menu/poster-hq.jpg" aria-hidden="true">
+                <source src="assets/main-menu/background-hq.mp4" type="video/mp4">
+            </video>
+            <nav id="main-menu-navigation" aria-label="主菜单导航">
+                <a class="menu-hotspot" id="menu-brand" href="#screen-main" data-screen="screen-main" style="--x:1.2%;--y:1.2%;--w:15.5%;--h:9.4%" aria-label="墨游华夏 · 首页"><span class="menu-tooltip">首页</span></a>
+                <a class="menu-hotspot" id="menu-home" href="#screen-main" data-screen="screen-main" style="--x:27.8%;--y:.5%;--w:5.5%;--h:10%" aria-label="首页" aria-current="page"><span class="menu-tooltip">首页</span></a>
+                <a class="menu-hotspot" id="menu-character" href="#screen-char-select" data-screen="screen-char-select" style="--x:36.8%;--y:.5%;--w:6%;--h:10%" aria-label="角色设置"><span class="menu-tooltip">角色设置</span></a>
+                <a class="menu-hotspot" id="menu-games" href="games.html" style="--x:46.9%;--y:.5%;--w:5.5%;--h:10%" aria-label="游艺区"><span class="menu-tooltip">游艺区</span></a>
+                <a class="menu-hotspot" id="menu-teleport" href="#screen-virtual-guide" data-screen="screen-virtual-guide" style="--x:55.9%;--y:.5%;--w:5.8%;--h:10%" aria-label="传送阵"><span class="menu-tooltip">传送阵</span></a>
+                <a class="menu-hotspot" id="menu-ai" href="#screen-ai-custom" data-screen="screen-ai-custom" style="--x:65.7%;--y:.5%;--w:6%;--h:10%" aria-label="AI易容"><span class="menu-tooltip">AI易容</span></a>
+                <a class="menu-hotspot" id="menu-search" href="#screen-virtual-guide" data-screen="screen-virtual-guide" style="--x:84.1%;--y:1.6%;--w:4%;--h:7.6%" aria-label="查找目的地"><span class="menu-tooltip">查找目的地</span></a>
+                <a class="menu-hotspot" id="menu-shop" href="wenchuang.html" style="--x:89.1%;--y:1.6%;--w:4.2%;--h:7.6%" aria-label="文创商店"><span class="menu-tooltip">文创商店</span></a>
+                <button class="menu-hotspot" id="menu-account" type="button" style="--x:95%;--y:1.6%;--w:3.6%;--h:7.6%" aria-label="登录 / 注册"><span class="menu-tooltip">登录 / 注册</span></button>
+                <a class="menu-hotspot menu-art-button" id="menu-roam" href="#map-china" data-screen="map-china" style="--x:44.479167%;--y:47.12963%;--w:16.458333%;--h:7.962963%" aria-label="山河漫览 · 开始游历"><img src="assets/main-menu/roam.svg" alt="山河漫览" draggable="false"></a>
+                <a class="menu-hotspot menu-art-button" id="menu-story" href="mainline.html" style="--x:43.697917%;--y:54.537037%;--w:17.447917%;--h:7.962963%" aria-label="灵迹寻踪 · 主线游历"><img src="assets/main-menu/story.svg" alt="灵迹寻踪" draggable="false"></a>
+            </nav>
+            <button class="menu-hotspot" id="main-menu-music" type="button" style="--x:82.8%;--y:90.5%;--w:14.5%;--h:7.5%" aria-label="开启背景音乐" aria-pressed="false"><span class="menu-tooltip">开启背景音乐</span><span id="main-menu-music-state" aria-hidden="true">点击开启</span></button>
+            <div id="main-menu-account-panel" hidden>
+                <button type="button" id="main-menu-backpack">个人背包</button>
+                <button type="button" id="main-menu-login">账号 / 退出登录</button>
+            </div>
+            <button id="main-menu-play" type="button" hidden>播放背景视频</button>
+            <span id="main-menu-status" class="menu-sr-only" aria-live="polite"></span>
+        </div>
          <audio id="bgm-map" loop preload="auto" volume="0.3">
             <source src="audio/map_bgm.ogg" type="audio/mpeg">
         </audio>
@@ -611,59 +655,59 @@
                     <img src="player_old.png" class="char-img" alt="老叟" onerror="this.src='player.png'">
                     <span>隐世老叟</span>
                 </div>
-                <div class="char-card locked" id="card-wangbo" onclick="selectChar(this, 'province/jiangxi/Architecture/location/wangbo.png')">
+                <div class="char-card locked" id="card-wangbo" onclick="selectChar(this, 'province/jiangxi/Architecture/location/wangbo.jpg')">
                     <div class="lock-mask" id="mask-wangbo">🔒<br>集齐滕王阁信物<br>即可解锁</div>
-                    <img src="province/jiangxi/Architecture/location/wangbo.png" class="char-img" alt="王勃" style="opacity: 0.4;" id="img-wangbo">
+                    <img src="province/jiangxi/Architecture/location/wangbo.jpg" class="char-img" alt="王勃" style="opacity: 0.4;" id="img-wangbo">
                     <span style="color: #ffd700;">诗杰 王勃</span>
                 </div>
-                <div class="char-card locked" id="card-qinshihuang" onclick="selectChar(this, 'province/shaanxi/Architecture/location/qinshihuang.png')">
+                <div class="char-card locked" id="card-qinshihuang" onclick="selectChar(this, 'province/shaanxi/Architecture/location/qinshihuang.jpg')">
                     <div class="lock-mask" id="mask-qinshihuang">🔒<br>集齐兵马俑信物<br>即可解锁</div>
-                    <img src="province/shaanxi/Architecture/location/qinshihuang.png" class="char-img" alt="秦始皇" style="opacity: 0.4;" id="img-qinshihuang">
+                    <img src="province/shaanxi/Architecture/location/qinshihuang.jpg" class="char-img" alt="秦始皇" style="opacity: 0.4;" id="img-qinshihuang">
                     <span style="color: #ffd700;">千古一帝 秦始皇</span>
                 </div>
-                <div class="char-card locked" id="card-wenchenggongzhu" onclick="selectChar(this, 'province/xizang/Architecture/location/wenchenggongzhu.png')">
+                <div class="char-card locked" id="card-wenchenggongzhu" onclick="selectChar(this, 'province/xizang/Architecture/location/wenchenggongzhu.jpg')">
                     <div class="lock-mask" id="mask-wenchenggongzhu">🔒<br>集齐文成公主信物<br>即可解锁</div>
-                    <img src="province/xizang/Architecture/location/wenchenggongzhu.png" class="char-img" alt="文成公主" style="opacity: 0.4;" id="img-wenchenggongzhu">
+                    <img src="province/xizang/Architecture/location/wenchenggongzhu.jpg" class="char-img" alt="文成公主" style="opacity: 0.4;" id="img-wenchenggongzhu">
                     <span style="color: #ffd700;">和亲公主 文成公主</span>
                 </div>
-                <div class="char-card locked" id="card-mengtian" onclick="selectChar(this, 'province/beijing/Architecture/location/mengtian.png')">
+                <div class="char-card locked" id="card-mengtian" onclick="selectChar(this, 'province/beijing/Architecture/location/mengtian.jpg')">
                     <div class="lock-mask" id="mask-mengtian">🔒<br>集齐蒙恬信物<br>即可解锁</div>
-                    <img src="province/beijing/Architecture/location/mengtian.png" class="char-img" alt="蒙恬" style="opacity: 0.4;" id="img-mengtian">
+                    <img src="province/beijing/Architecture/location/mengtian.jpg" class="char-img" alt="蒙恬" style="opacity: 0.4;" id="img-mengtian">
                     <span style="color: #ffd700;">抗胡名将 蒙恬</span>
                 </div>
-                <div class="char-card locked" id="card-cuihao" onclick="selectChar(this, 'province/hubei/Architecture/location/cuihao.png')">
+                <div class="char-card locked" id="card-cuihao" onclick="selectChar(this, 'province/hubei/Architecture/location/cuihao.jpg')">
                     <div class="lock-mask" id="mask-cuihao">🔒<br>集齐崔浩信物<br>即可解锁</div>
-                    <img src="province/hubei/Architecture/location/cuihao.png" class="char-img" alt="崔浩" style="opacity: 0.4;" id="img-cuihao">
+                    <img src="province/hubei/Architecture/location/cuihao.jpg" class="char-img" alt="崔浩" style="opacity: 0.4;" id="img-cuihao">
                     <span style="color: #ffd700;">北魏名臣 崔浩</span>
                 </div>
-                <div class="char-card locked" id="card-wuzetian" onclick="selectChar(this, 'province/henan/Architecture/location/wuzetian.png')">
+                <div class="char-card locked" id="card-wuzetian" onclick="selectChar(this, 'province/henan/Architecture/location/wuzetian.jpg')">
                     <div class="lock-mask" id="mask-wuzetian">🔒<br>集齐武则天信物<br>即可解锁</div>
-                    <img src="province/henan/Architecture/location/wuzetian.png" class="char-img" alt="武则天" style="opacity: 0.4;" id="img-wuzetian">
+                    <img src="province/henan/Architecture/location/wuzetian.jpg" class="char-img" alt="武则天" style="opacity: 0.4;" id="img-wuzetian">
                     <span style="color: #ffd700;">女皇 武则天</span>
                 </div>
-                <div class="char-card locked" id="card-lvdongbin" onclick="selectChar(this, 'province/shandong/Architecture/location/lvdongbin.png')">
+                <div class="char-card locked" id="card-lvdongbin" onclick="selectChar(this, 'province/shandong/Architecture/location/lvdongbin.jpg')">
                     <div class="lock-mask" id="mask-lvdongbin">🔒<br>集齐吕洞宾信物<br>即可解锁</div>
-                    <img src="province/shandong/Architecture/location/lvdongbin.png" class="char-img" alt="吕洞宾" style="opacity: 0.4;" id="img-lvdongbin">
+                    <img src="province/shandong/Architecture/location/lvdongbin.jpg" class="char-img" alt="吕洞宾" style="opacity: 0.4;" id="img-lvdongbin">
                     <span style="color: #ffd700;">八仙 吕洞宾</span>
                 </div>
-                <div class="char-card locked" id="card-damo" onclick="selectChar(this, 'province/henan/Architecture/location/damo.png')">
+                <div class="char-card locked" id="card-damo" onclick="selectChar(this, 'province/henan/Architecture/location/damo.jpg')">
                     <div class="lock-mask" id="mask-damo">🔒<br>集齐达摩信物<br>即可解锁</div>
-                    <img src="province/henan/Architecture/location/damo.png" class="char-img" alt="达摩" style="opacity: 0.4;" id="img-damo">
+                    <img src="province/henan/Architecture/location/damo.jpg" class="char-img" alt="达摩" style="opacity: 0.4;" id="img-damo">
                     <span style="color: #ffd700;">禅宗始祖 达摩</span>
                 </div>
-                <div class="char-card locked" id="card-jiajing" onclick="selectChar(this, 'province/beijing/Architecture/location/jiajing.png')">
+                <div class="char-card locked" id="card-jiajing" onclick="selectChar(this, 'province/beijing/Architecture/location/jiajing.jpg')">
                     <div class="lock-mask" id="mask-jiajing">🔒<br>集齐嘉靖信物<br>即可解锁</div>
-                    <img src="province/beijing/Architecture/location/jiajing.png" class="char-img" alt="嘉靖" style="opacity: 0.4;" id="img-jiajing">
+                    <img src="province/beijing/Architecture/location/jiajing.jpg" class="char-img" alt="嘉靖" style="opacity: 0.4;" id="img-jiajing">
                     <span style="color: #ffd700;">明朝皇帝 嘉靖</span>
                 </div>
-                <div class="char-card locked" id="card-fanzhongyan" onclick="selectChar(this, 'province/hunan/Architecture/location/fanzhongyan.png')">
+                <div class="char-card locked" id="card-fanzhongyan" onclick="selectChar(this, 'province/hunan/Architecture/location/fanzhongyan.jpg')">
                     <div class="lock-mask" id="mask-fanzhongyan">🔒<br>集齐范仲淹信物<br>即可解锁</div>
-                    <img src="province/hunan/Architecture/location/fanzhongyan.png" class="char-img" alt="范仲淹" style="opacity: 0.4;" id="img-fanzhongyan">
+                    <img src="province/hunan/Architecture/location/fanzhongyan.jpg" class="char-img" alt="范仲淹" style="opacity: 0.4;" id="img-fanzhongyan">
                     <span style="color: #ffd700;">北宋名臣 范仲淹</span>
                 </div>
-                <div class="char-card locked" id="card-lichun" onclick="selectChar(this, 'province/hebei/Architecture/location/lichun.png')">
+                <div class="char-card locked" id="card-lichun" onclick="selectChar(this, 'province/hebei/Architecture/location/lichun.jpg')">
                     <div class="lock-mask" id="mask-lichun">🔒<br>集齐李春信物<br>即可解锁</div>
-                    <img src="province/hebei/Architecture/location/lichun.png" class="char-img" alt="李春" style="opacity: 0.4;" id="img-lichun">
+                    <img src="province/hebei/Architecture/location/lichun.jpg" class="char-img" alt="李春" style="opacity: 0.4;" id="img-lichun">
                     <span style="color: #ffd700;">隋代建筑师 李春</span>
                 </div>
             </div>
@@ -691,6 +735,7 @@
     <div id="map-china" class="screen hidden">
         <button class="btn-back" onclick="showScreen('screen-main')">返回主菜单</button>
         <div class="title">神州大地</div>
+        <aside id="journeyMapProgress" style="position:absolute;left:20px;bottom:20px;z-index:30;max-width:min(420px,calc(100vw - 40px));color:#f0d38b;font:15px Microsoft YaHei,sans-serif;"></aside>
         
         <div id="region-jiangxi" class="region-hotspot">江西</div>
         <div id="region-henan" class="region-hotspot">河南</div>
@@ -731,6 +776,7 @@
     <div id="map-province" class="screen hidden">
         <button class="btn-back" onclick="showScreen('map-china')">返回神州</button>
         <div class="title" id="province-title">内景图</div>
+        <aside id="provinceContentPanel" aria-label="本省游历目录"></aside>
         
         <div id="level2-map-content">
             <div id="spot-tengwangge" class="landmark-spot" style="display: none;">滕王阁</div>
@@ -776,6 +822,15 @@
         </div>
     </div>
 
+    <dialog id="provinceAttractionDialog" class="province-dialog" aria-labelledby="attractionPreviewTitle">
+        <div class="province-dialog-head"><h2 id="attractionPreviewTitle"></h2><button id="closeAttractionPreview" aria-label="关闭图景预览">×</button></div>
+        <figure><img id="attractionPreviewImage" alt=""><figcaption id="attractionPreviewCaption"></figcaption></figure>
+        <p id="attractionPreviewNotice"></p>
+        <details id="attractionProvinceContext"><summary>查看本省图景</summary><img id="attractionProvinceImage" alt=""></details>
+    </dialog>
+    <script src="province-content-data.js"></script>
+    <script src="landmark-renderer.js"></script>
+    <script src="province-content.js"></script>
     <script>
         // =========================================================================
         // 【真·物理布料菜单引擎】基于 Verlet Integration 与 Three.js
@@ -918,7 +973,7 @@
                 ctx.shadowBlur = 4; // 晕染程度
                 ctx.font = '120px "华文行楷", "STXingkai", "Xingkai SC", "隶书", "LiSu", cursive';
                 ctx.textAlign = 'center';
-                ctx.fillText('水墨神州', centerX, 300); // 标题高度
+                ctx.fillText('水墨神州', centerX, 270); // 标题高度
 
                 // 设置按钮文字的字体
                 // ==========================================
@@ -928,13 +983,14 @@
                 const modernFont = 'bold 55px "Microsoft YaHei", Arial, sans-serif'; // 用于 AI 的现代粗体
                 
                 // ==========================================
-                // 1. 修改坐标：让四个选项从上到下垂直居中排列
+                // 1. 修改坐标：让五个选项从上到下垂直居中排列
                 // ==========================================
                 this.buttons = [
-                    { id: '开始游历', text: '开始游历', cx: 512, cy: 460, w: 300, h: 90, target: 'map-china' },
-                    { id: '角色设置', text: '角色设置', cx: 512, cy: 580, w: 300, h: 90, target: 'screen-char-select' },
-                    { id: 'AI易容',   text: 'AI易容',   cx: 512, cy: 700, w: 350, h: 90, target: 'screen-ai-custom' },
-                    { id: '传送阵',   text: '传送阵',   cx: 512, cy: 820, w: 250, h: 90, target: 'screen-virtual-guide' }
+                    { id: '主线游历', text: '主线游历', cx: 512, cy: 400, w: 300, h: 82, target: 'mainline.html' },
+                    { id: '开始游历', text: '开始游历', cx: 512, cy: 520, w: 300, h: 82, target: 'map-china' },
+                    { id: '角色设置', text: '角色设置', cx: 512, cy: 640, w: 300, h: 82, target: 'screen-char-select' },
+                    { id: 'AI易容',   text: 'AI易容',   cx: 512, cy: 760, w: 350, h: 82, target: 'screen-ai-custom' },
+                    { id: '传送阵',   text: '传送阵',   cx: 512, cy: 880, w: 250, h: 82, target: 'screen-virtual-guide' }
                 ];
 
                 // ==========================================
@@ -1110,6 +1166,8 @@
                             // 触发对应的跳转或功能
                             if (btnUV.target === 'action-teleport') {
                                 document.getElementById('teleport-input').click();
+                            } else if (btnUV.target.endsWith('.html')) {
+                                window.location.href = btnUV.target;
                             } else {
                                 window.showScreen(btnUV.target);
                             }
@@ -1139,7 +1197,7 @@
         };
 
         window.addEventListener('load', () => {
-            setTimeout(() => ClothEngine.init(), 200);
+            if (!document.getElementById('main-menu-stage')) setTimeout(() => ClothEngine.init(), 200);
         });
 
         const screens = ['screen-main', 'screen-char-select', 'screen-ai-custom', 'map-china', 'map-province', 'screen-virtual-guide'];
@@ -1383,11 +1441,25 @@
                         const match = bg.match(/url\(['"]?(.*?)['"]?\)/);
                         if (match && match[1]) {
                             const url = match[1];
+                            el.dataset.pickImage = url;
                             if (!this.cache[url]) {
                                 const img = new Image();
-                                img.src = url;
                                 this.cache[url] = { img: img, loaded: false };
-                                img.onload = () => { this.cache[url].loaded = true; };
+                                img.onload = () => {
+                                    this.cache[url].loaded = true;
+                                    this.cache[url].pixels = this.readMask(img);
+                                    const pixels=this.cache[url].pixels;
+                                    if(pixels.mask){
+                                        // Display only the recovered province fill; a JPEG
+                                        // rectangle must not cover neighboring map boards.
+                                        const plate=document.createElement('canvas');plate.width=pixels.width;plate.height=pixels.height;
+                                        const context=plate.getContext('2d'),image=context.createImageData(pixels.width,pixels.height);image.data.set(pixels.data);
+                                        for(let i=0;i<pixels.mask.length;i++)image.data[i*4+3]=pixels.mask[i]?255:0;
+                                        context.putImageData(image,0,0);el.style.backgroundImage=`url("${plate.toDataURL()}")`;
+                                    }
+                                };
+                                img.onerror = () => console.warn('省份板块图片加载失败：', url);
+                                img.src = url;
                             }
                         }
                     }
@@ -1396,18 +1468,53 @@
                 this.bindEvents();
             },
 
+            readMask(img) {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                ctx.drawImage(img, 0, 0);
+                const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                let hasAlpha = false;
+                for(let i=3;i<data.length;i+=4) if(data[i]<10){hasAlpha=true;break;}
+                // Old JPEG plates have no alpha. Recover the province's pastel fill
+                // for picking, instead of treating its entire rectangle as a province.
+                if(!hasAlpha) {
+                    const colors = new Map();
+                    for(let y=Math.floor(canvas.height*.2);y<canvas.height*.8;y+=2)
+                    for(let x=Math.floor(canvas.width*.2);x<canvas.width*.8;x+=2){
+                        const i=(y*canvas.width+x)*4,r=data[i],g=data[i+1],b=data[i+2];
+                        if(Math.min(r,g,b)<100) continue;
+                        const key=[r>>4,g>>4,b>>4].join(',');
+                        const item=colors.get(key)||{count:0,r:0,g:0,b:0};item.count++;item.r+=r;item.g+=g;item.b+=b;colors.set(key,item);
+                    }
+                    const fill=[...colors.values()].sort((a,b)=>b.count-a.count)[0];
+                    if(fill) {
+                        const r=fill.r/fill.count,g=fill.g/fill.count,b=fill.b/fill.count,mask=new Uint8Array(canvas.width*canvas.height);
+                        for(let i=0;i<mask.length;i++) if(Math.hypot(data[i*4]-r,data[i*4+1]-g,data[i*4+2]-b)<37)mask[i]=1;
+                        return {data, mask, width:canvas.width,height:canvas.height};
+                    }
+                }
+                return {data, width:canvas.width,height:canvas.height};
+            },
+
+            hitRect(el) {
+                // Hover lifts/scales the artwork. Keep picking in its original
+                // layout coordinates so small provinces do not move away on hover.
+                const parent=el.offsetParent,base=parent.getBoundingClientRect();
+                const sx=base.width/parent.offsetWidth,sy=base.height/parent.offsetHeight;
+                const left=base.left+el.offsetLeft*sx,top=base.top+el.offsetTop*sy;
+                return {left,top,width:el.offsetWidth*sx,height:el.offsetHeight*sy,right:left+el.offsetWidth*sx,bottom:top+el.offsetHeight*sy};
+            },
+
             isTransparent(el, clientX, clientY) {
-                const bg = window.getComputedStyle(el).backgroundImage;
-                if (bg === 'none') return true;
-                const match = bg.match(/url\(['"]?(.*?)['"]?\)/);
-                if (!match || !match[1]) return true;
-                const url = match[1];
+                const url = el.dataset.pickImage;
+                if(!url)return true;
 
                 const cacheObj = this.cache[url];
                 if (!cacheObj || !cacheObj.loaded) return true;
 
                 const img = cacheObj.img;
-                const rect = el.getBoundingClientRect();
+                const rect = this.hitRect(el);
 
                 const x_screen = clientX - rect.left;
                 const y_screen = clientY - rect.top;
@@ -1435,11 +1542,16 @@
                 const imgX = ((cssX - offsetX) / drawWidth) * img.width;
                 const imgY = ((cssY - offsetY) / drawHeight) * img.height;
 
-                this.ctx.clearRect(0, 0, 1, 1);
-                this.ctx.drawImage(img, imgX, imgY, 1, 1, 0, 0, 1, 1);
-                const alpha = this.ctx.getImageData(0, 0, 1, 1).data[3];
-
-                return alpha < 10;
+                const pixels=cacheObj.pixels;
+                if(!pixels)return true;
+                const x=Math.min(pixels.width-1,Math.max(0,Math.floor(imgX))),y=Math.min(pixels.height-1,Math.max(0,Math.floor(imgY)));
+                if(!pixels.mask)return pixels.data[(y*pixels.width+x)*4+3]<10;
+                // Include the printed names and city marks inside the province fill.
+                for(let dy=-5;dy<=5;dy++)for(let dx=-5;dx<=5;dx++){
+                    const a=x+dx,b=y+dy;
+                    if(a>=0&&a<pixels.width&&b>=0&&b<pixels.height&&pixels.mask[b*pixels.width+a])return false;
+                }
+                return true;
             },
 
             bindEvents() {
@@ -1447,10 +1559,11 @@
 
                 mapContainer.addEventListener('mousemove', (e) => {
                     if(!mapContainer.classList.contains('active')) return;
+                    if(e.target.closest('button,a,input,select,summary,#journeyMapProgress'))return;
 
                     let targetHover = null;
                     for (let el of this.hotspots) {
-                        const rect = el.getBoundingClientRect();
+                        const rect = this.hitRect(el);
                         if (e.clientX >= rect.left && e.clientX <= rect.right &&
                             e.clientY >= rect.top && e.clientY <= rect.bottom) {
                             
@@ -1472,9 +1585,10 @@
 
                 mapContainer.addEventListener('click', (e) => {
                     if(!mapContainer.classList.contains('active')) return;
+                    if(e.target.closest('button,a,input,select,summary,#journeyMapProgress'))return;
 
                     for (let el of this.hotspots) {
-                        const rect = el.getBoundingClientRect();
+                        const rect = this.hitRect(el);
                         if (e.clientX >= rect.left && e.clientX <= rect.right &&
                             e.clientY >= rect.top && e.clientY <= rect.bottom) {
 
@@ -1591,40 +1705,40 @@
         }
 
         const provinceConfig = {
-            'jiangxi':  { title: '江西', bg: 'province/jiangxi/Background/bg_jiangxi.png',   spots: ['spot-tengwangge', 'spot-yaozhi'] },
-            'henan':    { title: '河南', bg: 'province/henan/Background/bg_henan.png',     spots: ['spot-shaolinsi', 'spot-longmenshiku', 'spot-songyuesita', 'spot-yinxu', 'spot-suitangluoyang', 'spot-yuntaishan']},
-            'anhui':    { title: '安徽', bg: 'province/anhui/Background/bg_anhui.png',     spots: ['spot-ciguangge'] },
-            'hebei':    { title: '河北', bg: 'province/hebei/Background/bg_hebei.png',     spots: ['spot-zhaozhouqiao', 'spot-kaiyuansita', 'spot-yaowangmiao'] },
-            'shanxi':   { title: '山西', bg: 'province/shanxi/Background/bg_shanxi.png',   spots: ['spot-foguangsi', 'spot-nanchansi'] },
-            'shaanxi':  { title: '陕西', bg: 'province/shaanxi/Background/bg_shaanxi.png', spots: ['spot-bingmayong'] }, 
-            'shandong': { title: '山东', bg: 'province/shandong/Background/bg_shandong.png',spots: ['spot-penglaige', 'spot-kongmiao'] },
-            'xizang':   { title: '西藏', bg: 'province/xizang/Background/bg_xizang.png',   spots: ['spot-budalagong'] }, 
-            'beijing':  { title: '北京', bg: 'province/beijing/Background/bg_beijing.png', spots: ['spot-changcheng', 'spot-tiantan', 'spot-gugong'] },
-            'chongqing':  { title: '重庆', bg: 'province/chongqing/Background/bg_chongqing.png', spots: [] },
-            'gansu':      { title: '甘肃', bg: 'province/gansu/Background/bg_gansu.png',       spots: [] },
-            'guizhou':    { title: '贵州', bg: 'province/guizhou/Background/bg_guizhou.png',     spots: [] },
-            'heilongjiang':{ title: '黑龙江', bg: 'province/heilongjiang/Background/bg_heilongjiang.png', spots: ['spot-tazicheng', 'spot-heilongjiangmiao'] },
-            'hunan':      { title: '湖南', bg: 'province/hunan/Background/bg_hunan.png',       spots: ['spot-yueyanglou', 'spot-shuyuan'] }, 
-            'jiangsu':    { title: '江苏', bg: 'province/jiangsu/Background/bg_jiangsu.png',     spots: ['spot-mingxiaoling', 'spot-zhuozhengyuan'] },
-            'jilin':      { title: '吉林', bg: 'province/jilin/Background/bg_jilin.png',       spots: ['spot-guandimiao', 'spot-jilinmiao'] },
-            'liaoning':   { title: '辽宁', bg: 'province/liaoning/Background/bg_liaoning.png',     spots: ['spot-fengguosi', 'spot-shenyanggugong'] },
-            'yunnan':     { title: '云南', bg: 'province/yunnan/Background/bg_yunnan.png',       spots: [] },
-            'zhejiang':   { title: '浙江', bg: 'province/zhejiang/Background/bg_zhejiang.png',     spots: ['spot-liuheta'] },
-            'tianjin':    { title: '天津', bg: 'province/tianjin/Background/bg_tianjin.png',     spots: ['spot-dulesi', 'spot-tianhougong'] },
-            'fujian':     { title: '福建', bg: 'province/fujian/Background/bg_fujian.png',       spots: ['spot-qingjingsi','spot-hualinsi'] },
-            'guangdong':  { title: '广东', bg: 'province/guangdong/Background/bg_guangdong.png',     spots: [] },
-            'taiwan':     { title: '台湾', bg: 'province/taiwan/Background/bg_taiwan.png',       spots: [] },
-            'hainan':     { title: '海南', bg: 'province/hainan/Background/bg_hainan.png',       spots: [] },
-            'xinjiang':   { title: '新疆', bg: 'province/xinjiang/Background/bg_xinjiang.png',     spots: [] },
-            'ningxia':    { title: '宁夏', bg: 'province/ningxia/Background/bg_ningxia.png',     spots: [] },
-            'neimenggu':  { title: '内蒙古', bg: 'province/neimenggu/Background/bg_neimenggu.png',  spots: ['spot-dazhaosi', 'spot-xilituzhao'] },
-            'qinghai':    { title: '青海', bg: 'province/qinghai/Background/bg_qinghai.png', spots: [] },
-            'sichuan':    { title: '四川', bg: 'province/sichuan/Background/bg_sichuan.png', spots: [] },
-            'guangxi':    { title: '广西', bg: 'province/guangxi/Background/bg_guangxi.png', spots: [] },
-            'hubei':      { title: '湖北', bg: 'province/hubei/Background/bg_hubei.png', spots: ['spot-huanghelou'] },
-            'hongkong':   { title: '香港', bg: 'province/hongkong/Background/bg_hongkong.png', spots: [] },
-            'macau':      { title: '澳门', bg: 'province/macau/Background/bg_macau.png', spots: [] },
-            'shanghai':   { title: '上海', bg: 'province/shanghai/Background/bg_shanghai.png', spots: [] }
+            'jiangxi':  { title: '江西', bg: 'province/jiangxi/Background/bg_jiangxi.jpg',   spots: ['spot-tengwangge', 'spot-yaozhi'] },
+            'henan':    { title: '河南', bg: 'province/henan/Background/bg_henan.jpg',     spots: ['spot-shaolinsi', 'spot-longmenshiku', 'spot-songyuesita', 'spot-yinxu', 'spot-suitangluoyang', 'spot-yuntaishan']},
+            'anhui':    { title: '安徽', bg: 'province/anhui/Background/bg_anhui.jpg',     spots: ['spot-ciguangge'] },
+            'hebei':    { title: '河北', bg: 'province/hebei/Background/bg_hebei.jpg',     spots: ['spot-zhaozhouqiao', 'spot-kaiyuansita', 'spot-yaowangmiao'] },
+            'shanxi':   { title: '山西', bg: 'province/shanxi/Background/bg_shanxi.jpg',   spots: ['spot-foguangsi', 'spot-nanchansi'] },
+            'shaanxi':  { title: '陕西', bg: 'province/shaanxi/Background/bg_shaanxi.jpg', spots: ['spot-bingmayong'] }, 
+            'shandong': { title: '山东', bg: 'province/shandong/Background/bg_shandong.jpg',spots: ['spot-penglaige', 'spot-kongmiao'] },
+            'xizang':   { title: '西藏', bg: 'province/xizang/Background/bg_xizang.jpg',   spots: ['spot-budalagong'] }, 
+            'beijing':  { title: '北京', bg: 'province/beijing/Background/bg_beijing.jpg', spots: ['spot-changcheng', 'spot-tiantan', 'spot-gugong'] },
+            'chongqing':  { title: '重庆', bg: 'province/chongqing/Background/bg_chongqing.jpg', spots: [] },
+            'gansu':      { title: '甘肃', bg: 'province/gansu/Background/bg_gansu.jpg',       spots: [] },
+            'guizhou':    { title: '贵州', bg: 'province/guizhou/Background/bg_guizhou.jpg',     spots: [] },
+            'heilongjiang':{ title: '黑龙江', bg: 'province/heilongjiang/Background/bg_heilongjiang.jpg', spots: ['spot-tazicheng', 'spot-heilongjiangmiao'] },
+            'hunan':      { title: '湖南', bg: 'province/hunan/Background/bg_hunan.jpg',       spots: ['spot-yueyanglou', 'spot-shuyuan'] }, 
+            'jiangsu':    { title: '江苏', bg: 'province/jiangsu/Background/bg_jiangsu.jpg',     spots: ['spot-mingxiaoling', 'spot-zhuozhengyuan'] },
+            'jilin':      { title: '吉林', bg: 'province/jilin/Background/bg_jilin.jpg',       spots: ['spot-guandimiao', 'spot-jilinmiao'] },
+            'liaoning':   { title: '辽宁', bg: 'province/liaoning/Background/bg_liaoning.jpg',     spots: ['spot-fengguosi', 'spot-shenyanggugong'] },
+            'yunnan':     { title: '云南', bg: 'province/yunnan/Background/bg_yunnan.jpg',       spots: [] },
+            'zhejiang':   { title: '浙江', bg: 'province/zhejiang/Background/bg_zhejiang.jpg',     spots: ['spot-liuheta'] },
+            'tianjin':    { title: '天津', bg: 'province/tianjin/Background/bg_tianjin.jpg',     spots: ['spot-dulesi', 'spot-tianhougong'] },
+            'fujian':     { title: '福建', bg: 'province/fujian/Background/bg_fujian.jpg',       spots: ['spot-qingjingsi','spot-hualinsi'] },
+            'guangdong':  { title: '广东', bg: 'province/guangdong/Background/bg_guangdong.jpg',     spots: [] },
+            'taiwan':     { title: '台湾', bg: 'province/taiwan/Background/bg_taiwan.jpg',       spots: [] },
+            'hainan':     { title: '海南', bg: 'province/hainan/Background/bg_hainan.jpg',       spots: [] },
+            'xinjiang':   { title: '新疆', bg: 'province/xinjiang/Background/bg_xinjiang.jpg',     spots: [] },
+            'ningxia':    { title: '宁夏', bg: 'province/ningxia/Background/bg_ningxia.jpg',     spots: [] },
+            'neimenggu':  { title: '内蒙古', bg: 'province/neimenggu/Background/bg_neimenggu.jpg',  spots: ['spot-dazhaosi', 'spot-xilituzhao'] },
+            'qinghai':    { title: '青海', bg: 'province/qinghai/Background/bg_qinghai.jpg', spots: [] },
+            'sichuan':    { title: '四川', bg: 'province/sichuan/Background/bg_sichuan.jpg', spots: [] },
+            'guangxi':    { title: '广西', bg: 'province/guangxi/Background/bg_guangxi.jpg', spots: [] },
+            'hubei':      { title: '湖北', bg: 'province/hubei/Background/bg_hubei.jpg', spots: ['spot-huanghelou'] },
+            'hongkong':   { title: '香港', bg: 'province/hongkong/Background/bg_hongkong.jpg', spots: [] },
+            'macau':      { title: '澳门', bg: 'province/macau/Background/bg_macau.jpg', spots: [] },
+            'shanghai':   { title: '上海', bg: 'province/shanghai/Background/bg_shanghai.jpg', spots: [] }
         };
 
         // Province preview modal logic: show an intermediate preview before entering
@@ -1697,6 +1811,8 @@
                 const spotEl = document.getElementById(spotId);
                 if (spotEl) spotEl.style.display = 'flex';
             });
+
+            if(window.ProvinceUI)window.ProvinceUI.render(provinceKey);
 
             resetMapView();
             window.showScreen('map-province');
@@ -1952,7 +2068,7 @@
         }
 
         function resetMapView() {
-            mapScale = Math.max(1, getMinScale()); 
+            mapScale = getMinScale();
             mapTranslateX = (window.innerWidth - MAP_RAW_WIDTH * mapScale) / 2;
             mapTranslateY = (window.innerHeight - MAP_RAW_HEIGHT * mapScale) / 2;
             updateMapTransform();
@@ -1976,6 +2092,7 @@
 
         screenProvince.addEventListener('wheel', (e) => {
             if (!screenProvince.classList.contains('active')) return;
+            if(e.target.closest('#provinceContentPanel,button,a'))return;
             e.preventDefault(); 
             
             const zoomStep = 0.15; 
@@ -2224,7 +2341,7 @@
                     });
                 }
             });
-            return items;
+            return items.concat(window.getJourneyItems ? window.getJourneyItems() : []);
         }
 
         // 登录后将 localStorage 信物同步到数据库
@@ -2440,7 +2557,9 @@
             }
         }
     </script>
+    <script src="journey-map.js"></script>
     <script src="digital_human.js"></script>
+    <script src="main-menu.js"></script>
 </body>
 </html>
 

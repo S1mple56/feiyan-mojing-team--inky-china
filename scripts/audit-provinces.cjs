@@ -1,0 +1,10 @@
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const root=path.resolve(__dirname,'../2d'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const start=html.indexOf('const provinceConfig ='),end=html.indexOf('// Province preview modal',start),ctx={};vm.createContext(ctx);vm.runInContext(html.slice(start,end)+';this.config=provinceConfig;',ctx);
+const names=Object.fromEntries([...html.matchAll(/<div id="(spot-[\w-]+)"[^>]*>([^<]+)<\/div>/g)].map(m=>[m[1],m[2]]));
+const icons=Object.fromEntries([...html.matchAll(/#(spot-[\w-]+)\s*\{([^}]+)\}/g)].map(m=>[m[1],m[2].match(/url\('([^']+)'\)/)?.[1]||null]));
+const links=Object.fromEntries([...html.matchAll(/document\.getElementById\('(spot-[\w-]+)'\)\.addEventListener\('click', \(\) => \{ window\.location\.href = '([^']+)'/g)].map(m=>[m[1],m[2]]));
+const list=Object.entries(ctx.config).map(([id,c])=>({id,title:c.title,background:c.bg,backgroundExists:fs.existsSync(path.join(root,c.bg)),spots:c.spots.map(id=>({id,name:names[id],icon:icons[id],iconExists:!!icons[id]&&fs.existsSync(path.join(root,icons[id])),page:links[id]||null,pageExists:!!links[id]&&fs.existsSync(path.join(root,links[id]))}))}));
+const report={provinces:list.length,spots:list.reduce((s,p)=>s+p.spots.length,0),empty:list.filter(p=>!p.spots.length).map(p=>p.title),missingBackgrounds:list.filter(p=>!p.backgroundExists).map(p=>p.title),missingIcons:list.flatMap(p=>p.spots.filter(s=>!s.iconExists).map(s=>p.title+':'+s.name)),unlinked:list.flatMap(p=>p.spots.filter(s=>!s.pageExists).map(s=>p.title+':'+s.name)),list};
+fs.mkdirSync(path.resolve(root,'../tmp/provinces'),{recursive:true});fs.writeFileSync(path.resolve(root,'../tmp/provinces/audit-before.json'),JSON.stringify(report,null,2));
+console.log(JSON.stringify({...report,list:undefined},null,2));

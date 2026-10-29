@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>场景探索 - 红石峡</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script src="../vendor/phaser-3.55.2.min.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
         #game-container { width: 100%; height: 100%; }
@@ -23,6 +23,8 @@
         .btn-group { margin-top: 30px; display: flex; justify-content: center; gap: 30px; }
         #toast { position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(139, 69, 19, 0.9); border: 2px solid #ffd700; color: #fff; padding: 15px 30px; font-size: 24px; border-radius: 8px; display: none; z-index: 300; text-align: center; }
     </style>
+<script src="../landmark-renderer.js"></script>
+<script src="../scene-character-renderer.js"></script>
 </head>
 <body>
 <div id="game-container"></div>
@@ -38,8 +40,9 @@ const config={type:Phaser.AUTO,width:window.innerWidth,height:window.innerHeight
 const game=new Phaser.Game(config);
 let player,cursors,wasd,spaceKey,npcs=[],activeNPC=null,dialogState='hidden';
 const uiLayer=document.getElementById('ui-layer'),dialogText=document.getElementById('dialog-text'),optionsBox=document.getElementById('options-box'),optBtns=[document.getElementById('opt-0'),document.getElementById('opt-1'),document.getElementById('opt-2')];
-function preload(){this.load.image('bg','../province/henan/Architecture/location/yuntaishan/bg_hongshixia.png');this.load.image('yuwenkai','../province/henan/Architecture/location/yuwenkai.png');this.load.image('crafter','../province/henan/Architecture/location/crafter.png');this.load.image('direnjie','../province/henan/Architecture/location/direnjie.png');let ps=localStorage.getItem('playerSkin')||'player.png';if(ps.startsWith('data:image')){let a=ps.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);this.load.image('player',URL.createObjectURL(new Blob([u],{type:m})));}else{this.load.image('player','../'+ps);}}
-function create(){let bg=this.add.image(0,0,'bg').setOrigin(0,0);let bs=Math.max(this.cameras.main.width/bg.width,this.cameras.main.height/bg.height)*1.5;bg.setScale(bs);let W=bg.width*bs,H=bg.height*bs;this.physics.world.setBounds(0,0,W,H);this.cameras.main.setBounds(0,0,W,H);player=this.physics.add.sprite(W*0.5,H*0.7,'player');player.setScale(150/player.height);player.setCollideWorldBounds(true);player.body.setSize(player.width*0.6,player.height*0.6);
+function preload(){this.load.image('bg','../province/henan/Architecture/location/yuntaishan/bg_hongshixia.jpg');this.load.image('yuwenkai','../province/henan/Architecture/location/yuwenkai.jpg');this.load.image('crafter','../province/henan/Architecture/location/crafter.jpg');this.load.image('direnjie','../province/henan/Architecture/location/direnjie.jpg');let ps=localStorage.getItem('playerSkin')||'player.png';if(ps.startsWith('data:image')){let a=ps.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);this.load.image('player',URL.createObjectURL(new Blob([u],{type:m})));}else{this.load.image('player','../'+ps);}}
+function create(){
+    SceneCharacterRenderer.attach(this);let bg=this.add.image(0,0,'bg').setOrigin(0,0);let bs=Math.max(this.cameras.main.width/bg.width,this.cameras.main.height/bg.height)*1.5;bg.setScale(bs);let W=bg.width*bs,H=bg.height*bs;this.physics.world.setBounds(0,0,W,H);this.cameras.main.setBounds(0,0,W,H);player=this.physics.add.sprite(W*0.5,H*0.7,'player');player.setScale(150/player.height);player.setCollideWorldBounds(true);player.body.setSize(player.width*0.6,player.height*0.6);
 const nc=[{id:'yuwenkai',name:'宇文恺',x:0.4,y:0.6,scale:0.3,item:'丹霞石标本',hasGivenItem:false,intro:'<span class="highlight">【宇文恺】</span><br>此地岩石呈紫红色，属铁质砂岩，经亿万年形成丹霞地貌。<br><br>▶ 按【空格键】请教',question:'红石峡的岩石属于什么类型？',options:['A. 花岗岩','B. 石灰岩','C. 铁质砂岩'],correct:2,success:'正确！紫红色铁质砂岩经亿万年形成丹霞地貌。',fail:'红石峡的岩石是铁质砂岩。'},{id:'crafter',name:'船夫',x:0.6,y:0.7,scale:0.3,item:'峡谷船票',hasGivenItem:false,intro:'<span class="highlight">【船夫】</span><br>峡谷深68米，移步换景如仙境，四季恒温。<br><br>▶ 按【空格键】了解峡谷',question:'红石峡峡谷深多少米？',options:['A. 38米','B. 68米','C. 98米'],correct:1,success:'不错！峡谷深68米，东西宽2-30米不等。',fail:'红石峡峡谷深68米。'},{id:'direnjie',name:'狄仁杰',x:0.7,y:0.55,scale:0.3,item:'红石峡美景照',hasGivenItem:false,intro:'<span class="highlight">【狄仁杰】</span><br>此地被誉为"盆景峡谷"，是云台山精华所在。<br><br>▶ 按【空格键】交流',question:'红石峡被誉为什么？',options:['A. 人间仙境','B. 盆景峡谷','C. 太行明珠'],correct:1,success:'正是！红石峡素有"盆景峡谷"之美誉。',fail:'红石峡被誉为"盆景峡谷"。'}];
 nc.forEach(c=>{let n=this.physics.add.sprite(W*c.x,H*c.y,c.id);n.setScale(c.scale);n.setImmovable(true);n.body.setSize(n.width*0.6,n.height*0.6);n.npcData=c;npcs.push(n);this.physics.add.collider(player,n);});
 cursors=this.input.keyboard.createCursorKeys();wasd=this.input.keyboard.addKeys({W:87,A:65,S:83,D:68});spaceKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);this.cameras.main.startFollow(player,true,0.08,0.08);}

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>场景探索 - 万善寺</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script src="../vendor/phaser-3.55.2.min.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
         #game-container { width: 100%; height: 100%; }
@@ -23,6 +23,8 @@
         .btn-group { margin-top: 30px; display: flex; justify-content: center; gap: 30px; }
         #toast { position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(139, 69, 19, 0.9); border: 2px solid #ffd700; color: #fff; padding: 15px 30px; font-size: 24px; border-radius: 8px; display: none; z-index: 300; text-align: center; }
     </style>
+<script src="../landmark-renderer.js"></script>
+<script src="../scene-character-renderer.js"></script>
 </head>
 <body>
 <div id="game-container"></div>
@@ -42,8 +44,9 @@ const config={type:Phaser.AUTO,width:window.innerWidth,height:window.innerHeight
 const game=new Phaser.Game(config);
 let player,cursors,wasd,spaceKey,npcs=[],activeNPC=null,dialogState='hidden';
 const uiLayer=document.getElementById('ui-layer'),dialogText=document.getElementById('dialog-text'),optionsBox=document.getElementById('options-box'),optBtns=[document.getElementById('opt-0'),document.getElementById('opt-1'),document.getElementById('opt-2')];
-function preload(){this.load.image('bg','../province/henan/Architecture/location/yuntaishan/bg_wanshansi.png');this.load.image('damo','../province/henan/Architecture/location/damo.png');this.load.image('batuo','../province/henan/Architecture/location/batuo.png');this.load.image('huike','../province/henan/Architecture/location/huike.png');let ps=localStorage.getItem('playerSkin')||'player.png';if(ps.startsWith('data:image')){let a=ps.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);this.load.image('player',URL.createObjectURL(new Blob([u],{type:m})));}else{this.load.image('player','../'+ps);}}
-function create(){let bg=this.add.image(0,0,'bg').setOrigin(0,0);let bs=Math.max(this.cameras.main.width/bg.width,this.cameras.main.height/bg.height)*1.5;bg.setScale(bs);let W=bg.width*bs,H=bg.height*bs;this.physics.world.setBounds(0,0,W,H);this.cameras.main.setBounds(0,0,W,H);player=this.physics.add.sprite(W*0.5,H*0.7,'player');player.setScale(150/player.height);player.setCollideWorldBounds(true);player.body.setSize(player.width*0.6,player.height*0.6);
+function preload(){this.load.image('bg','../province/henan/Architecture/location/yuntaishan/bg_wanshansi.jpg');this.load.image('damo','../province/henan/Architecture/location/damo.jpg');this.load.image('batuo','../province/henan/Architecture/location/batuo.jpg');this.load.image('huike','../province/henan/Architecture/location/huike.jpg');let ps=localStorage.getItem('playerSkin')||'player.png';if(ps.startsWith('data:image')){let a=ps.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);this.load.image('player',URL.createObjectURL(new Blob([u],{type:m})));}else{this.load.image('player','../'+ps);}}
+function create(){
+    SceneCharacterRenderer.attach(this);let bg=this.add.image(0,0,'bg').setOrigin(0,0);let bs=Math.max(this.cameras.main.width/bg.width,this.cameras.main.height/bg.height)*1.5;bg.setScale(bs);let W=bg.width*bs,H=bg.height*bs;this.physics.world.setBounds(0,0,W,H);this.cameras.main.setBounds(0,0,W,H);player=this.physics.add.sprite(W*0.5,H*0.7,'player');player.setScale(150/player.height);player.setCollideWorldBounds(true);player.body.setSize(player.width*0.6,player.height*0.6);
 const nc=[{id:'damo',name:'达摩祖师',x:0.5,y:0.4,scale:0.12,item:'万善寺佛珠',hasGivenItem:false,intro:'<span class="highlight">【达摩祖师】</span><br>阿弥陀佛，施主远道而来，善哉善哉。<br><br>▶ 按【空格键】接受问道',question:'万善寺始建于哪个朝代？',options:['A. 唐代','B. 明代','C. 清代'],correct:1,success:'善哉！万善寺始建于明朝万历年间，已有四百余年。',fail:'万善寺始建于明朝万历年间。'},{id:'batuo',name:'跋陀禅师',x:0.35,y:0.55,scale:0.12,item:'祈福红绸',hasGivenItem:false,intro:'<span class="highlight">【跋陀禅师】</span><br>此寺佛道共存，颇为罕见。<br><br>▶ 按【空格键】闲聊',question:'万善寺最大的文化特色是什么？',options:['A. 纯佛教','B. 佛道共存','C. 纯道教'],correct:1,success:'没错！万善寺融合佛道两教，独具特色。',fail:'万善寺最大的特色是佛道共存。'},{id:'huike',name:'慧可大师',x:0.7,y:0.5,scale:0.12,item:'古柏叶',hasGivenItem:false,intro:'<span class="highlight">【慧可大师】</span><br>寺内古柏参天，已有数百年。<br><br>▶ 按【空格键】问道',question:'万善寺位于云台山哪个位置？',options:['A. 茱萸峰顶','B. 茱萸峰脚下','C. 红石峡内'],correct:1,success:'正是！万善寺坐落于茱萸峰脚下。',fail:'万善寺位于茱萸峰脚下。'}];
 nc.forEach(c=>{let n=this.physics.add.sprite(W*c.x,H*c.y,c.id);n.setScale(c.scale);n.setImmovable(true);n.body.setSize(n.width*0.6,n.height*0.6);n.npcData=c;npcs.push(n);this.physics.add.collider(player,n);});
 cursors=this.input.keyboard.createCursorKeys();wasd=this.input.keyboard.addKeys({W:87,A:65,S:83,D:68});spaceKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);this.cameras.main.startFollow(player,true,0.08,0.08);}

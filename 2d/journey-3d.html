@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>墨境 · 神州长卷寻墨记</title>
+<link rel="stylesheet" href="journey-3d.css">
+</head>
+<body class="is-intro">
+<div id="world" aria-label="三维记忆空间"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div id="loading" role="status">正在展开长卷…</div>
+<header class="game-header"><a href="mainline.html" aria-label="返回主线">← 长卷</a><div><small id="chapterNumber">神州长卷</small><h1 id="chapterName">墨境</h1></div><span id="saveNote" role="status">本地存档</span><button id="characterButton">人物近览</button><button id="soundButton" aria-pressed="false">声音 · 关</button><button id="pauseButton" aria-label="暂停游戏">Ⅱ</button></header>
+<section id="quest" aria-label="当前任务"><div class="section-label">当下 · <span id="questCount"></span></div><h2 id="questTitle"></h2><p id="questDesc"></p><div class="quest-track"><i id="questProgress"></i></div><span id="questDetail"></span></section>
+<aside id="compass" aria-label="目标方向"><span>小墨灵的回声</span><strong id="targetName">寻找记忆</strong><small id="targetDistance"></small><button id="senseButton">Q · 寻墨</button></aside>
+<div id="marker" aria-hidden="true"><span>◇</span><small id="markerLabel"></small></div>
+<div id="interaction"><button id="interactButton"><kbd>E</kbd><span id="interactionLabel">互动</span><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19"/></svg></button><small>按住完成互动</small></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<footer class="game-controls"><span><kbd>W A S D</kbd> 移动</span><span><kbd>Shift</kbd> 疾行</span><span>拖动 · 环视 / 滚轮 · 远近</span><span><kbd>Q</kbd> 寻墨</span><span><kbd>Esc</kbd> 暂停</span><button id="helpButton">操作说明</button></footer>
+<div id="touchControls"><div id="joystick" aria-label="拖动摇杆移动"><i></i></div><button id="touchInteract">互动</button><button id="touchSense">寻墨</button></div>
+<section id="startScreen" class="screen visible" aria-labelledby="startTitle"><div class="start-layout"><div class="intro-card"><span class="section-label" id="startEyebrow">五大墨灵空间</span><h2 id="startTitle"></h2><p class="start-subtitle" id="startSubtitle"></p><p id="startStory"></p><div class="start-tags"><span>三维自由探索</span><span>建筑空间解谜</span><span>自动保存</span></div><button id="startButton" class="gold-button">走入墨境 →</button><button id="startPortrait" class="portrait-link">先看人物</button><a href="mainline.html">返回长卷</a></div><div class="chapter-seal" aria-hidden="true"><span id="sealText"></span><small>一景 · 一念 · 一程</small></div></div><div class="start-bottom"><span>神州长卷寻墨记</span><span>原创记忆空间 · 建筑的生活回声</span></div></section>
+<section id="characterScreen" class="screen" role="dialog" aria-modal="true" aria-labelledby="characterTitle"><div class="character-card"><span class="section-label">执笔人 · 写实角色</span><h2 id="characterTitle">一袭青衣<br>步入长卷</h2><p>真人扫描面部、皮肤法线细节、织物衣装与关节动作。</p><p id="humanAssetStatus" role="status">正在加载写实面部…</p><div class="portrait-options"><button id="portraitFull">全身</button><button id="portraitFace">面部特写</button><button id="portraitRotate">转身查看</button></div><button id="closePortrait" class="gold-button">返回游历 →</button><details><summary>素材署名</summary><p>面部扫描：Lee Perry-Smith / Infinite Realities，CC BY 3.0。衣装、发型与躯体为本项目程序化组合。扫描面部尚未包含表情绑定。</p><a href="assets/characters/ATTRIBUTION.md" target="_blank" rel="noopener">查看完整素材说明</a></details></div></section>
+<section id="pauseScreen" class="screen" role="dialog" aria-modal="true" aria-labelledby="pauseTitle"><div class="dialog-card"><span class="section-label">暂歇 · 长卷仍在</span><h2 id="pauseTitle">留一刻，再出发</h2><p>WASD / 方向键移动，Shift 疾行。拖动场景旋转镜头，滚轮调整远近。靠近发光物件，按住 E 互动。Q 唤起小墨灵，短暂显示通向目标的墨光。</p><p>每次完成机关或托付都会自动保存。手机使用左侧摇杆移动，拖动右侧场景转动视角。</p><button id="resumeButton" class="gold-button">继续游历</button><a href="mainline.html">返回主线</a></div></section>
+<section id="puzzleScreen" class="screen" role="dialog" aria-modal="true" aria-labelledby="puzzleTitle"><div class="puzzle-card"><div class="puzzle-top"><span class="section-label" id="puzzleType">记忆机关</span><button id="closePuzzle" aria-label="暂时离开机关">×</button></div><h2 id="puzzleTitle"></h2><p id="puzzleDesc"></p><div id="puzzleBoard"></div><p id="puzzleFeedback" role="status" aria-live="polite"></p><div class="puzzle-bottom"><button id="puzzleHint">小墨灵 · 提示</button><button id="confirmPuzzle" class="gold-button">让记忆归位</button></div></div></section>
+<section id="storyScreen" class="screen" role="dialog" aria-modal="true" aria-labelledby="storyTitle"><div class="story-card"><span class="section-label" id="storySpeaker"></span><h2 id="storyTitle"></h2><p id="storyText"></p><button id="storyContinue" class="gold-button">沿着回声继续 →</button></div></section>
+<section id="finishScreen" class="screen" role="dialog" aria-modal="true" aria-labelledby="finishTitle"><div class="finish-card"><span class="section-label">一段往事 · 已有回声</span><div class="reward-symbol">◇</div><h2 id="finishTitle"></h2><p id="finishMemory"></p><p id="finishDesc"></p><button id="nextChapter" class="gold-button">走向下一段记忆 →</button><a href="mainline.html">回到神州长卷 · 查看行囊</a></div></section>
+<script src="three.min.js"></script><script src="vendor/GLTFLoader-r128.js"></script><script src="ink-human.js"></script><script src="mainline-data.js"></script><script src="journey-3d-data.js"></script><script src="journey-3d.js"></script>
+</body></html>

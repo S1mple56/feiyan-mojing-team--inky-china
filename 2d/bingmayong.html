@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>古建游览 - 兵马俑寻秦记</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script src="vendor/phaser-3.55.2.min.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
         #game-container { width: 100%; height: 100%; }
@@ -80,6 +80,8 @@
 
         #chat-input:focus { border-bottom: 2px solid #ceae75 !important; }
     </style>
+<script src="landmark-renderer.js"></script>
+<script src="scene-character-renderer.js"></script>
 </head>
 <body>
 
@@ -110,7 +112,7 @@
             <div style="flex: 1; border: 2px solid #ceae75; border-radius: 10px; background: #111; position: relative; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
                 <div id="qin-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: bottom center; animation: breathing 4s ease-in-out infinite;">
                     <video id="qin-talking" src="" loop muted playsinline style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; pointer-events: none;"></video>
-                    <img id="qin-static" src="province/shaanxi/Architecture/location/qinshihuang.png" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; background: #111; z-index: 2; transition: opacity 0.3s ease-in-out;" onerror="this.src='player.png'">
+                    <img id="qin-static" src="province/shaanxi/Architecture/location/qinshihuang.jpg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; background: #111; z-index: 2; transition: opacity 0.3s ease-in-out;" onerror="this.src='player.png'">
                 </div>
                 
                 <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); border: 1px solid #ceae75; padding: 5px 25px; border-radius: 20px; z-index: 10;">
@@ -248,13 +250,13 @@ const optionsBox = document.getElementById('options-box');
 const optBtns = [document.getElementById('opt-0'), document.getElementById('opt-1'), document.getElementById('opt-2')];
 
 function preload() {
-    this.load.image('bg', 'province/shaanxi/Architecture/location/bg_bingmayong.png'); 
-    this.load.image('qinshihuang', 'province/shaanxi/Architecture/location/qinshihuang.png');
-    this.load.image('lisi', 'province/shaanxi/Architecture/location/lisi.png');
-    this.load.image('wangjian', 'province/shaanxi/Architecture/location/wangjian.png');
-    this.load.image('fuqing', 'province/shaanxi/Architecture/location/fuqing.png');
+    this.load.image('bg', 'province/shaanxi/Architecture/location/bg_bingmayong.jpg'); 
+    this.load.image('qinshihuang', 'province/shaanxi/Architecture/location/qinshihuang.jpg');
+    this.load.image('lisi', 'province/shaanxi/Architecture/location/lisi.jpg');
+    this.load.image('wangjian', 'province/shaanxi/Architecture/location/wangjian.jpg');
+    this.load.image('fuqing', 'province/shaanxi/Architecture/location/fuqing.jpg');
     this.load.audio('bgm_shaanxi', 'audio/shaanxi.mp3');
-    this.load.image('clay', 'province/shaanxi/Architecture/location/clay.png');
+    this.load.image('clay', 'province/shaanxi/Architecture/location/clay.jpg');
 
     let playerSkin = localStorage.getItem('playerSkin') || 'player.png';
     if (playerSkin.startsWith('data:image')) {
@@ -269,6 +271,7 @@ function preload() {
 }
 
 function create() {
+    SceneCharacterRenderer.attach(this);
     let bgm = this.sound.add('bgm_shaanxi', { loop: true, volume: 0.2 });
     bgm.play();
     let bg = this.add.image(0, 0, 'bg').setOrigin(0, 0);

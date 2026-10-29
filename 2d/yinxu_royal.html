@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>古建游览 - 殷墟王陵遗址区 (洹河北岸)</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script src="vendor/phaser-3.55.2.min.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
         #game-container { width: 100%; height: 100%; }
@@ -19,6 +19,8 @@
         
         #toast { position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(30, 40, 50, 0.9); border: 2px solid #ffd700; color: #fff; padding: 15px 30px; font-size: 24px; border-radius: 8px; display: none; z-index: 300; opacity: 0; transition: opacity 0.5s; text-align: center; }
     </style>
+<script src="landmark-renderer.js"></script>
+<script src="scene-character-renderer.js"></script>
 </head>
 <body>
 
@@ -57,10 +59,10 @@ const dialogText = document.getElementById('dialog-text');
 const optBtns = [document.getElementById('opt-0'), document.getElementById('opt-1'), document.getElementById('opt-2')];
 
 function preload() {
-    this.load.image('bg', 'province/henan/Architecture/location/bg_yinxu.png'); 
-    this.load.image('stone', 'province/henan/Architecture/location/stone.png');
-    this.load.image('guard', 'province/henan/Architecture/location/crafter.png'); // 临时替代
-    this.load.image('shaman', 'province/henan/Architecture/location/pangeng.png'); // 临时替代
+    this.load.image('bg', 'province/henan/Architecture/location/bg_yinxu.jpg'); 
+    this.load.svg('stone', 'assets/game/earth-block.svg');
+    this.load.image('guard', 'province/henan/Architecture/location/crafter.jpg'); // 临时替代
+    this.load.image('shaman', 'province/henan/Architecture/location/pangeng.jpg'); // 临时替代
 
     let playerSkin = localStorage.getItem('playerSkin') || 'player.png';
     if (playerSkin.startsWith('data:image')) {
@@ -75,6 +77,7 @@ function preload() {
 }
 
 function create() {
+    SceneCharacterRenderer.attach(this);
     let bg = this.add.image(0, 0, 'bg').setOrigin(0, 0);
     // 王陵区采用一种更清冷、深沉的色调
     bg.setTint(0x99aacc);

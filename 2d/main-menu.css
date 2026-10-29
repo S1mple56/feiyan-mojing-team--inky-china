@@ -1,0 +1,50 @@
+/* Main-menu presentation only. Module screens retain their existing styles. */
+#screen-main { position: fixed; inset: 0; background: #130a04; }
+#main-menu-stage {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: min(100vw, calc(100dvh * 16 / 9)); aspect-ratio: 16 / 9;
+    isolation: isolate; background: #482300 url('assets/main-menu/poster-hq.jpg') center / 100% 100% no-repeat;
+}
+#screen-main #bg-video {
+    position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; min-height: 0;
+    transform: none; object-fit: contain; opacity: 1; z-index: 0; pointer-events: none;
+}
+#main-menu-navigation { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+#main-menu-stage .menu-hotspot {
+    position: absolute; left: var(--x); top: var(--y); width: var(--w); height: var(--h);
+    display: block; padding: 0; margin: 0; border: 0; border-radius: 6px;
+    background: transparent; color: #f0d4a0; cursor: pointer; text-decoration: none;
+    pointer-events: auto; -webkit-tap-highlight-color: #f5d09533; touch-action: manipulation;
+    transition: background .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+#main-menu-stage .menu-hotspot:hover { background: #f2c57e12; box-shadow: inset 0 0 0 1px #e8bb6e55, 0 0 18px #dba15c26; }
+#main-menu-stage .menu-hotspot:focus-visible { outline: 2px solid #ffe0a2; outline-offset: 3px; background: #f2c57e16; }
+#main-menu-stage .menu-art-button img { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+#main-menu-stage .menu-art-button:hover { background: transparent; box-shadow: none; filter: brightness(1.25) drop-shadow(0 0 8px #f4b35466); }
+#main-menu-stage .menu-tooltip {
+    position: absolute; left: 50%; top: calc(100% + 8px); transform: translateX(-50%);
+    white-space: nowrap; padding: 6px 10px; background: #241407ed; border: 1px solid #cba56e88;
+    border-radius: 4px; font: 14px/1.5 "KaiTi", "Microsoft YaHei", serif;
+    opacity: 0; visibility: hidden; pointer-events: none;
+}
+#main-menu-stage .menu-hotspot:is(:hover,:focus-visible) .menu-tooltip { visibility: visible; opacity: 1; }
+#main-menu-music { z-index: 2; }
+#main-menu-stage #main-menu-music { background-image: url('assets/main-menu/music.svg'); background-size: 100% 100%; background-position: center; background-repeat: no-repeat; }
+#main-menu-music-state { position: absolute; right: 4%; bottom: -12%; padding: 2px 7px; border: 1px solid #b9956066; border-radius: 3px; background: #211205cc; color: #d8b57a; font: clamp(9px, .85vw, 13px)/1.4 "Microsoft YaHei", sans-serif; white-space: nowrap; pointer-events: none; }
+#main-menu-music .menu-tooltip { top: auto; bottom: calc(100% + 8px); }
+#main-menu-music[aria-pressed="true"] { box-shadow: inset 0 -2px 0 #d8b57a99; }
+#main-menu-account-panel {
+    position: absolute; z-index: 4; top: 11.5%; right: 1.5%; min-width: 160px;
+    padding: 7px; background: #241407f5; border: 1px solid #cba56e88; border-radius: 5px;
+}
+#main-menu-account-panel[hidden], #main-menu-play[hidden] { display: none; }
+#main-menu-account-panel button {
+    display: block; width: 100%; padding: 10px 16px; background: transparent; border: 0;
+    color: #e5c58e; text-align: left; cursor: pointer; font: 16px "KaiTi", serif;
+}
+#main-menu-account-panel button:is(:hover,:focus-visible) { background: #e8bb6e22; outline: 1px solid #cba56e88; }
+#main-menu-play { position: absolute; right: 2%; bottom: 11%; z-index: 3; border: 1px solid #cba56e; padding: 8px 12px; border-radius: 4px; background: #241407dd; color: #e5c58e; cursor: pointer; }
+#screen-main :is(#cloth-menu-container,.main-highlights,.low-threshold-tip,.secret-tip,#sound-toggle) { display: none !important; }
+body:has(#screen-main.active) :is(#top-right-ui-container,#dh-container) { display: none !important; }
+.menu-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { #main-menu-stage .menu-hotspot { transition: none; } }

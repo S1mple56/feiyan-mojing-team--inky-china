@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>古建游览 - 拙政园文心雅韵</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script src="vendor/phaser-3.55.2.min.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
         #game-container { width: 100%; height: 100%; }
@@ -45,6 +45,8 @@
         #ai-gen-preview { max-width: 250px; max-height: 300px; display: none; border: 2px solid #ceae75; border-radius: 10px; margin: 0 auto; }
         .loading { display: none; color: #ffd700; font-size: 20px; margin: 15px 0; }
     </style>
+<script src="landmark-renderer.js"></script>
+<script src="scene-character-renderer.js"></script>
 </head>
 <body>
 
@@ -216,11 +218,11 @@ const optionsBox = document.getElementById('options-box');
 const optBtns = [document.getElementById('opt-0'), document.getElementById('opt-1'), document.getElementById('opt-2')];
 
 function preload() {
-    this.load.image('bg', 'province/jiangsu/Architecture/location/bg_zhuozhengyuan.png');
-    this.load.image('wenzhengming', 'province/jiangsu/Architecture/location/wenzhengming.png');
-    this.load.image('lixiucheng', 'province/jiangsu/Architecture/location/lixiucheng.png');
-    this.load.image('caoxueqin', 'province/jiangsu/Architecture/location/caoxueqin.png');
-    this.load.image('page', 'province/henan/Architecture/location/page.png');
+    this.load.image('bg', 'province/jiangsu/Architecture/location/bg_zhuozhengyuan.jpg');
+    this.load.image('wenzhengming', 'province/jiangsu/Architecture/location/wenzhengming.jpg');
+    this.load.image('lixiucheng', 'province/jiangsu/Architecture/location/lixiucheng.jpg');
+    this.load.image('caoxueqin', 'province/jiangsu/Architecture/location/caoxueqin.jpg');
+    this.load.svg('page', 'assets/game/paper.svg');
     this.load.audio('bgm', 'audio/map_bgm.ogg');
 
     let playerSkin = localStorage.getItem('playerSkin') || 'player.png';
@@ -236,6 +238,7 @@ function preload() {
 }
 
 function create() {
+    SceneCharacterRenderer.attach(this);
     let bgm = this.sound.add('bgm', { loop: true, volume: 0.2 });
     bgm.play();
     let bg = this.add.image(0, 0, 'bg').setOrigin(0, 0);

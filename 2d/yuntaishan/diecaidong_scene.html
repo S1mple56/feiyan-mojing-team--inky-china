@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>场景探索 - 叠彩洞</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script src="../vendor/phaser-3.55.2.min.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "KaiTi", "楷体", serif; }
         #game-container { width: 100%; height: 100%; }
@@ -23,6 +23,8 @@
         .btn-group { margin-top: 30px; display: flex; justify-content: center; gap: 30px; }
         #toast { position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(139, 69, 19, 0.9); border: 2px solid #ffd700; color: #fff; padding: 15px 30px; font-size: 24px; border-radius: 8px; display: none; z-index: 300; text-align: center; }
     </style>
+<script src="../landmark-renderer.js"></script>
+<script src="../scene-character-renderer.js"></script>
 </head>
 <body>
 <div id="game-container"></div>
@@ -38,8 +40,9 @@ const config={type:Phaser.AUTO,width:window.innerWidth,height:window.innerHeight
 const game=new Phaser.Game(config);
 let player,cursors,wasd,spaceKey,npcs=[],activeNPC=null,dialogState='hidden';
 const uiLayer=document.getElementById('ui-layer'),dialogText=document.getElementById('dialog-text'),optionsBox=document.getElementById('options-box'),optBtns=[document.getElementById('opt-0'),document.getElementById('opt-1'),document.getElementById('opt-2')];
-function preload(){this.load.image('bg','../province/henan/Architecture/location/yuntaishan/bg_diecaidong.png');this.load.image('crafter','../province/henan/Architecture/location/crafter.png');this.load.image('qijiguang','../province/henan/Architecture/location/qijiguang.png');this.load.image('yuwenkai','../province/henan/Architecture/location/yuwenkai.png');let ps=localStorage.getItem('playerSkin')||'player.png';if(ps.startsWith('data:image')){let a=ps.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);this.load.image('player',URL.createObjectURL(new Blob([u],{type:m})));}else{this.load.image('player','../'+ps);}}
-function create(){let bg=this.add.image(0,0,'bg').setOrigin(0,0);let bs=Math.max(this.cameras.main.width/bg.width,this.cameras.main.height/bg.height)*1.5;bg.setScale(bs);let W=bg.width*bs,H=bg.height*bs;this.physics.world.setBounds(0,0,W,H);this.cameras.main.setBounds(0,0,W,H);player=this.physics.add.sprite(W*0.3,H*0.6,'player');player.setScale(150/player.height);player.setCollideWorldBounds(true);player.body.setSize(player.width*0.6,player.height*0.6);
+function preload(){this.load.image('bg','../province/henan/Architecture/location/yuntaishan/bg_diecaidong.jpg');this.load.image('crafter','../province/henan/Architecture/location/crafter.jpg');this.load.image('qijiguang','../province/henan/Architecture/location/qijiguang.jpg');this.load.image('yuwenkai','../province/henan/Architecture/location/yuwenkai.jpg');let ps=localStorage.getItem('playerSkin')||'player.png';if(ps.startsWith('data:image')){let a=ps.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);this.load.image('player',URL.createObjectURL(new Blob([u],{type:m})));}else{this.load.image('player','../'+ps);}}
+function create(){
+    SceneCharacterRenderer.attach(this);let bg=this.add.image(0,0,'bg').setOrigin(0,0);let bs=Math.max(this.cameras.main.width/bg.width,this.cameras.main.height/bg.height)*1.5;bg.setScale(bs);let W=bg.width*bs,H=bg.height*bs;this.physics.world.setBounds(0,0,W,H);this.cameras.main.setBounds(0,0,W,H);player=this.physics.add.sprite(W*0.3,H*0.6,'player');player.setScale(150/player.height);player.setCollideWorldBounds(true);player.body.setSize(player.width*0.6,player.height*0.6);
 const nc=[{id:'crafter',name:'修路老工匠',x:0.4,y:0.5,scale:0.3,item:'天路石',hasGivenItem:false,intro:'<span class="highlight">【修路老工匠】</span><br>此路历时十年，在绝壁上开凿而成，是修武人民的血汗结晶。<br><br>▶ 按【空格键】聆听故事',question:'叠彩洞是历时多少年开凿而成的？',options:['A. 五年','B. 十年','C. 二十年'],correct:1,success:'不错！历时十年，修武人民在绝壁上开凿出这条天路。',fail:'叠彩洞历时十年开凿而成。'},{id:'qijiguang',name:'戚继光',x:0.6,y:0.45,scale:0.08,item:'太行风景照',hasGivenItem:false,intro:'<span class="highlight">【戚继光】</span><br>19条隧洞，洞洞相连，曲折迂回，如同巨龙蜿蜒。<br><br>▶ 按【空格键】交流见闻',question:'叠彩洞由多少条隧道组成？',options:['A. 9条','B. 14条','C. 19条'],correct:2,success:'正确！由19条隧道组成，全长4800余米。',fail:'叠彩洞由19条隧道组成。'},{id:'yuwenkai',name:'宇文恺',x:0.7,y:0.55,scale:0.25,item:'采访笔记',hasGivenItem:false,intro:'<span class="highlight">【宇文恺】</span><br>此路被誉为"太行天路"，洞中向外望去如画框。<br><br>▶ 按【空格键】接受采访',question:'叠彩洞被誉为什么？',options:['A. 太行天路','B. 绝壁长廊','C. 人工天河'],correct:0,success:'正是！被誉为"太行天路"。',fail:'叠彩洞被誉为"太行天路"。'}];
 nc.forEach(c=>{let n=this.physics.add.sprite(W*c.x,H*c.y,c.id);n.setScale(c.scale);n.setImmovable(true);n.body.setSize(n.width*0.6,n.height*0.6);n.npcData=c;npcs.push(n);this.physics.add.collider(player,n);});
 cursors=this.input.keyboard.createCursorKeys();wasd=this.input.keyboard.addKeys({W:87,A:65,S:83,D:68});spaceKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);this.cameras.main.startFollow(player,true,0.08,0.08);}

@@ -2,6 +2,7 @@
 (function(){
   if(window.__digitalHumanLoaded) return;
   window.__digitalHumanLoaded = true;
+  const avatarUrl = new URL('xianzi.png', document.currentScript.src).href;
 
   /* ---------- 注入CSS ---------- */
   const style = document.createElement('style');
@@ -14,10 +15,10 @@
     #dh-container:hover { transform: scale(1.05); }
     /* speaking glow disabled */
     /* dh-glow removed */
-    #dh-avatar { border-radius: 50%; width: 70px; height: 70px; object-fit: cover;
-      background: rgba(18,18,18,0.6); border: 2px solid rgba(206,174,117,0.5); }
+    #dh-avatar { display: block; width: 82px; height: 110px; object-fit: contain;
+      background: transparent; border: 0; border-radius: 0; }
     #dh-panel {
-      position: absolute; bottom: 80px; right: 0; z-index: 99998;
+      position: absolute; bottom: 120px; right: 0; z-index: 99998;
       width: 380px; max-height: 520px;
       background: rgba(20,18,15,0.96);
       border: 1.5px solid rgba(206,174,117,0.5);
@@ -144,7 +145,7 @@
   const container = document.createElement('div');
   container.id = 'dh-container';
   container.innerHTML = `
-    <img id="dh-avatar" src="xianzi.png" alt="墨韵书生" onerror="this.style.display='none'" />
+    <img id="dh-avatar" src="${avatarUrl}" alt="墨韵书生" onerror="this.style.display='none'" />
     <div id="dh-panel">
       <div class="dh-header">
         <span>\u{1F4DC} 墨韵书生</span>

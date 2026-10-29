@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>赵州桥 · 桥那头的人</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#161313;color:#f0d38b;font-family:"KaiTi","STKaiti","Microsoft YaHei",serif;touch-action:none}
+canvas{display:block;width:100vw;height:100vh}
+button{font-family:inherit;cursor:pointer}
+#start-screen{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:linear-gradient(rgba(10,8,6,.55),rgba(10,8,6,.9)),radial-gradient(circle at 50% 30%,#3a3020,#1a1510 60%,#0a0808 100%)}
+#start-screen.hide{opacity:0;pointer-events:none;transition:opacity .5s}
+h1{color:#f0d38b;font-size:48px;letter-spacing:8px;text-shadow:0 3px 18px rgba(0,0,0,.8)}
+.sub{margin-top:8px;color:#c8a45b;font-size:18px;letter-spacing:4px}
+.intro{max-width:700px;margin:24px auto 28px;line-height:2;color:rgba(234,217,183,.88);font-size:16px}
+.primary-btn{font-size:20px;padding:12px 32px;border-radius:8px;border:2px solid #c8a45b;background:linear-gradient(135deg,#f0d38b,#a07828);color:#1a1207;font-weight:bold;transition:.2s}
+.primary-btn:hover{transform:translateY(-2px);filter:brightness(1.1)}
+#hud{position:fixed;top:12px;left:12px;z-index:20;width:min(320px,calc(100vw - 24px));background:rgba(22,19,19,.88);border:1px solid rgba(200,164,91,.4);border-radius:8px;padding:10px 14px;backdrop-filter:blur(6px);display:none}
+.hud-row{display:flex;justify-content:space-between;gap:10px;margin:4px 0;font-size:14px}
+.hud-label{color:#9e8a62}.hud-value{color:#f0d38b;text-align:right}
+#task-panel{position:fixed;top:12px;right:12px;z-index:20;width:min(260px,calc(100vw - 24px));background:rgba(22,19,19,.88);border:1px solid rgba(200,164,91,.4);border-radius:8px;padding:10px 14px;display:none}
+#task-panel h3{color:#c8a45b;font-size:14px;margin-bottom:6px}
+#task-panel .task-desc{color:#d6c9ae;font-size:13px;line-height:1.6}
+#dialogue-box{position:fixed;bottom:0;left:0;right:0;z-index:50;padding:20px 24px 24px;background:linear-gradient(transparent,rgba(10,8,6,.95) 30%);display:none}
+#dialogue-inner{max-width:760px;margin:0 auto;background:rgba(30,25,20,.92);border:1px solid rgba(200,164,91,.5);border-radius:10px;padding:16px 20px}
+#dialogue-speaker{color:#c8a45b;font-size:15px;margin-bottom:6px;font-weight:bold}
+#dialogue-text{color:#ead9b7;font-size:16px;line-height:1.8;min-height:50px}
+#dialogue-next{display:block;margin-top:10px;color:#9e8a62;font-size:12px;text-align:right}
+#toast{position:fixed;top:18%;left:50%;transform:translateX(-50%);z-index:60;min-width:200px;max-width:min(600px,86vw);padding:10px 18px;background:rgba(38,30,18,.93);border:1px solid rgba(240,211,139,.5);border-radius:8px;color:#f0d38b;text-align:center;font-size:15px;display:none;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+#interact-prompt{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);z-index:40;padding:8px 18px;background:rgba(30,25,20,.9);border:1px solid rgba(240,211,139,.6);border-radius:6px;color:#f0d38b;font-size:14px;display:none;pointer-events:none}
+#top-actions{position:fixed;left:12px;bottom:12px;z-index:25;display:none;gap:8px}
+#top-actions button{font-size:14px;color:#c8a45b;background:rgba(0,0,0,.5);border:1px solid rgba(200,164,91,.5);border-radius:6px;padding:7px 12px}
+#mobile-pad{display:none;position:fixed;right:16px;bottom:16px;z-index:35;width:150px;height:150px}
+.pad-btn{position:absolute;width:48px;height:48px;border-radius:50%;border:1px solid rgba(240,211,139,.5);background:rgba(22,19,19,.6);color:#f0d38b;font-size:20px;display:flex;align-items:center;justify-content:center;user-select:none}
+.pad-btn:active,.pad-btn.pressed{background:rgba(240,211,139,.3)}
+.pad-up{left:51px;top:0}.pad-left{left:0;top:51px}.pad-right{right:0;top:51px}.pad-down{left:51px;bottom:0}
+#pad-e{right:-10px;bottom:-10px;width:52px;height:52px;font-size:16px;background:rgba(120,80,30,.6)}
+#result-modal{position:fixed;inset:0;z-index:90;display:none;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;background:rgba(10,8,6,.92)}
+#result-modal.show{display:flex}
+#result-title{color:#f0d38b;font-size:42px;margin-bottom:12px}
+#result-detail{max-width:700px;line-height:2;color:#d6c9ae;font-size:17px;margin-bottom:24px}
+#result-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+@media(max-width:760px){h1{font-size:32px;letter-spacing:4px}.intro{font-size:14px}#hud{top:6px;left:6px;width:calc(100vw - 120px);padding:6px 10px;font-size:12px}#task-panel{top:6px;right:6px;width:110px;padding:6px 8px;font-size:11px}#mobile-pad{display:block}#top-actions{bottom:66px;left:6px}}
+</style>
+</head>
+<body>
+<div id="start-screen"><h1>赵州桥</h1><div class="sub">桥那头的人 · 两岸与桥下</div><div class="intro">赵州桥横在一条没有尽头的墨河上。桥头的老人每天点灯，等一个说好归家的年轻人。<br>找到修桥记录，复位拱石接通两岸，读出未尽的约定，把灯移到桥中央。<br><small>键盘：A/D 或方向键移动，W/S 上下桥，E 互动 | 移动端：方向键移动，E 键互动</small></div><button class="primary-btn" onclick="startGame()">踏上赵州桥</button></div>
+<div id="hud"><div class="hud-row"><span class="hud-label">当前目标</span><span class="hud-value" id="hud-goal">寻找修桥记录</span></div><div class="hud-row"><span class="hud-label">刻痕</span><span class="hud-value" id="hud-carvings">0 / 3</span></div><div class="hud-row"><span class="hud-label">拱石</span><span class="hud-value" id="hud-stones">0 / 3</span></div></div>
+<div id="task-panel"><h3 id="tp-title">任务一 · 找到修桥记录</h3><div class="task-desc" id="tp-desc">打开桥头旧行囊，沿桥面寻找相同的刻痕。</div></div>
+<div id="dialogue-box"><div id="dialogue-inner"><div id="dialogue-speaker"></div><div id="dialogue-text"></div><div id="dialogue-next">按 E / 空格 继续</div></div></div>
+<div id="toast"></div><div id="interact-prompt"></div>
+<div id="top-actions"><button onclick="location.reload()">重新开始</button><button onclick="location.href='mainline.html'">返回主线</button></div>
+<div id="mobile-pad"><div class="pad-btn pad-up" data-k="up">&#8593;</div><div class="pad-btn pad-left" data-k="left">&#8592;</div><div class="pad-btn pad-right" data-k="right">&#8594;</div><div class="pad-btn pad-down" data-k="down">&#8595;</div><div class="pad-btn" id="pad-e" data-k="e">E</div></div>
+<div id="result-modal"><h2 id="result-title"></h2><div id="result-detail"></div><div id="result-actions"><button class="primary-btn" onclick="location.href='mainline.html'">返回主线</button></div></div>
+<canvas id="game"></canvas>
+<script src="zhaozhouqiao-game.js"></script>
+</body>
+</html>
